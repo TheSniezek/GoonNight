@@ -52,6 +52,7 @@ export const mapE621Post = (post: E621Post): Post => {
     },
 
     tags,
+    is_favorited: post.is_favorited,
   };
 };
 

@@ -231,6 +231,9 @@ app.get('/api/e621', async (req, res) => {
       (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
     );
 
+    console.log('🔍 [/api/e621] Auth:', auth ? 'YES' : 'NO', 'User:', username || 'anonymous');
+    console.log('📦 [/api/e621] First post is_favorited:', posts[0]?.is_favorited);
+
     const payload = { posts, anonymous: !auth, hasMore: posts.length === limit };
 
     cache.set(cacheKey, payload);
@@ -359,11 +362,24 @@ app.post('/api/e621/favorites', async (req, res) => {
   try {
     const { postId, username, apiKey } = req.body;
 
+    console.log('❤️ [Add Favorite] Request:', {
+      postId,
+      username: username || 'missing',
+      hasApiKey: !!apiKey,
+    });
+
     if (!postId || !username || !apiKey) {
+      console.error('❌ [Add Favorite] Missing fields:', {
+        postId: !!postId,
+        username: !!username,
+        apiKey: !!apiKey,
+      });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    await e621Limiter.execute(
+    console.log(`❤️ [Add Favorite] Adding post ${postId} for user ${username}`);
+
+    const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
           axios.post(
@@ -382,10 +398,15 @@ app.post('/api/e621/favorites', async (req, res) => {
       5, // Very high priority
     );
 
-    // ✅ AGRESYWNE CZYSZCZENIE CACHE
+    console.log(
+      `✅ [Add Favorite] Success for post ${postId}, response status: ${response.status}`,
+    );
+
+    // ✅ INTELIGENTNE CZYSZCZENIE - tylko to co trzeba
     cache.clearPattern(`favorites:${username}`);
     cache.clearPattern(`favorite-ids:${username}`);
-    cache.clearPattern(`posts:`); // Czyść też posty (bo mają is_favorited)
+    // NIE czyścimy wszystkich postów - za dużo refetcha
+    // is_favorited będzie zaktualizowane przez optimistic update w froncie
 
     res.json({ success: true });
   } catch (err) {
@@ -418,15 +439,21 @@ app.delete('/api/e621/favorites/:postId', async (req, res) => {
       5, // Very high priority
     );
 
+    console.log(`✅ [Backend] E621 API responded:`, response.status, response.data);
+
+    // NIE czyść cache postów - to powoduje freeze
     cache.clearPattern(`favorites:${username}`);
     cache.clearPattern(`favorite-ids:${username}`);
-    cache.clearPattern(`posts:`);
 
+    console.log(`✅✅✅ [Backend] Favorite added successfully for ${postId}`);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ [Remove Favorite]', err.message);
+    console.error('❌❌❌ [Backend] Error adding favorite:', err.message);
+    if (err.response) {
+      console.error('❌ [Backend] E621 API error:', err.response.status, err.response.data);
+    }
     res.status(err.response?.status || 500).json({
-      error: err.message || 'Failed to remove favorite',
+      error: err.message || 'Failed to add favorite',
     });
   }
 });

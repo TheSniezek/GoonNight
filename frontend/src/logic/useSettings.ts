@@ -1,5 +1,5 @@
 // useSettings z poprzedniego pliku - już jest OK
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
 const SETTINGS_VERSION = 2;
@@ -162,15 +162,6 @@ export function useSettings() {
     setSettings(defaults);
     saveToStorage(defaults);
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveToStorage(settings);
-      }
-    };
-  }, [settings]);
 
   return {
     settings,

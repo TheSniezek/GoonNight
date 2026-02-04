@@ -9,18 +9,9 @@ type Props = {
   initialTags?: string;
   order: Order;
   setOrder: (order: Order) => void;
-  favoritesMode?: boolean; // 🔥 NOWY
-  onExitFavorites?: () => void; // 🔥 NOWY
 };
 
-export default function SearchBar({
-  onSearch,
-  initialTags = '',
-  order,
-  setOrder,
-  favoritesMode = false, // 🔥 NOWY
-  onExitFavorites, // 🔥 NOWY
-}: Props) {
+export default function SearchBar({ onSearch, initialTags = '', order, setOrder }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -50,37 +41,40 @@ export default function SearchBar({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    if (savedOrder !== null) {
-      // 🔥 Przywróć zapisany order przy normalnym wyszukiwaniu
+    // Sprawdź czy user usunął order:hot z inputu
+    const hasOrderHot = input.toLowerCase().includes('order:hot');
+
+    if (savedOrder !== null && !hasOrderHot) {
+      // User wyszukuje coś innego niż hot - przywróć poprzedni order
       setOrder(savedOrder);
       onSearch(input, savedOrder);
-      setSavedOrder(null); // 🔥 Wyczyść zapisany order
+      setSavedOrder(null);
     } else {
       onSearch(input, order);
     }
   };
 
   const handleDefaultSearch = () => {
-    if (favoritesMode && onExitFavorites) {
-      onExitFavorites();
+    // Przywróć poprzedni order jeśli był zapisany
+    if (savedOrder !== null) {
+      setOrder(savedOrder);
+      setSavedOrder(null);
     }
 
     setInput('');
-    setSavedOrder(order); // 🔥 Zapisz aktualny order przed zmianą
-    // 🔥 NIE wywołuj setOrder('id_desc') - zostaw aktualny order
-
-    onSearch('', 'id_desc', true);
+    onSearch('', savedOrder || 'id_desc', true);
   };
 
   const handleHotSearch = () => {
-    if (favoritesMode && onExitFavorites) {
-      onExitFavorites();
+    // Zapisz obecny order jeśli nie jest już hot
+    if (order !== 'hot' && savedOrder === null) {
+      setSavedOrder(order);
     }
 
-    setSavedOrder(order); // 🔥 Zapisz aktualny order przed zmianą
-    setInput('');
-
-    onSearch('', 'hot', true);
+    // Ustaw order na hot i wpisz do search bara
+    setOrder('hot');
+    setInput('order:hot');
+    onSearch('order:hot', 'hot');
   };
 
   const handleChange = (value: string) => {
@@ -234,7 +228,12 @@ export default function SearchBar({
               className={(savedOrder !== null ? savedOrder : order) === opt.value ? 'active' : ''}
               onClick={() => {
                 setShowFilters(false);
-                setSavedOrder(null);
+
+                // Jeśli był zapisany order (np. z Hot), wyczyść go
+                if (savedOrder !== null) {
+                  setSavedOrder(null);
+                }
+
                 setOrder(opt.value);
                 onSearch(input, opt.value);
               }}

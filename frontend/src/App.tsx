@@ -4,7 +4,7 @@ import SearchBar from './components/SearchBar';
 import PageButtonsTop from './components/PageButtons/PageButtonsTop';
 import PageButtonsBottom from './components/PageButtons/PageButtonsBottom';
 import type { Order, Post, PostTag } from './api/types';
-import { fetchPostsForMultipleTags } from './api/posts';
+import { fetchPostsForMultipleTags, mapE621Post } from './api/posts';
 import { useSettings } from './logic/useSettings';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
@@ -57,28 +57,8 @@ function App() {
   const { observedTags, toggleTag } = useObservedTags();
 
   const {
-    favoritesMode,
-    favoritePosts,
-    favoritesPage,
-    favoritesLoading,
-    isLoggedIn,
-    toggleFavorites,
-    loadFavorites,
-    toggleFavoritePost,
-    favoriteIds,
-    syncFavoriteIdsFromApi,
-    searchFavorites,
-    favoritesTags,
-    favoritesOrder,
-    pendingFavorites,
-    setFavoritesMode,
-  } = useFavorites({
-    username: e621User,
-    apiKey: e621ApiKey,
-  });
-
-  const {
     allPosts,
+    setAllPosts,
     tags,
     uiPage,
     loading,
@@ -91,11 +71,29 @@ function App() {
     observeLazy,
     order,
     setOrder,
+    setApiPage,
+    setHasNextApiPage,
+    setLoading,
+    setUiPage,
+    setTags,
+    setIsViewingRealFavorites, // ✅ DODAJ TO
   } = usePosts('', {
     hideFavorites,
     username: e621User,
     postsPerPage,
-    pauseLoading: pendingFavorites.size > 0,
+    infiniteScroll,
+  });
+
+  // ✅ NOWY hook useFavorites - tylko do toggle'owania
+  const { isLoggedIn, toggleFavoritePost, pendingFavorites } = useFavorites({
+    username: e621User,
+    apiKey: e621ApiKey,
+    onPostUpdate: (postId, isFavorited) => {
+      // ✅ Aktualizuj is_favorited w allPosts
+      setAllPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, is_favorited: isFavorited } : p)),
+      );
+    },
   });
 
   const {
@@ -121,9 +119,6 @@ function App() {
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const newsCache = useRef<Record<string, Post[]>>({});
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
-
-  // 🔥 Ref do SearchBar żeby móc modyfikować jego wartość
-  const [searchBarValue, setSearchBarValue] = useState('');
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
@@ -172,41 +167,50 @@ function App() {
     prevMaximizedPostId.current = maximizedPostId;
   }, [maximizedPostId, autoPlayOnMaximize, autoPauseOnMinimize]);
 
-  // 🔥 Synchronizuj searchBarValue z aktualnym stanem
-  const currentTags = favoritesMode ? favoritesTags : tags;
+  const handleSearch = useCallback(
+    async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
+      console.log('🔍 [App.handleSearch]', searchTags, newOrder, clearTags);
 
-  useEffect(() => {
-    setSearchBarValue(currentTags);
-  }, [currentTags]);
+      // ✅ UPROSZCZONE - zawsze normalne wyszukiwanie
+      await newSearch(
+        searchTags,
+        { username: e621User, apiKey: e621ApiKey },
+        { order: newOrder || order, clearTags },
+      );
+    },
+    [newSearch, e621User, e621ApiKey, order],
+  );
 
   // 🔥 Funkcje do modyfikacji SearchBar
-  const searchTag = async (tag: string) => {
-    setSearchBarValue(tag);
+  const searchTag = useCallback(
+    async (tag: string) => {
+      // Wyszukaj tylko ten jeden tag
+      await handleSearch(tag, order);
+    },
+    [handleSearch, order],
+  );
 
-    // 🔥 Wyjdź z favorites mode
-    if (favoritesMode) {
-      setFavoritesMode(false);
-    }
+  const addTag = useCallback(
+    (tag: string) => {
+      const currentTags = tags.split(' ').filter(Boolean);
+      if (!currentTags.includes(tag)) {
+        const newValue = [...currentTags, tag].join(' ');
+        // Tylko ustaw tagi, NIE wyszukuj automatycznie
+        setTags(newValue);
+      }
+    },
+    [tags, setTags],
+  );
 
-    // 🔥 Wyszukaj w normalnym trybie
-    await newSearch(tag, { username: e621User, apiKey: e621ApiKey }, { order: order });
-  };
-
-  const addTag = (tag: string) => {
-    const currentTags = searchBarValue.split(' ').filter(Boolean);
-    if (!currentTags.includes(tag)) {
-      const newValue = [...currentTags, tag].join(' ');
-      setSearchBarValue(newValue);
-      // 🔥 NIE wyszukuje automatycznie - tylko dodaje do inputa
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    const currentTags = searchBarValue.split(' ').filter(Boolean);
-    const newValue = currentTags.filter((t) => t !== tag).join(' ');
-    setSearchBarValue(newValue);
-    // 🔥 NIE wyszukuje automatycznie - tylko usuwa z inputa
-  };
+  const removeTag = useCallback(
+    (tag: string) => {
+      const currentTags = tags.split(' ').filter(Boolean);
+      const newValue = currentTags.filter((t: string) => t !== tag).join(' ');
+      // Tylko usuń tag, NIE wyszukuj automatycznie
+      setTags(newValue);
+    },
+    [tags, setTags],
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -228,48 +232,80 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [maximizedPostId, toggleMaximize, showNewsPopup]);
 
-  const handleSearch = async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
-    console.log(
-      '🔍 [App.handleSearch] START - tags:',
-      searchTags,
-      'order:',
-      newOrder,
-      'clearTags:',
-      clearTags,
-      'favoritesMode:',
-      favoritesMode,
-    );
-
-    // 🔥 Jeśli clearTags=true (Hot/Default), wyjdź z favorites mode
-    if (clearTags && favoritesMode) {
-      console.log('🔄 [App.handleSearch] Exiting favorites mode (clearTags)');
-      setFavoritesMode(false);
-      // Po wyjściu wykonaj normalne wyszukiwanie
-      await newSearch(
-        searchTags,
-        { username: e621User, apiKey: e621ApiKey },
-        { order: newOrder || order, clearTags },
-      );
-    } else if (favoritesMode) {
-      console.log('❤️ [App.handleSearch] Searching in favorites mode');
-      // Normalne wyszukiwanie w favorites mode
-      await searchFavorites(
-        searchTags,
-        { username: e621User, apiKey: e621ApiKey },
-        { order: newOrder, clearTags },
-      );
-    } else {
-      console.log('📝 [App.handleSearch] Normal search');
-      // Normalne wyszukiwanie w zwykłym mode
-      await newSearch(
-        searchTags,
-        { username: e621User, apiKey: e621ApiKey },
-        { order: newOrder || order, clearTags },
-      );
+  const loadRealFavorites = useCallback(async () => {
+    if (!e621User || !e621ApiKey) {
+      alert('Please log in first');
+      return;
     }
 
-    console.log('✅ [App.handleSearch] END');
-  };
+    console.log('📥 [loadRealFavorites] Loading favorites from /favorites.json');
+
+    // Wyczyść obecne posty
+    setAllPosts([]);
+    setUiPage(1);
+    setApiPage(1);
+
+    try {
+      setLoading(true);
+
+      // ✅ USTAW FLAGĘ ŻE JESTEŚ W TRYBIE FAVORITES
+      setIsViewingRealFavorites(true);
+      setTags(`fav:${e621User}`);
+
+      const response = await fetch(
+        `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 [loadRealFavorites] Got', data.posts?.length, 'favorites');
+
+      // Te posty są już posortowane po dacie dodania do favorites!
+      const mappedPosts = (data.posts || []).map(mapE621Post);
+      setAllPosts(mappedPosts);
+      setApiPage(2);
+      setHasNextApiPage(data.hasMore || false);
+
+      console.log('✅ [loadRealFavorites] Loaded successfully');
+    } catch (error) {
+      console.error('❌ [loadRealFavorites] Error:', error);
+      alert('Failed to load favorites');
+      // ✅ RESET FLAGI przy błędzie
+      setIsViewingRealFavorites(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    e621User,
+    e621ApiKey,
+    setAllPosts,
+    setUiPage,
+    setApiPage,
+    setLoading,
+    setIsViewingRealFavorites,
+    setTags,
+    setHasNextApiPage,
+  ]);
+
+  // ✅ NOWA FUNKCJA - Przycisk Favorites → wpisuje fav:{username}
+  const handleFavoritesClick = useCallback(() => {
+    if (!e621User) {
+      alert('Please log in first to view your favorites');
+      setShowLoginModal(true);
+      return;
+    }
+
+    console.log('⭐ [handleFavoritesClick] Loading favorites for:', e621User);
+
+    loadRealFavorites();
+
+    // ✅ Opcja 2 (lepsze - sortuje po dacie dodania do fav):
+    // Musisz dodać endpoint w backend który używa /favorites.json
+    // Ten endpoint domyślnie sortuje po "kiedy dodano do favorites"
+  }, [e621User, handleSearch]);
 
   // Dodaj funkcję filtrującą posty przez blacklist
   const filterByBlacklist = useCallback(
@@ -293,10 +329,15 @@ function App() {
     [blacklist],
   );
 
+  // ✅ Sprawdź czy w searchu jest fav:{username}
+  const isViewingFavorites = useMemo(() => {
+    return tags.toLowerCase().includes(`fav:${e621User.toLowerCase()}`);
+  }, [tags, e621User]);
+
   const hiddenFavoritesCount = useMemo(() => {
-    if (!hideFavorites) return 0;
-    return allPosts.filter((p) => favoriteIds.has(p.id)).length;
-  }, [allPosts, favoriteIds, hideFavorites]);
+    if (!hideFavorites || isViewingFavorites) return 0; // ✅ NIE liczę gdy oglądam favorites
+    return allPosts.filter((p) => p.is_favorited).length;
+  }, [allPosts, hideFavorites, isViewingFavorites]);
 
   const filteredPosts = useMemo(() => {
     let result = allPosts;
@@ -304,48 +345,42 @@ function App() {
     // 1. Filtruj przez blacklist
     result = filterByBlacklist(result);
 
-    // 2. Filtruj przez hideFavorites
-    if (hideFavorites) {
-      result = result.filter((p) => !favoriteIds.has(p.id));
+    // 2. Filtruj przez hideFavorites (ale NIE gdy oglądasz favorites)
+    if (hideFavorites && !isViewingFavorites) {
+      result = result.filter((p) => !p.is_favorited);
     }
 
     return result;
-  }, [allPosts, hideFavorites, favoriteIds, filterByBlacklist]);
+  }, [allPosts, hideFavorites, isViewingFavorites, filterByBlacklist]);
 
   const start = (uiPage - 1) * postsPerPage;
   const end = start + postsPerPage;
 
   const visiblePosts = useMemo(() => {
-    if (favoritesMode) {
-      // Filtruj również favorites przez blacklist
-      return filterByBlacklist(favoritePosts);
-    }
-
+    // ✅ UPROSZCZONE - nie ma favoritesMode
     if (infiniteScroll) {
       return filteredPosts;
     }
 
     return filteredPosts.slice(start, end);
-  }, [favoritesMode, favoritePosts, filteredPosts, start, end, infiniteScroll, filterByBlacklist]);
+  }, [filteredPosts, start, end, infiniteScroll]);
 
   // 🔥 Funkcja do nawigacji w zmaksymalizowanym trybie
   const goNextPost = useCallback(() => {
     if (maximizedPostId === null) return;
-    const posts = favoritesMode ? favoritePosts : visiblePosts;
-    const index = posts.findIndex((p) => p.id === maximizedPostId);
-    if (index >= 0 && index < posts.length - 1) {
-      toggleMaximize(posts[index + 1].id);
+    const index = visiblePosts.findIndex((p) => p.id === maximizedPostId);
+    if (index >= 0 && index < visiblePosts.length - 1) {
+      toggleMaximize(visiblePosts[index + 1].id);
     }
-  }, [maximizedPostId, favoritesMode, favoritePosts, visiblePosts, toggleMaximize]);
+  }, [maximizedPostId, visiblePosts, toggleMaximize]);
 
   const goPrevPost = useCallback(() => {
     if (maximizedPostId === null) return;
-    const posts = favoritesMode ? favoritePosts : visiblePosts;
-    const index = posts.findIndex((p) => p.id === maximizedPostId);
+    const index = visiblePosts.findIndex((p) => p.id === maximizedPostId);
     if (index > 0) {
-      toggleMaximize(posts[index - 1].id);
+      toggleMaximize(visiblePosts[index - 1].id);
     }
-  }, [maximizedPostId, favoritesMode, favoritePosts, visiblePosts, toggleMaximize]);
+  }, [maximizedPostId, visiblePosts, toggleMaximize]);
 
   // 🔥 Obsługa nawigacji strzałkami w maximized mode
   useEffect(() => {
@@ -359,15 +394,7 @@ function App() {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [
-    maximizedPostId,
-    favoritesMode,
-    favoritePosts,
-    visiblePosts,
-    goNextPost,
-    goPrevPost,
-    toggleMaximize,
-  ]);
+  }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize]);
 
   useEffect(() => {
     if (!infiniteScroll) return;
@@ -391,29 +418,43 @@ function App() {
   }, [infiniteScroll, loading, nextUiPage, postsPerPage]);
 
   useEffect(() => {
-    if (!favoritesMode) return;
-
-    const onScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
-        loadFavorites();
-      }
-    };
-
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [favoritesMode, loadFavorites]);
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      syncFavoriteIdsFromApi();
-    }
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     if (!infiniteScroll && hideFavorites) {
       setHideFavorites(false);
     }
   }, [infiniteScroll]);
+
+  // ✅ Wyczyść cache po zalogowaniu
+  useEffect(() => {
+    if (e621User && e621ApiKey) {
+      console.log('🔑 [Login] User logged in, refreshing posts');
+      // Odśwież obecne posty z credentials
+      if (tags) {
+        newSearch(tags, { username: e621User, apiKey: e621ApiKey });
+      }
+    }
+  }, [e621User, e621ApiKey]); // Tylko gdy się zmienią credentials
+
+  // ✅ DODAJ TEN NOWY useEffect dla infinite scroll
+  useEffect(() => {
+    if (!infiniteScroll || !infiniteTriggerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !loading && hasNextApiPage) {
+          console.log('📜 [Infinite Scroll] Triggered');
+          nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey });
+        }
+      },
+      {
+        rootMargin: '300px',
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(infiniteTriggerRef.current);
+
+    return () => observer.disconnect();
+  }, [infiniteScroll, loading, hasNextApiPage, nextUiPage, postsPerPage, e621User, e621ApiKey]);
 
   return (
     <div className={`app-container ${fixedHeader ? 'fixed' : ''}`}>
@@ -434,8 +475,8 @@ function App() {
           </svg>
         </button>
         <div className="top-bar">
-          {showHiddenFavCount && hideFavorites && hiddenFavoritesCount > 0 && (
-            <div className="hidden-fav-count-container">
+          {showHiddenFavCount && hideFavorites && (
+            <div className={`hidden-fav-count-container ${isViewingFavorites ? 'disabled' : ''}`}>
               <div className="hidden-fav-count-icon">
                 <svg
                   width="48"
@@ -448,47 +489,29 @@ function App() {
                 </svg>
               </div>
               <div className="hidden-fav-count-textbox">
-                <span className="hidden-fav-count-label">Hidden posts</span>
-                <span className="hidden-fav-count">{hiddenFavoritesCount}</span>
+                <span className="hidden-fav-count-label">
+                  {isViewingFavorites ? 'Hide favorites (disabled)' : 'Hidden posts'}
+                </span>
+                <span className="hidden-fav-count">
+                  {isViewingFavorites ? '—' : hiddenFavoritesCount}
+                </span>
               </div>
             </div>
           )}
           <SearchBar
             onSearch={handleSearch}
-            initialTags={searchBarValue}
-            order={favoritesMode ? favoritesOrder : order}
-            setOrder={(newOrder) => {
-              if (favoritesMode) {
-                searchFavorites(
-                  favoritesTags,
-                  { username: e621User, apiKey: e621ApiKey },
-                  { order: newOrder },
-                );
-              } else {
-                setOrder(newOrder);
-              }
-            }}
-            favoritesMode={favoritesMode} // 🔥 NOWY
-            onExitFavorites={() => {
-              // 🔥 NOWY
-              setFavoritesMode(false);
-              setSearchBarValue(tags);
-            }}
+            initialTags={tags} // ✅ UPROSZCZONE
+            order={order}
+            setOrder={setOrder}
           />
 
           {!infiniteScroll && (
             <PageButtonsTop
-              page={favoritesMode ? favoritesPage : uiPage}
-              loading={favoritesMode ? favoritesLoading : loading}
-              onPrev={() => (favoritesMode ? loadFavorites(favoritesPage - 1) : prevUiPage())}
-              onNext={() =>
-                favoritesMode
-                  ? loadFavorites(favoritesPage + 1)
-                  : nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey })
-              }
-              disableNext={
-                favoritesMode ? false : !hasNextApiPage && uiPage * postsPerPage >= allPosts.length
-              }
+              page={uiPage}
+              loading={loading}
+              onPrev={prevUiPage}
+              onNext={() => nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey })}
+              disableNext={!hasNextApiPage && uiPage * postsPerPage >= allPosts.length}
             />
           )}
         </div>
@@ -511,30 +534,8 @@ function App() {
           </button>
 
           <button
-            className={`fav-btn ${favoritesMode ? 'active' : ''}`}
-            onClick={async () => {
-              console.log('🔘 [FavButton] Clicked - current favoritesMode:', favoritesMode);
-              if (!isLoggedIn) {
-                console.log('⛔ [FavButton] Not logged in');
-                return;
-              }
-
-              const wasInFavoritesMode = favoritesMode;
-
-              if (!wasInFavoritesMode) {
-                console.log('📥 [FavButton] Entering favorites - clearing searchBar');
-                setSearchBarValue('');
-              } else {
-                console.log('📤 [FavButton] Exiting favorites - restoring tags:', tags);
-                setSearchBarValue(tags);
-              }
-
-              await toggleFavorites();
-              console.log(
-                '✅ [FavButton] Toggle complete - new favoritesMode should be:',
-                !wasInFavoritesMode,
-              );
-            }}
+            className="fav-btn"
+            onClick={handleFavoritesClick}
             disabled={!isLoggedIn}
             title={!isLoggedIn ? 'Login required' : 'Favorites'}
           >
@@ -617,7 +618,7 @@ function App() {
         style={{ '--columns': postColumns } as React.CSSProperties}
       >
         {visiblePosts.map((post: Post, index: number) => {
-          const isLCP = index === 0 && uiPage === 1 && !favoritesMode;
+          const isLCP = index === 0 && uiPage === 1;
           const url = post.file.url || post.file.sample_url;
           if (!url) return null;
 
@@ -718,12 +719,12 @@ function App() {
                 )}
               </button>
               <button
-                className={`fav-post-btn ${favoriteIds.has(post.id) ? 'is-favorite' : ''} ${
+                className={`fav-post-btn ${post.is_favorited ? 'is-favorite' : ''} ${
                   isMaximized ? 'fav-post-btn-max' : ''
                 }`}
                 onClick={async () => {
-                  const wasNotFavorite = !favoriteIds.has(post.id);
-                  await toggleFavoritePost(post.id);
+                  const wasNotFavorite = !post.is_favorited;
+                  await toggleFavoritePost(post.id, post.is_favorited || false);
 
                   // Jeśli dodaliśmy do fav i hide favorites jest włączony i jesteśmy w maximized
                   if (wasNotFavorite && hideFavorites && isMaximized) {
@@ -1043,25 +1044,15 @@ function App() {
 
       {!infiniteScroll && (
         <PageButtonsBottom
-          page={favoritesMode ? favoritesPage : uiPage}
-          loading={favoritesMode ? favoritesLoading : loading}
-          onPrev={() => (favoritesMode ? loadFavorites(favoritesPage - 1) : prevUiPage())}
-          onNext={() =>
-            favoritesMode
-              ? loadFavorites(favoritesPage + 1)
-              : nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey })
-          }
-          disableNext={
-            favoritesMode ? false : !hasNextApiPage && uiPage * postsPerPage >= allPosts.length
-          }
+          page={uiPage}
+          loading={loading}
+          onPrev={prevUiPage}
+          onNext={() => nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey })}
+          disableNext={!hasNextApiPage && uiPage * postsPerPage >= allPosts.length}
         />
       )}
 
-      {(loading || favoritesLoading) && (
-        <p style={{ marginTop: 10 }}>
-          {favoritesMode ? 'Loading favorites...' : 'Loading posts...'}
-        </p>
-      )}
+      {loading && <p style={{ marginTop: 10 }}>Loading posts...</p>}
       {infiniteScroll && <div ref={infiniteTriggerRef} style={{ height: 1 }} />}
     </div>
   );

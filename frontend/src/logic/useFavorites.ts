@@ -1,24 +1,8 @@
 // ============================================================
-// useFavorites.ts - FINALNA WERSJA
-// ============================================================================
-//
-// KLUCZOWE ZMIANY:
-// ✅ Bez zmiany key (nie powoduje re-render wszystkich postów)
-// ✅ Smart invalidation (tylko zmienione posty)
-// ✅ Batch operations z rate limiting
-// ✅ Optimistic updates + rollback
-// ✅ Zero błędów TypeScript
-//
-// JAK TO DZIAŁA:
-// - favoriteIds jest Set<number>
-// - Komponenty używają React.memo + isFavorited prop
-// - Tylko zmienione posty re-renderują się
-//
-// ============================================================================
+// useFavorites.ts - NAPRAWIONA WERSJA
+// ============================================================
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { mapE621Post } from '../api/posts';
-import type { Post, Order } from '../api/types';
 
 const API_BASE = 'http://localhost:3001';
 
@@ -38,7 +22,7 @@ interface QueueCallbacks {
 }
 
 // ============================================================================
-// REQUEST QUEUE (respektuje backend rate limit)
+// REQUEST QUEUE
 // ============================================================================
 class FavoriteOperationQueue {
   private queue: FavoriteOperation[] = [];
@@ -48,33 +32,52 @@ class FavoriteOperationQueue {
 
   constructor(callbacks: QueueCallbacks) {
     this.callbacks = callbacks;
+    console.log('🎯 [FavoriteQueue] Initialized');
   }
 
   enqueue(postId: number, action: 'add' | 'remove'): void {
-    // Usuń duplikaty (jeśli już jest w kolejce)
+    // Usuń duplikaty
     this.queue = this.queue.filter((op) => op.postId !== postId);
-
-    // Dodaj nowy
     this.queue.push({ postId, action, retries: 0 });
 
-    // Flush po 200ms (batch multiple clicks)
-    if (this.flushTimer) clearTimeout(this.flushTimer);
-    this.flushTimer = setTimeout(() => this.flush(), 200);
+    console.log(
+      `📝 [FavoriteQueue] Enqueued ${action} ${postId}, queue size: ${this.queue.length}`,
+    );
+
+    // ✅ WAŻNE: Clear poprzedni timer
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+    }
+
+    // ✅ WAŻNE: Ustaw nowy timer
+    this.flushTimer = setTimeout(() => {
+      console.log('⏰ [FavoriteQueue] Timer triggered, starting flush');
+      this.flush();
+    }, 200);
   }
 
   async flush(): Promise<void> {
-    if (this.processing || this.queue.length === 0) return;
+    if (this.processing) {
+      console.log('⏸️ [FavoriteQueue] Already processing, skipping flush');
+      return;
+    }
 
-    console.log(`🔄 [FavoriteQueue] Flushing ${this.queue.length} operations`);
+    if (this.queue.length === 0) {
+      console.log('📭 [FavoriteQueue] Queue is empty, nothing to flush');
+      return;
+    }
+
+    console.log(`🔄 [FavoriteQueue] Starting flush of ${this.queue.length} operations`);
     this.processing = true;
 
-    // ✅ SEQUENTIAL (backend ma własny rate limiter)
     while (this.queue.length > 0) {
       const op = this.queue.shift()!;
+      console.log(`🎯 [FavoriteQueue] Processing ${op.action} ${op.postId}`);
       await this.executeOperation(op);
     }
 
     this.processing = false;
+    console.log('✅ [FavoriteQueue] Flush complete');
   }
 
   private async executeOperation(op: FavoriteOperation): Promise<void> {
@@ -82,48 +85,80 @@ class FavoriteOperationQueue {
     const { username, apiKey } = this.callbacks.credentials();
     const MAX_RETRIES = 3;
 
+    console.log(
+      `🚀 [Queue] Executing ${action} ${postId} (attempt ${retries + 1}/${MAX_RETRIES + 1})`,
+    );
+
     try {
       if (action === 'add') {
+        console.log(`📤 [Queue] POST to /api/e621/favorites`, { postId, username });
+
         const response = await fetch(`${API_BASE}/api/e621/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ postId, username, apiKey }),
         });
 
+        console.log(`📥 [Queue] Response status: ${response.status}`);
+
         if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
+          const errorText = await response.text();
+          console.error(`❌ [Queue] Response not OK:`, errorText);
+          const error = JSON.parse(errorText).catch(() => ({ error: errorText }));
           throw new Error(error.error || `HTTP ${response.status}`);
         }
+
+        const result = await response.json();
+        console.log(`✅ [Queue] ADD response:`, result);
       } else {
+        console.log(`📤 [Queue] DELETE to /api/e621/favorites/${postId}`);
+
         const response = await fetch(`${API_BASE}/api/e621/favorites/${postId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, apiKey }),
         });
 
+        console.log(`📥 [Queue] Response status: ${response.status}`);
+
         if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
+          const errorText = await response.text();
+          console.error(`❌ [Queue] Response not OK:`, errorText);
+          const error = JSON.parse(errorText).catch(() => ({ error: errorText }));
           throw new Error(error.error || `HTTP ${response.status}`);
         }
+
+        const result = await response.json();
+        console.log(`✅ [Queue] REMOVE response:`, result);
       }
 
       this.callbacks.onSuccess(postId, action);
-      console.log(`✅ [Queue] ${action} ${postId} - SUCCESS`);
+      console.log(`✅✅✅ [Queue] ${action} ${postId} - SUCCESS`);
     } catch (error) {
       console.error(`❌ [Queue] ${action} ${postId} - ERROR:`, error);
 
+      if (error instanceof Error) {
+        console.error(`❌ [Queue] Error message:`, error.message);
+      }
+
       if (retries < MAX_RETRIES) {
-        console.log(`🔄 [Queue] Retry ${retries + 1}/${MAX_RETRIES}`);
+        const delay = 1000 * Math.pow(2, retries);
+        console.log(`🔄 [Queue] Will retry ${retries + 1}/${MAX_RETRIES} after ${delay}ms`);
         this.queue.unshift({ ...op, retries: retries + 1 });
-        await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } else {
+        console.error(`❌❌❌ [Queue] Max retries reached for ${action} ${postId}`);
         this.callbacks.onError(postId, action, error as Error);
       }
     }
   }
 
   clear(): void {
-    if (this.flushTimer) clearTimeout(this.flushTimer);
+    console.log('🧹 [FavoriteQueue] Clearing queue');
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
     this.queue = [];
     this.processing = false;
   }
@@ -135,20 +170,10 @@ class FavoriteOperationQueue {
 interface UseFavoritesParams {
   username: string;
   apiKey: string;
+  onPostUpdate: (postId: number, isFavorited: boolean) => void;
 }
 
-export function useFavorites({ username, apiKey }: UseFavoritesParams) {
-  const [favoritesMode, setFavoritesMode] = useState(false);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [allFavoritePosts, setAllFavoritePosts] = useState<Post[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [searchTags, setSearchTags] = useState('');
-  const [searchOrder, setSearchOrder] = useState<Order>('id_desc');
-
-  // ✅ SIMPLE SET - React wykrywa zmiany przez referencję
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
-
+export function useFavorites({ username, apiKey, onPostUpdate }: UseFavoritesParams) {
   const [pendingFavorites, setPendingFavorites] = useState<Set<number>>(new Set());
 
   const isLoggedIn = Boolean(username && apiKey);
@@ -156,262 +181,110 @@ export function useFavorites({ username, apiKey }: UseFavoritesParams) {
 
   // Inicjalizuj queue
   useEffect(() => {
+    console.log('🔧 [useFavorites] useEffect triggered, isLoggedIn:', isLoggedIn);
+
     if (!isLoggedIn) {
+      console.log('🔒 [useFavorites] Not logged in, clearing queue');
       queueRef.current?.clear();
       queueRef.current = null;
       return;
     }
 
+    if (queueRef.current) {
+      console.log('♻️ [useFavorites] Queue already exists, skipping initialization');
+      return;
+    }
+
+    console.log('✨ [useFavorites] Creating new queue');
     queueRef.current = new FavoriteOperationQueue({
       onSuccess: (postId) => {
+        console.log(`🎉 [useFavorites] onSuccess for ${postId}`);
         setPendingFavorites((prev) => {
           const next = new Set(prev);
           next.delete(postId);
+          console.log(`📊 [useFavorites] Pending favorites after success:`, next.size);
           return next;
         });
       },
       onError: (postId, action, error) => {
-        console.error(`❌ [Queue Error] ${action} ${postId}:`, error);
+        console.error(`💥 [useFavorites] onError for ${postId}:`, error.message);
 
         // Rollback
-        setFavoriteIds((prev) => {
-          const next = new Set(prev);
-          if (action === 'add') {
-            next.delete(postId);
-          } else {
-            next.add(postId);
-          }
-          return next;
-        });
+        const shouldBeFavorited = action === 'remove';
+        console.log(
+          `🔄 [useFavorites] Rolling back ${postId} to is_favorited=${shouldBeFavorited}`,
+        );
+        onPostUpdate(postId, shouldBeFavorited);
 
         setPendingFavorites((prev) => {
           const next = new Set(prev);
           next.delete(postId);
           return next;
         });
+
+        alert(`Failed to ${action} favorite. Please try again.`);
       },
-      credentials: () => ({ username, apiKey }),
+      credentials: () => {
+        console.log('🔑 [useFavorites] Getting credentials:', { username, hasApiKey: !!apiKey });
+        return { username, apiKey };
+      },
     });
 
     return () => {
+      console.log('🧹 [useFavorites] Cleanup - clearing queue');
       queueRef.current?.clear();
     };
-  }, [isLoggedIn, username, apiKey]);
+  }, [isLoggedIn, username, apiKey, onPostUpdate]);
 
   // ============================================================================
   // TOGGLE FAVORITE
   // ============================================================================
   const toggleFavoritePost = useCallback(
-    async (postId: number) => {
-      if (!isLoggedIn || pendingFavorites.has(postId)) {
+    async (postId: number, currentIsFavorited: boolean) => {
+      console.log('🎯 [toggleFavoritePost] Called:', { postId, currentIsFavorited, isLoggedIn });
+
+      if (!isLoggedIn) {
+        console.warn('⚠️ [toggleFavoritePost] Not logged in');
+        alert('Please log in first');
         return;
       }
 
-      const isFav = favoriteIds.has(postId);
-      console.log(`❤️ [toggleFavoritePost] ${isFav ? 'REMOVE' : 'ADD'} ${postId}`);
+      if (pendingFavorites.has(postId)) {
+        console.warn('⚠️ [toggleFavoritePost] Already pending:', postId);
+        return;
+      }
 
+      if (!queueRef.current) {
+        console.error('❌ [toggleFavoritePost] Queue is null!');
+        return;
+      }
+
+      const action = currentIsFavorited ? 'REMOVE' : 'ADD';
+      console.log(`❤️ [toggleFavoritePost] ${action} ${postId}`);
+
+      // Dodaj do pending
       setPendingFavorites((prev) => {
         const next = new Set(prev);
         next.add(postId);
+        console.log(`📊 [toggleFavoritePost] Pending favorites:`, next.size);
         return next;
       });
 
-      // ✅ OPTIMISTIC UPDATE - WAŻNE: Nowa referencja Set
-      setFavoriteIds((prev) => {
-        const next = new Set(prev);
-        if (isFav) {
-          next.delete(postId);
-        } else {
-          next.add(postId);
-        }
-        return next; // Nowa referencja → React wykryje zmianę
-      });
+      // Optimistic update
+      console.log(`✨ [toggleFavoritePost] Optimistic update: ${postId} -> ${!currentIsFavorited}`);
+      onPostUpdate(postId, !currentIsFavorited);
 
-      queueRef.current?.enqueue(postId, isFav ? 'remove' : 'add');
+      // Dodaj do queue
+      console.log(`➕ [toggleFavoritePost] Enqueueing ${action} ${postId}`);
+      queueRef.current.enqueue(postId, currentIsFavorited ? 'remove' : 'add');
+      console.log(`✅ [toggleFavoritePost] Enqueued successfully`);
     },
-    [isLoggedIn, favoriteIds, pendingFavorites],
+    [isLoggedIn, pendingFavorites, onPostUpdate],
   );
 
-  // ============================================================================
-  // SYNC IDS
-  // ============================================================================
-  const syncFavoriteIdsFromApi = useCallback(async () => {
-    if (!isLoggedIn) return;
-
-    console.log('🔄 [syncFavoriteIds] START');
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/e621/favorites/ids?username=${encodeURIComponent(
-          username,
-        )}&apiKey=${encodeURIComponent(apiKey)}`,
-      );
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      console.log('📥 [syncFavoriteIds] Received', data.ids?.length || 0, 'IDs');
-
-      setFavoriteIds(new Set<number>(data.ids || []));
-    } catch (err) {
-      console.error('❌ [syncFavoriteIds] ERROR:', err);
-    }
-  }, [username, apiKey, isLoggedIn]);
-
-  // ============================================================================
-  // LOAD FAVORITES
-  // ============================================================================
-  const loadFavorites = useCallback(
-    async (nextPage = page + 1) => {
-      if (!isLoggedIn || loading) return;
-
-      console.log('📥 [loadFavorites] page:', nextPage);
-      setLoading(true);
-
-      try {
-        const endpoint = searchTags
-          ? `/api/e621?tags=${encodeURIComponent(
-              `fav:${username} ${searchTags}`,
-            )}&page=${nextPage}&username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(
-              apiKey,
-            )}`
-          : `/api/e621/favorites?username=${encodeURIComponent(
-              username,
-            )}&apiKey=${encodeURIComponent(apiKey)}&page=${nextPage}`;
-
-        const res = await fetch(`${API_BASE}${endpoint}`);
-        const data = await res.json();
-        const mappedPosts = (data.posts || []).map(mapE621Post);
-
-        setAllFavoritePosts((prev) => [...prev, ...mappedPosts]);
-        setPosts((prev) => [...prev, ...mappedPosts]);
-        setPage(nextPage);
-      } catch (err) {
-        console.error('❌ [loadFavorites] ERROR:', err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [username, apiKey, page, isLoggedIn, loading, searchTags],
-  );
-
-  // ============================================================================
-  // TOGGLE MODE
-  // ============================================================================
-  const toggleFavorites = useCallback(async () => {
-    if (!isLoggedIn) return;
-
-    if (!favoritesMode) {
-      console.log('📥 [toggleFavorites] Entering favorites mode');
-      setPosts([]);
-      setAllFavoritePosts([]);
-      setPage(1);
-      await loadFavorites(1);
-      setFavoritesMode(true);
-    } else {
-      console.log('📤 [toggleFavorites] Exiting favorites mode');
-      setFavoritesMode(false);
-      setPosts([]);
-      setAllFavoritePosts([]);
-      setPage(1);
-    }
-  }, [favoritesMode, isLoggedIn, loadFavorites]);
-
-  // ============================================================================
-  // SEARCH FAVORITES
-  // ============================================================================
-  const searchFavorites = useCallback(
-    async (
-      newTags: string,
-      auth?: { username: string; apiKey: string },
-      options?: { order?: Order; clearTags?: boolean },
-    ) => {
-      const cleanedTags = options?.clearTags ? '' : newTags;
-      const newOrder = options?.order ?? searchOrder;
-
-      setSearchTags(cleanedTags);
-      setSearchOrder(newOrder);
-      setAllFavoritePosts([]);
-      setPosts([]);
-      setPage(1);
-
-      if (!isLoggedIn || !auth) return;
-
-      setLoading(true);
-      try {
-        const queryTags = cleanedTags
-          ? `fav:${auth.username} ${cleanedTags}`
-          : `fav:${auth.username}`;
-
-        const res = await fetch(
-          `${API_BASE}/api/e621?tags=${encodeURIComponent(queryTags)}&page=1&username=${encodeURIComponent(
-            auth.username,
-          )}&apiKey=${encodeURIComponent(auth.apiKey)}`,
-        );
-        const data = await res.json();
-        const mappedPosts = (data.posts || []).map(mapE621Post);
-
-        setAllFavoritePosts(mappedPosts);
-        setPosts(mappedPosts);
-      } catch (err) {
-        console.error('❌ [searchFavorites] ERROR:', err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [isLoggedIn, searchOrder],
-  );
-
-  // ============================================================================
-  // RESET
-  // ============================================================================
-  const resetFavorites = useCallback(() => {
-    setFavoritesMode(false);
-    setPosts([]);
-    setAllFavoritePosts([]);
-    setPage(1);
-    setFavoriteIds(new Set());
-    setSearchTags('');
-    setSearchOrder('id_desc');
-    queueRef.current?.clear();
-  }, []);
-
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
-
-  // Sync on login
-  useEffect(() => {
-    if (isLoggedIn) {
-      syncFavoriteIdsFromApi();
-    } else {
-      resetFavorites();
-    }
-  }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ============================================================================
-  // RETURN
-  // ============================================================================
   return {
-    favoritesMode,
-    favoritePosts: posts,
-    favoritesPage: page,
-    favoritesLoading: loading,
     isLoggedIn,
-
-    toggleFavorites,
-    loadFavorites,
-    resetFavorites,
     toggleFavoritePost,
-    searchFavorites,
-
-    favoriteIds,
-    setFavoriteIds,
-    syncFavoriteIdsFromApi,
-    setFavoritesMode,
-
-    favoritesTags: searchTags,
-    favoritesOrder: searchOrder,
     pendingFavorites,
-    allFavoritePosts,
   };
 }

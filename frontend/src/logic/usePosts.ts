@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchPosts } from '../api/posts';
-import type { Order, Post } from '../api/types';
+import { fetchPosts, mapE621Post } from '../api/posts';
+import type { E621Post, Order, Post } from '../api/types';
 
 interface Auth {
   username: string;
@@ -14,7 +14,6 @@ export function usePosts(
     username?: string;
     postsPerPage: number;
     infiniteScroll?: boolean;
-    pauseLoading?: boolean; // 🔥 NOWY
   },
 ) {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
@@ -27,6 +26,8 @@ export function usePosts(
 
   const [loading, setLoading] = useState(false);
   const [hasNextApiPage, setHasNextApiPage] = useState(true);
+
+  const [isViewingRealFavorites, setIsViewingRealFavorites] = useState(false);
 
   const [maximizedPostId, setMaximizedPostId] = useState<number | null>(null);
   const [pendingNextPage, setPendingNextPage] = useState(false);
@@ -51,8 +52,13 @@ export function usePosts(
     // Dodaj aktualny order
     result += ` order:${currentOrder}`;
 
-    // Hide favorites tylko przy infinite scroll
-    if (options?.hideFavorites && options?.username && options?.infiniteScroll) {
+    // ✅ POPRAWIONE - Hide favorites tylko gdy NIE przeglądasz favorites
+    if (
+      options?.hideFavorites &&
+      options?.username &&
+      options?.infiniteScroll &&
+      !isViewingRealFavorites
+    ) {
       result += ` -fav:${options.username}`;
     }
 
@@ -61,25 +67,58 @@ export function usePosts(
 
   // ---------------- API FETCH ----------------
   const fetchNextApiPage = async (auth?: Auth) => {
-    if (loading || !hasNextApiPage || options?.pauseLoading) {
-      if (options?.pauseLoading) {
-        console.log('⏸️ [fetchNextApiPage] Paused - favorite operation in progress');
-      }
+    if (loading || !hasNextApiPage) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const apiTags = buildApiTags(tags, order);
-      const newPosts = await fetchPosts(apiTags, apiPage, auth);
+      let newPosts: Post[];
+
+      // ✅ SPRAWDŹ CZY JESTEŚ W TRYBIE FAVORITES
+      if (isViewingRealFavorites) {
+        console.log('⭐ [fetchNextApiPage] Fetching FAVORITES page:', apiPage);
+
+        // Użyj dedykowanego endpointu favorites
+        const username = auth?.username || options?.username || '';
+        const apiKey = auth?.apiKey || '';
+
+        if (!username || !apiKey) {
+          throw new Error('Missing credentials for favorites');
+        }
+
+        const response = await fetch(
+          `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&page=${apiPage}&limit=50`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        newPosts = (data.posts || []).map((post: E621Post) => mapE621Post(post));
+
+        // Zaktualizuj hasMore na podstawie odpowiedzi
+        if (!data.hasMore || newPosts.length < 50) {
+          setHasNextApiPage(false);
+        }
+      } else {
+        // Normalny fetch przez tagi
+        console.log('🔍 [fetchNextApiPage] Fetching NORMAL page:', apiPage);
+        const apiTags = buildApiTags(tags, order);
+        newPosts = await fetchPosts(apiTags, apiPage, auth);
+
+        if (newPosts.length < 50) {
+          setHasNextApiPage(false);
+        }
+      }
 
       setAllPosts((prev) => [...prev, ...newPosts]);
       setApiPage((p) => p + 1);
-
-      if (newPosts.length < 50) {
-        setHasNextApiPage(false);
-      }
+    } catch (error) {
+      console.error('❌ [fetchNextApiPage] Error:', error);
+      setHasNextApiPage(false);
     } finally {
       setLoading(false);
     }
@@ -99,6 +138,9 @@ export function usePosts(
     setTags(cleanedTags);
     setOrder(newOrder);
 
+    // ✅ RESET FLAGI przy nowym searchu
+    setIsViewingRealFavorites(false);
+
     setAllPosts([]);
     setUiPage(1);
     setApiPage(1);
@@ -107,7 +149,12 @@ export function usePosts(
     setLoading(true);
     try {
       const apiTags = buildApiTags(cleanedTags, newOrder);
+      console.log('🔍 [newSearch] Fetching with tags:', apiTags); // ✅ DODAJ
+      console.log('🔍 [newSearch] Auth:', auth); // ✅ DODAJ
       const firstPage = await fetchPosts(apiTags, 1, auth);
+
+      console.log('📦 [newSearch] Got posts:', firstPage.length); // ✅ DODAJ
+      console.log('📦 [newSearch] First post is_favorited:', firstPage[0]?.is_favorited); // ✅ DODAJ
 
       setAllPosts(firstPage);
       if (firstPage.length < 50) setHasNextApiPage(false);
@@ -227,6 +274,7 @@ export function usePosts(
   return {
     // data
     allPosts,
+    setAllPosts,
     tags,
 
     // pagination
@@ -248,5 +296,13 @@ export function usePosts(
 
     order,
     setOrder,
+    setApiPage,
+    setHasNextApiPage,
+    setLoading,
+    setUiPage,
+
+    // ✅ DODAJ TO
+    setIsViewingRealFavorites,
+    setTags,
   };
 }

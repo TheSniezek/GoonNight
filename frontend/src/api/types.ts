@@ -87,6 +87,7 @@ export type E621Post = {
   tags: E621Tags;
   rating: 's' | 'q' | 'e';
   duration?: number | null;
+  is_favorited?: boolean;
 };
 
 export type PostTag = {
@@ -120,4 +121,5 @@ export type Post = {
   };
 
   tags: PostTag[];
+  is_favorited?: boolean;
 };
