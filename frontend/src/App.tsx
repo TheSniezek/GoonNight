@@ -119,6 +119,7 @@ function App() {
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const newsCache = useRef<Record<string, Post[]>>({});
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
+  const savedOrderRef = useRef<Order | null>(null);
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
@@ -184,10 +185,14 @@ function App() {
   // 🔥 Funkcje do modyfikacji SearchBar
   const searchTag = useCallback(
     async (tag: string) => {
-      // Wyszukaj tylko ten jeden tag
-      await handleSearch(tag, order);
+      // Użyj zapisanego order jeśli istnieje, inaczej domyślny
+      const orderToUse = savedOrderRef.current || 'id_desc';
+      await handleSearch(tag, orderToUse);
+
+      // Wyczyść zapisany order (już go użyliśmy)
+      savedOrderRef.current = null;
     },
-    [handleSearch, order],
+    [handleSearch],
   );
 
   const addTag = useCallback(
@@ -230,7 +235,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [maximizedPostId, toggleMaximize, showNewsPopup]);
+  }, [maximizedPostId, toggleMaximize, showNewsPopup, showLoginModal, showSettings]);
 
   const loadRealFavorites = useCallback(async () => {
     if (!e621User || !e621ApiKey) {
@@ -305,7 +310,7 @@ function App() {
     // ✅ Opcja 2 (lepsze - sortuje po dacie dodania do fav):
     // Musisz dodać endpoint w backend który używa /favorites.json
     // Ten endpoint domyślnie sortuje po "kiedy dodano do favorites"
-  }, [e621User, handleSearch]);
+  }, [e621User, loadRealFavorites]);
 
   // Dodaj funkcję filtrującą posty przez blacklist
   const filterByBlacklist = useCallback(
@@ -397,42 +402,33 @@ function App() {
   }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize]);
 
   useEffect(() => {
-    if (!infiniteScroll) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !loading && hasNextApiPage) {
-          nextUiPage(postsPerPage);
-        }
-      },
-      {
-        rootMargin: '300px',
-      },
-    );
-
-    if (infiniteTriggerRef.current) {
-      observer.observe(infiniteTriggerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [infiniteScroll, loading, nextUiPage, postsPerPage]);
-
-  useEffect(() => {
     if (!infiniteScroll && hideFavorites) {
       setHideFavorites(false);
     }
-  }, [infiniteScroll]);
+  }, [infiniteScroll, hideFavorites, setHideFavorites]);
 
   // ✅ Wyczyść cache po zalogowaniu
+  // DODAJ ref na początku komponentu (około linii 3360)
+  const isFirstLoginRef = useRef(true);
+
+  // ZMIEŃ useEffect
   useEffect(() => {
-    if (e621User && e621ApiKey) {
+    // Tylko przy PIERWSZYM zalogowaniu, nie przy każdej zmianie
+    if (e621User && e621ApiKey && isFirstLoginRef.current) {
+      isFirstLoginRef.current = false;
       console.log('🔑 [Login] User logged in, refreshing posts');
       // Odśwież obecne posty z credentials
       if (tags) {
         newSearch(tags, { username: e621User, apiKey: e621ApiKey });
       }
     }
-  }, [e621User, e621ApiKey]); // Tylko gdy się zmienią credentials
+
+    // Reset gdy user się wyloguje
+    if (!e621User || !e621ApiKey) {
+      isFirstLoginRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [e621User, e621ApiKey]); // ✅ Tylko credentials
 
   // ✅ DODAJ TEN NOWY useEffect dla infinite scroll
   useEffect(() => {
@@ -503,6 +499,7 @@ function App() {
             initialTags={tags} // ✅ UPROSZCZONE
             order={order}
             setOrder={setOrder}
+            savedOrderRef={savedOrderRef}
           />
 
           {!infiniteScroll && (
@@ -628,9 +625,9 @@ function App() {
           const videoUrl = videoResolution === 'best' ? post.file.url : post.sample.url;
           const shouldUseFull = isMaximized || (gifsAutoplay && isGif);
 
-          const postContent = (
+          return (
             <div
-              key={`${post.id}-fav`}
+              key={post.id}
               id={`post-${post.id}`}
               className={`post-wrapper ${isMaximized ? 'maximized' : ''}`}
             >
@@ -964,8 +961,6 @@ function App() {
               )}
             </div>
           );
-
-          return postContent;
         })}
 
         {showSettings && (

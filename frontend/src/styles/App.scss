@@ -81,9 +81,6 @@ button {
           padding: 6px;
           border-radius: 0 6px 6px 0;
 
-          .hidden-fav-count-label {
-          }
-
           .hidden-fav-count {
             display: flex;
             justify-content: center;
@@ -247,7 +244,9 @@ button {
       color: #ff5ca8;
       cursor: pointer;
       opacity: 0;
-      transition: opacity 0.2s ease, background 0.2s ease;
+      transition:
+        opacity 0.2s ease,
+        background 0.2s ease;
 
       &:hover {
         transform: scale(1.05);
@@ -475,7 +474,9 @@ button {
   top: 50%;
   z-index: 1000;
   opacity: 0.5;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
   background: #35354b;
   color: #ff5ca8;
 

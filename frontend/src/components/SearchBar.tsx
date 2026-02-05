@@ -9,9 +9,16 @@ type Props = {
   initialTags?: string;
   order: Order;
   setOrder: (order: Order) => void;
+  savedOrderRef?: React.MutableRefObject<Order | null>;
 };
 
-export default function SearchBar({ onSearch, initialTags = '', order, setOrder }: Props) {
+export default function SearchBar({
+  onSearch,
+  initialTags = '',
+  order,
+  setOrder,
+  savedOrderRef,
+}: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -37,6 +44,12 @@ export default function SearchBar({ onSearch, initialTags = '', order, setOrder 
     { label: 'Most favourites', value: 'favcount' },
     { label: 'Hot', value: 'hot' },
   ];
+
+  useEffect(() => {
+    if (savedOrderRef) {
+      savedOrderRef.current = savedOrder;
+    }
+  }, [savedOrder, savedOrderRef]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
