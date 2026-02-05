@@ -7,15 +7,16 @@ interface Auth {
   apiKey: string;
 }
 
-export function usePosts(
-  initialTags: string,
-  options?: {
-    hideFavorites?: boolean;
-    username?: string;
-    postsPerPage: number;
-    infiniteScroll?: boolean;
-  },
-) {
+// 🔥 NOWY PARAMETR - blacklist
+interface UsePostsOptions {
+  hideFavorites?: boolean;
+  username?: string;
+  postsPerPage: number;
+  infiniteScroll?: boolean;
+  blacklist?: string; // 🔥 DODANE
+}
+
+export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [tags, setTags] = useState(() => {
     return localStorage.getItem('searchTags') || initialTags;
@@ -36,6 +37,28 @@ export function usePosts(
   const observer = useRef<IntersectionObserver | null>(null);
   const scrollBeforeMaximize = useRef(0);
 
+  // 🔥 NOWA FUNKCJA - konwertuj blacklist na negative tagi
+  const buildBlacklistTags = (blacklist: string): string => {
+    if (!blacklist.trim()) return '';
+
+    const blacklistLines = blacklist
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#')); // Ignoruj komentarze
+
+    // Konwertuj każdą linię na negatywne tagi
+    const negativeTags = blacklistLines
+      .map((line) => {
+        const tags = line.split(/\s+/); // Split by whitespace
+        // Jeśli linia ma wiele tagów (AND logic), e621 nie wspiera tego natywnie
+        // Musimy przekonwertować każdy tag osobno na negatywny
+        return tags.map((tag) => `-${tag}`).join(' ');
+      })
+      .join(' ');
+
+    return negativeTags;
+  };
+
   // Usuwa order: z tagów jeśli istnieje
   const stripOrderFromTags = (baseTags: string) => {
     return baseTags
@@ -48,6 +71,14 @@ export function usePosts(
   const buildApiTags = (baseTags: string, currentOrder: Order) => {
     // Najpierw usuń wszystkie order: z tagów
     let result = stripOrderFromTags(baseTags);
+
+    // 🔥 DODAJ BLACKLIST JAKO NEGATYWNE TAGI
+    if (options?.blacklist) {
+      const blacklistTags = buildBlacklistTags(options.blacklist);
+      if (blacklistTags) {
+        result += ` ${blacklistTags}`;
+      }
+    }
 
     // Dodaj aktualny order
     result += ` order:${currentOrder}`;
@@ -107,6 +138,7 @@ export function usePosts(
         // Normalny fetch przez tagi
         console.log('🔍 [fetchNextApiPage] Fetching NORMAL page:', apiPage);
         const apiTags = buildApiTags(tags, order);
+        console.log('🔍 [fetchNextApiPage] API Tags:', apiTags); // 🔥 DEBUG
         newPosts = await fetchPosts(apiTags, apiPage, auth);
 
         if (newPosts.length < 50) {
@@ -149,12 +181,12 @@ export function usePosts(
     setLoading(true);
     try {
       const apiTags = buildApiTags(cleanedTags, newOrder);
-      console.log('🔍 [newSearch] Fetching with tags:', apiTags); // ✅ DODAJ
-      console.log('🔍 [newSearch] Auth:', auth); // ✅ DODAJ
+      console.log('🔍 [newSearch] Fetching with tags:', apiTags); // 🔥 DEBUG
+      console.log('🔍 [newSearch] Auth:', auth); // 🔥 DEBUG
       const firstPage = await fetchPosts(apiTags, 1, auth);
 
-      console.log('📦 [newSearch] Got posts:', firstPage.length); // ✅ DODAJ
-      console.log('📦 [newSearch] First post is_favorited:', firstPage[0]?.is_favorited); // ✅ DODAJ
+      console.log('📦 [newSearch] Got posts:', firstPage.length); // 🔥 DEBUG
+      console.log('📦 [newSearch] First post is_favorited:', firstPage[0]?.is_favorited); // 🔥 DEBUG
 
       setAllPosts(firstPage);
       if (firstPage.length < 50) setHasNextApiPage(false);

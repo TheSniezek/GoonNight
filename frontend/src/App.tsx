@@ -57,6 +57,15 @@ function App() {
   const { observedTags, toggleTag } = useObservedTags();
 
   const {
+    blacklist,
+    loading: blacklistLoading,
+    updateBlacklist,
+  } = useBlacklist({
+    username: e621User,
+    apiKey: e621ApiKey,
+  });
+
+  const {
     allPosts,
     setAllPosts,
     tags,
@@ -82,6 +91,7 @@ function App() {
     username: e621User,
     postsPerPage,
     infiniteScroll,
+    blacklist, // 🔥 DODANE - przekazuj blacklist do usePosts
   });
 
   // ✅ NOWY hook useFavorites - tylko do toggle'owania
@@ -94,15 +104,6 @@ function App() {
         prev.map((p) => (p.id === postId ? { ...p, is_favorited: isFavorited } : p)),
       );
     },
-  });
-
-  const {
-    blacklist,
-    loading: blacklistLoading,
-    updateBlacklist,
-  } = useBlacklist({
-    username: e621User,
-    apiKey: e621ApiKey,
   });
 
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
@@ -312,28 +313,6 @@ function App() {
     // Ten endpoint domyślnie sortuje po "kiedy dodano do favorites"
   }, [e621User, loadRealFavorites]);
 
-  // Dodaj funkcję filtrującą posty przez blacklist
-  const filterByBlacklist = useCallback(
-    (posts: Post[]): Post[] => {
-      if (!blacklist.trim()) return posts;
-
-      const blacklistLines = blacklist.split('\n').filter((line) => line.trim());
-
-      return posts.filter((post) => {
-        // Sprawdź każdą linię blacklisty
-        return !blacklistLines.some((line) => {
-          const tags = line.trim().toLowerCase().split(/\s+/);
-
-          // Wszystkie tagi z linii muszą być w poście (AND logic)
-          return tags.every((blackTag) => {
-            return post.tags.some((postTag) => postTag.name.toLowerCase() === blackTag);
-          });
-        });
-      });
-    },
-    [blacklist],
-  );
-
   // ✅ Sprawdź czy w searchu jest fav:{username}
   const isViewingFavorites = useMemo(() => {
     return tags.toLowerCase().includes(`fav:${e621User.toLowerCase()}`);
@@ -347,16 +326,15 @@ function App() {
   const filteredPosts = useMemo(() => {
     let result = allPosts;
 
-    // 1. Filtruj przez blacklist
-    result = filterByBlacklist(result);
+    // 🔥 BLACKLIST JUŻ JEST ZASTOSOWANY W API QUERY - nie filtruj tutaj!
 
-    // 2. Filtruj przez hideFavorites (ale NIE gdy oglądasz favorites)
+    // Filtruj przez hideFavorites (ale NIE gdy oglądasz favorites)
     if (hideFavorites && !isViewingFavorites) {
       result = result.filter((p) => !p.is_favorited);
     }
 
     return result;
-  }, [allPosts, hideFavorites, isViewingFavorites, filterByBlacklist]);
+  }, [allPosts, hideFavorites, isViewingFavorites]);
 
   const start = (uiPage - 1) * postsPerPage;
   const end = start + postsPerPage;
@@ -1031,7 +1009,11 @@ function App() {
           <BlacklistModal
             onClose={() => setShowBlacklistModal(false)}
             blacklist={blacklist}
-            onSave={updateBlacklist}
+            onSave={async (newBlacklist: string) => {
+              await updateBlacklist(newBlacklist);
+              // 🔥 DODANE - odśwież wyniki po zapisie blacklist
+              newSearch(tags, { username: e621User, apiKey: e621ApiKey }, { order });
+            }}
             loading={blacklistLoading}
           />
         )}
