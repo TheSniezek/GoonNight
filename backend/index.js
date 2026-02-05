@@ -49,7 +49,7 @@ class E621RateLimiter {
     this.queue = [];
     this.processing = false;
     this.lastRequestTime = 0;
-    this.minInterval = 1200; // 600ms = max ~1.66 req/sec (bezpiecznie < 2)
+    this.minInterval = 1200;
     console.log('🔒 [E621 RateLimiter] Initialized (max 1.66 req/sec)');
   }
 
