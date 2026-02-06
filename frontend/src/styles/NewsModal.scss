@@ -56,7 +56,9 @@
         border: none;
         color: #fff;
         cursor: pointer;
-        transition: background 0.2s ease, transform 0.2s ease;
+        transition:
+          background 0.2s ease,
+          transform 0.2s ease;
         width: fit-content;
         height: 60px;
         padding: 14px;
@@ -76,7 +78,9 @@
         border: none;
         color: #fff;
         cursor: pointer;
-        transition: background 0.2s ease, transform 0.2s ease;
+        transition:
+          background 0.2s ease,
+          transform 0.2s ease;
         width: fit-content;
         height: 60px;
         padding: 16px;
@@ -142,7 +146,9 @@
         font-weight: 700;
         cursor: pointer;
         border-radius: 6px;
-        transition: background 0.2s ease, transform 0.2s ease;
+        transition:
+          background 0.2s ease,
+          transform 0.2s ease;
         position: relative;
 
         &:hover {

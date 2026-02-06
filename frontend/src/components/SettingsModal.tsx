@@ -82,8 +82,8 @@ export default function SettingsModal({
   } = useObservedTags();
 
   const setObservedTags = (tags: string[]) => {
-    originalSetObservedTags(tags); // aktualizuje stan w React
-    saveObservedTags(tags); // zapisuje też do localStorage
+    originalSetObservedTags(tags);
+    saveObservedTags(tags);
   };
 
   const exportSettings = (settings: Partial<StoredSettings>, observedTags: string[]) => {
@@ -104,7 +104,7 @@ export default function SettingsModal({
   const importSettings = (
     file: File,
     applySettings: (newSettings: Partial<StoredSettings>) => void,
-    applyObservedTags: (tags: string[]) => void
+    applyObservedTags: (tags: string[]) => void,
   ) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -206,7 +206,7 @@ export default function SettingsModal({
                 }`}
               >
                 <div className="hide-favorites-content">
-                  <span className="settings-names">Hide favorited posts</span>
+                  <span className="settings-names">Hide favorite posts</span>
                   <input
                     type="checkbox"
                     checked={hideFavorites}
@@ -478,7 +478,7 @@ export default function SettingsModal({
                           },
                           (tags) => {
                             setObservedTags(tags);
-                          }
+                          },
                         );
                         window.location.reload();
                       }
@@ -505,7 +505,7 @@ export default function SettingsModal({
                         loopVideos,
                         videoResolution,
                       },
-                      observedTags
+                      observedTags,
                     )
                   }
                 >
@@ -526,6 +526,6 @@ export default function SettingsModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
