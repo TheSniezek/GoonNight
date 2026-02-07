@@ -40,8 +40,6 @@ function App() {
     setPostsPerPage,
     hideFavorites,
     setHideFavorites,
-    searchOnlyObserved,
-    setSearchOnlyObserved,
     loopVideos,
     setLoopVideos,
     videoResolution,
@@ -997,8 +995,6 @@ function App() {
             setPostsPerPage={setPostsPerPage}
             hideFavorites={hideFavorites}
             setHideFavorites={setHideFavorites}
-            searchOnlyObserved={searchOnlyObserved}
-            setSearchOnlyObserved={setSearchOnlyObserved}
             loopVideos={loopVideos}
             setLoopVideos={setLoopVideos}
             videoResolution={videoResolution}

@@ -26,8 +26,6 @@ interface SettingsModalProps {
   setPostsPerPage: (n: number) => void;
   hideFavorites: boolean;
   setHideFavorites: (v: boolean) => void;
-  searchOnlyObserved: boolean;
-  setSearchOnlyObserved: (v: boolean) => void;
   loopVideos: boolean;
   setLoopVideos: (v: boolean) => void;
   videoResolution: 'best' | 'worse';
@@ -62,8 +60,6 @@ export default function SettingsModal({
   setPostsPerPage,
   hideFavorites,
   setHideFavorites,
-  searchOnlyObserved,
-  setSearchOnlyObserved,
   loopVideos,
   setLoopVideos,
   videoResolution,
@@ -249,16 +245,6 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={infiniteScroll}
                   onChange={(e) => setInfiniteScroll(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Search only observed tags</span>
-                <input
-                  type="checkbox"
-                  checked={searchOnlyObserved}
-                  onChange={(e) => setSearchOnlyObserved(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>
@@ -469,8 +455,6 @@ export default function SettingsModal({
                             if (newSettings.postsPerPage) setPostsPerPage(newSettings.postsPerPage);
                             if (newSettings.hideFavorites !== undefined)
                               setHideFavorites(newSettings.hideFavorites);
-                            if (newSettings.searchOnlyObserved !== undefined)
-                              setSearchOnlyObserved(newSettings.searchOnlyObserved);
                             if (newSettings.loopVideos !== undefined)
                               setLoopVideos(newSettings.loopVideos);
                             if (newSettings.videoResolution)
@@ -501,7 +485,6 @@ export default function SettingsModal({
                         fixedHeader,
                         postsPerPage,
                         hideFavorites,
-                        searchOnlyObserved,
                         loopVideos,
                         videoResolution,
                       },

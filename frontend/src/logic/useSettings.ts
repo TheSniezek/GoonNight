@@ -24,7 +24,6 @@ export interface StoredSettings {
   postsPerPage: number;
   hideFavorites: boolean;
   showHiddenFavCount: boolean;
-  searchOnlyObserved: boolean;
   infiniteScroll: boolean;
 }
 
@@ -44,7 +43,6 @@ const getDefaults = (): StoredSettings => ({
   postsPerPage: 50,
   hideFavorites: false,
   showHiddenFavCount: false,
-  searchOnlyObserved: false,
   infiniteScroll: false,
 });
 
@@ -193,8 +191,6 @@ export function useSettings() {
     setHideFavorites: (v: boolean) => updateSetting('hideFavorites', v),
     showHiddenFavCount: settings.showHiddenFavCount,
     setShowHiddenFavCount: (v: boolean) => updateSetting('showHiddenFavCount', v),
-    searchOnlyObserved: settings.searchOnlyObserved,
-    setSearchOnlyObserved: (v: boolean) => updateSetting('searchOnlyObserved', v),
     infiniteScroll: settings.infiniteScroll,
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
     updateSetting,
