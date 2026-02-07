@@ -103,6 +103,19 @@ function App() {
       setAllPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, is_favorited: isFavorited } : p)),
       );
+      // ✅ Aktualizuj is_favorited w newsPosts
+      setNewsPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, is_favorited: isFavorited } : p)),
+      );
+      // 🔥 NOWE - Aktualizuj is_favorited w newsCache
+      Object.keys(newsCache.current).forEach((key) => {
+        newsCache.current[key] = newsCache.current[key].map((p) =>
+          p.id === postId ? { ...p, is_favorited: isFavorited } : p,
+        );
+      });
+      console.log(
+        `🔄 [onPostUpdate] Updated post ${postId} is_favorited=${isFavorited} in all caches`,
+      );
     },
   });
 
@@ -538,19 +551,39 @@ function App() {
               if (observedTags.length === 0) return alert('No tags observed yet!');
 
               const key = observedTags.sort().join(',');
-              if (newsCache.current[key]) {
+              const lastReload = Number(localStorage.getItem('newsLastReload')) || 0;
+              const timeSinceReload = Date.now() - lastReload;
+              const ONE_HOUR = 3600 * 1000;
+
+              // 🔥 SPRAWDŹ CZY CACHE JEST AKTUALNY (młodszy niż 1h) I czy user się nie zmienił
+              const cachedForUser = localStorage.getItem('newsCacheUser') || '';
+              const userChanged = cachedForUser !== e621User;
+
+              if (newsCache.current[key] && timeSinceReload < ONE_HOUR && !userChanged) {
+                console.log('📦 [News] Using cached posts');
                 setNewsPosts(newsCache.current[key]);
                 setShowNewsPopup(true);
                 return;
               }
 
+              // 🔥 Jeśli user się zmienił, wyczyść cache
+              if (userChanged) {
+                console.log('🔄 [News] User changed, clearing cache');
+                newsCache.current = {};
+                localStorage.setItem('newsCacheUser', e621User);
+              }
+
               setShowNewsPopup(true);
 
               try {
-                const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week');
+                // 🔥 DODANE - przekaż auth do fetchPostsForMultipleTags
+                const auth =
+                  e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
+                const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
 
                 newsCache.current[key] = allPosts;
                 setNewsPosts(allPosts);
+                localStorage.setItem('newsLastReload', Date.now().toString());
 
                 if (allPosts.length === 0) {
                   console.log('DEBUG: No posts returned for these queries');
@@ -1002,6 +1035,14 @@ function App() {
             onToggleTag={toggleTag}
             onSearchTag={handleSearch}
             defaultVolume={defaultVolume}
+            toggleFavoritePost={toggleFavoritePost}
+            pendingFavorites={pendingFavorites}
+            isLoggedIn={isLoggedIn}
+            addTag={addTag}
+            removeTag={removeTag}
+            searchTag={searchTag}
+            username={e621User}
+            apiKey={e621ApiKey}
           />
         )}
 

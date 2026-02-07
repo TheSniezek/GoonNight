@@ -70,6 +70,7 @@ export const fetchPosts = async (
 export const fetchPostsForMultipleTags = async (
   observedTags: string[],
   baseQuery: string, // np. "date:week"
+  auth?: { username: string; apiKey: string }, // 🔥 DODANE - auth do sprawdzania favorites
 ): Promise<Post[]> => {
   const results: Post[] = [];
   const seen = new Set<number>();
@@ -90,7 +91,13 @@ export const fetchPostsForMultipleTags = async (
 
       try {
         const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, {
-          params: { tags: query, page: 1, limit: 320 }, // Pobieramy więcej na raz
+          params: {
+            tags: query,
+            page: 1,
+            limit: 320,
+            username: auth?.username, // 🔥 DODANE
+            apiKey: auth?.apiKey, // 🔥 DODANE
+          },
         });
 
         data.posts.forEach((post) => {

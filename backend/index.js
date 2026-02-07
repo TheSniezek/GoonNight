@@ -423,11 +423,25 @@ app.delete('/api/e621/favorites/:postId', async (req, res) => {
     const { postId } = req.params;
     const { username, apiKey } = req.body;
 
+    console.log('💔 [Remove Favorite] Request:', {
+      postId,
+      username: username || 'missing',
+      hasApiKey: !!apiKey,
+    });
+
     if (!postId || !username || !apiKey) {
+      console.error('❌ [Remove Favorite] Missing fields:', {
+        postId: !!postId,
+        username: !!username,
+        apiKey: !!apiKey,
+      });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    await e621Limiter.execute(
+    console.log(`💔 [Remove Favorite] Removing post ${postId} for user ${username}`);
+
+    // 🔥 FIX - Capture response
+    const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
           axios.delete(`https://e621.net/favorites/${postId}.json`, {
@@ -439,21 +453,21 @@ app.delete('/api/e621/favorites/:postId', async (req, res) => {
       5, // Very high priority
     );
 
-    console.log(`✅ [Backend] E621 API responded:`, response.status, response.data);
+    console.log(`✅ [Remove Favorite] E621 API responded: ${response.status}`);
 
     // NIE czyść cache postów - to powoduje freeze
     cache.clearPattern(`favorites:${username}`);
     cache.clearPattern(`favorite-ids:${username}`);
 
-    console.log(`✅✅✅ [Backend] Favorite added successfully for ${postId}`);
+    console.log(`✅✅✅ [Remove Favorite] Successfully removed ${postId}`);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌❌❌ [Backend] Error adding favorite:', err.message);
+    console.error('❌❌❌ [Remove Favorite] Error:', err.message);
     if (err.response) {
-      console.error('❌ [Backend] E621 API error:', err.response.status, err.response.data);
+      console.error('❌ [Remove Favorite] E621 API error:', err.response.status, err.response.data);
     }
     res.status(err.response?.status || 500).json({
-      error: err.message || 'Failed to add favorite',
+      error: err.message || 'Failed to remove favorite',
     });
   }
 });
