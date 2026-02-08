@@ -427,6 +427,7 @@
               // Custom scrollbar for better UX
               &::-webkit-scrollbar {
                 width: 6px;
+                height: 6px;
               }
 
               &::-webkit-scrollbar-thumb {

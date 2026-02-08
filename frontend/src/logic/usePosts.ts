@@ -7,13 +7,11 @@ interface Auth {
   apiKey: string;
 }
 
-// 🔥 NOWY PARAMETR - blacklist
 interface UsePostsOptions {
   hideFavorites?: boolean;
   username?: string;
   postsPerPage: number;
   infiniteScroll?: boolean;
-  blacklist?: string; // 🔥 DODANE
   sexSearch?: {
     female: boolean;
     male: boolean;
@@ -43,28 +41,6 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const observer = useRef<IntersectionObserver | null>(null);
   const scrollBeforeMaximize = useRef(0);
 
-  // 🔥 NOWA FUNKCJA - konwertuj blacklist na negative tagi
-  const buildBlacklistTags = (blacklist: string): string => {
-    if (!blacklist.trim()) return '';
-
-    const blacklistLines = blacklist
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('#')); // Ignoruj komentarze
-
-    // Konwertuj każdą linię na negatywne tagi
-    const negativeTags = blacklistLines
-      .map((line) => {
-        const tags = line.split(/\s+/); // Split by whitespace
-        // Jeśli linia ma wiele tagów (AND logic), e621 nie wspiera tego natywnie
-        // Musimy przekonwertować każdy tag osobno na negatywny
-        return tags.map((tag) => `-${tag}`).join(' ');
-      })
-      .join(' ');
-
-    return negativeTags;
-  };
-
   // 🔥 NOWA FUNKCJA - buduj tagi dla sex search
   const buildSexSearchTags = (sexSearch?: UsePostsOptions['sexSearch']): string => {
     if (!sexSearch) return '';
@@ -90,14 +66,6 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const buildApiTags = (baseTags: string, currentOrder: Order) => {
     // Najpierw usuń wszystkie order: z tagów
     let result = stripOrderFromTags(baseTags);
-
-    // 🔥 DODAJ BLACKLIST JAKO NEGATYWNE TAGI
-    if (options?.blacklist) {
-      const blacklistTags = buildBlacklistTags(options.blacklist);
-      if (blacklistTags) {
-        result += ` ${blacklistTags}`;
-      }
-    }
 
     // 🔥 DODAJ SEX SEARCH TAGI
     if (options?.sexSearch) {

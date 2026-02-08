@@ -1,5 +1,7 @@
 export type Order = 'id_desc' | 'id' | 'score' | 'favcount' | 'hot';
 
+export type PopularScale = 'day' | 'week' | 'month';
+
 export type E621File = {
   url?: string;
   ext?: 'jpg' | 'png' | 'gif' | 'webm' | 'mp4';

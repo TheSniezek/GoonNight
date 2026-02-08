@@ -35,9 +35,12 @@ button {
     padding-bottom: 20px;
   }
 
+  &.popular-fixed {
+    padding-top: 170px;
+  }
+
   .app-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
     background-color: #0f0f14;
     padding-bottom: 20px;
@@ -110,7 +113,6 @@ button {
 
     .top-bar-right {
       display: flex;
-      align-items: center;
       justify-items: center;
       gap: 15px;
 

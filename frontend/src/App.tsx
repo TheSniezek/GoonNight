@@ -3,8 +3,8 @@ import './styles/App.scss';
 import SearchBar from './components/SearchBar';
 import PageButtonsTop from './components/PageButtons/PageButtonsTop';
 import PageButtonsBottom from './components/PageButtons/PageButtonsBottom';
-import type { Order, Post, PostTag } from './api/types';
-import { fetchPostsForMultipleTags, mapE621Post } from './api/posts';
+import type { Order, Post, PostTag, PopularScale } from './api/types';
+import { fetchPostsForMultipleTags, mapE621Post, fetchPopularPosts } from './api/posts';
 import { useSettings } from './logic/useSettings';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
@@ -13,6 +13,7 @@ import NewsModal from './components/NewsModal';
 import LoginModal from './components/LoginModal';
 import { useFavorites } from './logic/useFavorites';
 import { useBlacklist } from './logic/useBlacklist';
+import { filterPostsByBlacklist, filterPostsBySexSearch } from './logic/blacklistFilter';
 import BlacklistModal from './components/BlacklistModal';
 
 function App() {
@@ -59,9 +60,13 @@ function App() {
   const { observedTags, toggleTag } = useObservedTags();
 
   const {
-    blacklist,
+    blacklistLines,
     loading: blacklistLoading,
     updateBlacklist,
+    toggleLine,
+    addLine,
+    removeLine,
+    editLine,
   } = useBlacklist({
     username: e621User,
     apiKey: e621ApiKey,
@@ -93,7 +98,6 @@ function App() {
     username: e621User,
     postsPerPage,
     infiniteScroll,
-    blacklist, // 🔥 DODANE - przekazuj blacklist do usePosts
     sexSearch, // 🔥 DODANE - przekazuj sexSearch do usePosts
   });
 
@@ -139,6 +143,15 @@ function App() {
   const newsCache = useRef<Record<string, Post[]>>({});
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
   const savedOrderRef = useRef<Order | null>(null);
+
+  // 🌟 Popular mode state
+  const [isPopularMode, setIsPopularMode] = useState(false);
+  const [popularDate, setPopularDate] = useState(() => {
+    const today = new Date();
+    today.setDate(today.getDate() - 1); // Wczorajszy dzień jako domyślny
+    return today.toISOString().split('T')[0];
+  });
+  const [popularScale, setPopularScale] = useState<PopularScale>('day');
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
@@ -221,14 +234,6 @@ function App() {
     return () => observer.disconnect();
   }, [pauseVideoOutOfFocus, allPosts]); // Re-run gdy zmienią się posty
 
-  // 🔥 NOWY useEffect - Odświeżaj wyniki gdy zmieni się sexSearch
-  useEffect(() => {
-    if (tags) {
-      // Tylko odśwież jeśli już coś wyszukiwaliśmy
-      newSearch(tags, { username: e621User, apiKey: e621ApiKey }, { order });
-    }
-  }, [sexSearch]); // Tylko sexSearch w dependencies
-
   const handleSearch = useCallback(
     async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
       console.log('🔍 [App.handleSearch]', searchTags, newOrder, clearTags);
@@ -236,6 +241,9 @@ function App() {
       // Close popups when searching
       setShowTagsFor(null);
       setShowInfoFor(null);
+
+      // Wyłącz popular mode przy normalnym wyszukiwaniu
+      setIsPopularMode(false);
 
       // ✅ UPROSZCZONE - zawsze normalne wyszukiwanie
       await newSearch(
@@ -245,6 +253,55 @@ function App() {
       );
     },
     [newSearch, e621User, e621ApiKey, order],
+  );
+
+  // 🌟 Handle Popular Search
+  const handlePopularSearch = useCallback(
+    async (date: string, scale: PopularScale) => {
+      console.log('⭐ [App.handlePopularSearch] START', { date, scale });
+
+      // Close popups when searching
+      setShowTagsFor(null);
+      setShowInfoFor(null);
+
+      setLoading(true);
+      setIsPopularMode(true);
+
+      try {
+        const auth =
+          e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
+        console.log('⭐ [handlePopularSearch] Auth:', auth ? 'YES' : 'NO');
+
+        const posts = await fetchPopularPosts(date, scale, auth);
+
+        console.log('⭐ [handlePopularSearch] Received posts:', posts.length);
+        console.log('⭐ [handlePopularSearch] First post:', posts[0]);
+
+        setAllPosts(posts);
+        setUiPage(1);
+        setApiPage(1);
+        setHasNextApiPage(false); // Popular nie ma paginacji
+        setTags(`popular:${scale}:${date}`);
+        setIsViewingRealFavorites(false);
+
+        console.log('⭐ [handlePopularSearch] State updated, posts should display');
+      } catch (err) {
+        console.error('❌ [handlePopularSearch] Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      e621User,
+      e621ApiKey,
+      setLoading,
+      setAllPosts,
+      setUiPage,
+      setApiPage,
+      setHasNextApiPage,
+      setTags,
+      setIsViewingRealFavorites,
+    ],
   );
 
   // 🔥 Helper functions for info modal
@@ -425,7 +482,11 @@ function App() {
   const filteredPosts = useMemo(() => {
     let result = allPosts;
 
-    // 🔥 BLACKLIST JUŻ JEST ZASTOSOWANY W API QUERY - nie filtruj tutaj!
+    // 🔥 FRONTEND BLACKLIST FILTERING - instant hide/show
+    result = filterPostsByBlacklist(result, blacklistLines);
+
+    // 🔥 SEX SEARCH FILTERING - instant filter (działa w Popular Mode też!)
+    result = filterPostsBySexSearch(result, sexSearch);
 
     // Filtruj przez hideFavorites (ale NIE gdy oglądasz favorites)
     if (hideFavorites && !isViewingFavorites) {
@@ -433,7 +494,7 @@ function App() {
     }
 
     return result;
-  }, [allPosts, hideFavorites, isViewingFavorites]);
+  }, [allPosts, blacklistLines, sexSearch, hideFavorites, isViewingFavorites]);
 
   const start = (uiPage - 1) * postsPerPage;
   const end = start + postsPerPage;
@@ -530,7 +591,9 @@ function App() {
   }, [infiniteScroll, loading, hasNextApiPage, nextUiPage, postsPerPage, e621User, e621ApiKey]);
 
   return (
-    <div className={`app-container ${fixedHeader ? 'fixed' : ''}`}>
+    <div
+      className={`app-container ${fixedHeader ? 'fixed' : ''} ${isPopularMode && fixedHeader ? 'popular-fixed' : ''}`}
+    >
       <div className={`app-header ${fixedHeader ? 'fixed' : ''}`}>
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           <svg
@@ -573,10 +636,17 @@ function App() {
           )}
           <SearchBar
             onSearch={handleSearch}
-            initialTags={tags} // ✅ UPROSZCZONE
+            onPopularSearch={handlePopularSearch}
+            initialTags={isPopularMode ? '' : tags}
             order={order}
             setOrder={setOrder}
             savedOrderRef={savedOrderRef}
+            isPopularMode={isPopularMode}
+            setIsPopularMode={setIsPopularMode}
+            popularDate={popularDate}
+            setPopularDate={setPopularDate}
+            popularScale={popularScale}
+            setPopularScale={setPopularScale}
           />
 
           {!infiniteScroll && (
@@ -1270,12 +1340,12 @@ function App() {
         {showBlacklistModal && (
           <BlacklistModal
             onClose={() => setShowBlacklistModal(false)}
-            blacklist={blacklist}
-            onSave={async (newBlacklist: string) => {
-              await updateBlacklist(newBlacklist);
-              // 🔥 DODANE - odśwież wyniki po zapisie blacklist
-              newSearch(tags, { username: e621User, apiKey: e621ApiKey }, { order });
-            }}
+            blacklistLines={blacklistLines}
+            onToggle={toggleLine}
+            onAdd={addLine}
+            onRemove={removeLine}
+            onEdit={editLine}
+            onSave={updateBlacklist}
             loading={blacklistLoading}
           />
         )}

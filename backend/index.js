@@ -599,6 +599,81 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ==================== POPULAR ENDPOINT ====================
+app.get('/api/e621/popular', async (req, res) => {
+  try {
+    const date = String(req.query.date ?? '').trim();
+    const scale = String(req.query.scale ?? 'day').trim();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter is required' });
+    }
+
+    if (!['day', 'week', 'month'].includes(scale)) {
+      return res.status(400).json({ error: 'Scale must be day, week, or month' });
+    }
+
+    // ✅ PRIORYTET: Credentials z requesta > .env
+    const username = req.query.username || E621_USER;
+    const apiKey = req.query.apiKey || E621_API_KEY;
+
+    const cacheKey = `popular:${date}:${scale}:${username || 'anon'}`;
+    const cached = cache.get(cacheKey, 300000); // 5 min cache dla popular
+
+    if (cached) {
+      console.log('📦 [Popular] Using cached data');
+      return res.json({ ...cached, fromCache: true });
+    }
+
+    const auth = username && apiKey ? { username, password: apiKey } : undefined;
+
+    // Format daty dla e621 popular endpoint
+    // e621 expects: YYYY-MM-DD HH:MM:SS +ZONE
+    const dateObj = new Date(date);
+    const formattedDate = `${date} 00:00:00 +0000`;
+
+    console.log('⭐ [Popular] Fetching:', { date: formattedDate, scale, auth: !!auth });
+
+    // ✅ RATE LIMITED REQUEST
+    const response = await e621Limiter.execute(
+      () =>
+        retryWithBackoff(() =>
+          axios.get('https://e621.net/popular.json', {
+            params: {
+              date: formattedDate,
+              scale: scale,
+            },
+            headers: { 'User-Agent': USER_AGENT },
+            auth,
+            timeout: 15000,
+          }),
+        ),
+      1, // Normal priority
+    );
+
+    const posts = (response.data.posts || []).filter(
+      (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
+    );
+
+    console.log('⭐ [Popular] Fetched', posts.length, 'posts');
+
+    const payload = { posts, anonymous: !auth };
+
+    cache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    console.error('❌ [Popular]', err.message);
+    if (err.response) {
+      console.error('Response status:', err.response.status);
+      console.error('Response data:', err.response.data);
+    }
+    res.status(err.response?.status || 500).json({
+      error: err.response?.data?.message || err.message || 'Failed to fetch popular posts',
+      posts: [],
+    });
+  }
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });

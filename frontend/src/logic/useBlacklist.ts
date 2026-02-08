@@ -5,10 +5,33 @@ interface UseBlacklistArgs {
   apiKey: string;
 }
 
+export type BlacklistLine = {
+  id: string;
+  tags: string;
+  enabled: boolean;
+};
+
 export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
-  const [blacklist, setBlacklist] = useState('');
+  const [blacklistLines, setBlacklistLines] = useState<BlacklistLine[]>([]);
   const [loading, setLoading] = useState(false);
   const isLoggedIn = Boolean(username && apiKey);
+
+  // Convert array of lines to string format for e621 API
+  const linesToString = (lines: BlacklistLine[]): string => {
+    return lines.map((line) => line.tags).join('\n');
+  };
+
+  // Convert string from e621 API to array of lines
+  const stringToLines = (blacklistString: string): BlacklistLine[] => {
+    return blacklistString
+      .split('\n')
+      .map((tags, index) => ({
+        id: `bl-${Date.now()}-${index}`,
+        tags: tags.trim(),
+        enabled: true, // Default wszystkie włączone
+      }))
+      .filter((line) => line.tags.length > 0 && !line.tags.startsWith('#')); // Ignoruj puste i komentarze
+  };
 
   const fetchBlacklist = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -18,13 +41,14 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
     try {
       const res = await fetch(
         `http://localhost:3001/api/e621/blacklist?username=${encodeURIComponent(
-          username
-        )}&apiKey=${encodeURIComponent(apiKey)}`
+          username,
+        )}&apiKey=${encodeURIComponent(apiKey)}`,
       );
       const data = await res.json();
 
-      setBlacklist(data.blacklist || '');
-      console.log('✅ [useBlacklist] Fetched successfully');
+      const lines = stringToLines(data.blacklist || '');
+      setBlacklistLines(lines);
+      console.log('✅ [useBlacklist] Fetched successfully:', lines.length, 'lines');
     } catch (err) {
       console.error('❌ [useBlacklist] Fetch ERROR:', err);
     } finally {
@@ -33,8 +57,10 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
   }, [username, apiKey, isLoggedIn]);
 
   const updateBlacklist = useCallback(
-    async (newBlacklist: string) => {
+    async (newLines: BlacklistLine[]) => {
       if (!isLoggedIn) return;
+
+      const blacklistString = linesToString(newLines);
 
       console.log('🚫 [useBlacklist] Updating blacklist');
       setLoading(true);
@@ -42,11 +68,11 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
         const res = await fetch('http://localhost:3001/api/e621/blacklist', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, apiKey, blacklist: newBlacklist }),
+          body: JSON.stringify({ username, apiKey, blacklist: blacklistString }),
         });
 
         if (res.ok) {
-          setBlacklist(newBlacklist);
+          setBlacklistLines(newLines);
           console.log('✅ [useBlacklist] Updated successfully');
         }
       } catch (err) {
@@ -55,8 +81,33 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
         setLoading(false);
       }
     },
-    [username, apiKey, isLoggedIn]
+    [username, apiKey, isLoggedIn],
   );
+
+  const toggleLine = useCallback((lineId: string) => {
+    setBlacklistLines((prev) =>
+      prev.map((line) => (line.id === lineId ? { ...line, enabled: !line.enabled } : line)),
+    );
+  }, []);
+
+  const addLine = useCallback((tags: string) => {
+    const newLine: BlacklistLine = {
+      id: `bl-${Date.now()}`,
+      tags: tags.trim(),
+      enabled: true,
+    };
+    setBlacklistLines((prev) => [...prev, newLine]);
+  }, []);
+
+  const removeLine = useCallback((lineId: string) => {
+    setBlacklistLines((prev) => prev.filter((line) => line.id !== lineId));
+  }, []);
+
+  const editLine = useCallback((lineId: string, newTags: string) => {
+    setBlacklistLines((prev) =>
+      prev.map((line) => (line.id === lineId ? { ...line, tags: newTags.trim() } : line)),
+    );
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -65,11 +116,15 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
   }, [isLoggedIn, fetchBlacklist]);
 
   return {
-    blacklist,
+    blacklistLines,
     loading,
     isLoggedIn,
     fetchBlacklist,
     updateBlacklist,
-    setBlacklist,
+    toggleLine,
+    addLine,
+    removeLine,
+    editLine,
+    setBlacklistLines,
   };
 }

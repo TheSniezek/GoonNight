@@ -235,12 +235,12 @@ export default function SettingsModal({
                   <input
                     type="range"
                     min={10}
-                    max={320}
+                    max={60}
                     step={10}
                     value={postsPerPage}
                     style={
                       {
-                        '--value': `${((postsPerPage - 10) / 310) * 100}%`,
+                        '--value': `${((postsPerPage - 10) / 50) * 100}%`,
                       } as React.CSSProperties
                     }
                     onChange={(e) => {
@@ -295,46 +295,59 @@ export default function SettingsModal({
           </div>
 
           <div className="settings-section">
-            <span className="settings-section-tittle">Sex Search</span>
+            <span className="settings-section-tittle">Search</span>
             <div className="settings-section-content">
               <label className="settings-row">
-                <span className="settings-names">Female</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.female}
-                  onChange={(e) => setSexSearch({ ...sexSearch, female: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
+                <span className="settings-names">Gender</span>
+                <div className="sex-search-grid">
+                  <button
+                    className={`sex-search-btn ${sexSearch.female ? 'active' : ''} top-left`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        female: !sexSearch.female,
+                      })
+                    }
+                  >
+                    <span>Female</span>
+                  </button>
 
-              <label className="settings-row">
-                <span className="settings-names">Male</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.male}
-                  onChange={(e) => setSexSearch({ ...sexSearch, male: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
+                  <button
+                    className={`sex-search-btn ${sexSearch.male ? 'active' : ''} top-right`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        male: !sexSearch.male,
+                      })
+                    }
+                  >
+                    <span>Male</span>
+                  </button>
 
-              <label className="settings-row">
-                <span className="settings-names">Intersex</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.intersex}
-                  onChange={(e) => setSexSearch({ ...sexSearch, intersex: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
+                  <button
+                    className={`sex-search-btn ${sexSearch.intersex ? 'active' : ''} bottom-left`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        intersex: !sexSearch.intersex,
+                      })
+                    }
+                  >
+                    <span>Intersex</span>
+                  </button>
 
-              <label className="settings-row">
-                <span className="settings-names">Ambiguous gender</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.ambiguous}
-                  onChange={(e) => setSexSearch({ ...sexSearch, ambiguous: e.target.checked })}
-                />
-                <span className="checkmark"></span>
+                  <button
+                    className={`sex-search-btn ${sexSearch.ambiguous ? 'active' : ''} bottom-right`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        ambiguous: !sexSearch.ambiguous,
+                      })
+                    }
+                  >
+                    <span>Ambiguous</span>
+                  </button>
+                </div>
               </label>
             </div>
           </div>
@@ -375,7 +388,7 @@ export default function SettingsModal({
                     }`}
                     onClick={() => setVideoResolution('worse')}
                   >
-                    Worse
+                    Worse then the best
                   </button>
                 </div>
               </label>

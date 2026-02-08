@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Post, E621Post, PostTag, AutocompleteItem } from './types';
+import type { Post, E621Post, PostTag, AutocompleteItem, PopularScale } from './types';
 
 const E621_API = 'http://localhost:3001/api/e621';
 
@@ -127,4 +127,20 @@ export const fetchTagSuggestions = async (query: string) => {
     params: { q: query },
   });
   return data;
+};
+
+export const fetchPopularPosts = async (
+  date: string, // format: YYYY-MM-DD
+  scale: PopularScale,
+  auth?: { username: string; apiKey: string },
+): Promise<Post[]> => {
+  const { data } = await axios.get<{ posts: E621Post[] }>(`${E621_API}/popular`, {
+    params: {
+      date,
+      scale,
+      username: auth?.username,
+      apiKey: auth?.apiKey,
+    },
+  });
+  return data.posts.map(mapE621Post);
 };
