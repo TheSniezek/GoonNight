@@ -144,9 +144,6 @@ function App() {
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
   const savedOrderRef = useRef<Order | null>(null);
 
-  // ⚡ Abort controller dla canceling fetch requests
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   // 🌟 Popular mode state
   const [isPopularMode, setIsPopularMode] = useState(false);
   const [popularDate, setPopularDate] = useState(() => {
@@ -280,15 +277,6 @@ function App() {
     async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
       console.log('🔍 [App.handleSearch]', searchTags, newOrder, clearTags);
 
-      // ⚡ Anuluj poprzedni request
-      if (abortControllerRef.current) {
-        console.log('🛑 [handleSearch] Aborting previous request');
-        abortControllerRef.current.abort();
-      }
-
-      // ⚡ Stwórz nowy AbortController (będzie użyty w usePosts)
-      abortControllerRef.current = new AbortController();
-
       // Close popups when searching
       setShowTagsFor(null);
       setShowInfoFor(null);
@@ -311,16 +299,6 @@ function App() {
     async (date: string, scale: PopularScale) => {
       console.log('⭐ [App.handlePopularSearch] START', { date, scale });
 
-      // ⚡ Anuluj poprzedni request
-      if (abortControllerRef.current) {
-        console.log('🛑 [handlePopularSearch] Aborting previous request');
-        abortControllerRef.current.abort();
-      }
-
-      // ⚡ Stwórz nowy AbortController
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
       // Close popups when searching
       setShowTagsFor(null);
       setShowInfoFor(null);
@@ -333,7 +311,7 @@ function App() {
           e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
         console.log('⭐ [handlePopularSearch] Auth:', auth ? 'YES' : 'NO');
 
-        const posts = await fetchPopularPosts(date, scale, auth, signal);
+        const posts = await fetchPopularPosts(date, scale, auth);
 
         console.log('⭐ [handlePopularSearch] Received posts:', posts.length);
         console.log('⭐ [handlePopularSearch] First post:', posts[0]);
@@ -483,16 +461,6 @@ function App() {
 
     console.log('📥 [loadRealFavorites] Loading favorites from /favorites.json');
 
-    // ⚡ Anuluj poprzedni request
-    if (abortControllerRef.current) {
-      console.log('🛑 [loadRealFavorites] Aborting previous request');
-      abortControllerRef.current.abort();
-    }
-
-    // ⚡ Stwórz nowy AbortController
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-
     // Wyłącz Popular Mode przy wejściu w Favorites
     setIsPopularMode(false);
 
@@ -510,7 +478,7 @@ function App() {
 
       const response = await fetch(
         `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
-        { signal },
+        {},
       );
 
       if (!response.ok) {
@@ -767,12 +735,13 @@ function App() {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="50"
-              height="50"
-              viewBox="0 0 24 24"
+              width="45"
+              height="45"
+              viewBox="0 0 120 120"
               fill="currentColor"
             >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2M4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12m8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8" />
+              <path d="M60.005 23.299c9.799 0 19.014 3.817 25.946 10.75C92.884 40.98 96.701 50.197 96.701 60s-3.817 19.02-10.75 25.952C79.02 92.884 69.803 96.701 60 96.701s-19.02-3.817-25.952-10.75C27.116 79.02 23.299 69.804 23.299 60s3.817-19.02 10.75-25.952c6.931-6.931 16.148-10.749 25.955-10.75zm-.005-20C45.491 3.3 30.977 8.836 19.906 19.906c-22.144 22.144-22.143 58.045 0 80.188C30.978 111.166 45.489 116.701 60 116.701s29.021-5.535 40.094-16.607c22.144-22.144 22.144-58.044 0-80.188C89.021 8.833 74.513 3.297 60 3.299" />
+              <path d="m18.184 33.033 14.848-14.848 68.397 68.397-14.848 14.848z" />
             </svg>
           </button>
 
