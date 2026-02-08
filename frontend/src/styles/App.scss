@@ -298,7 +298,7 @@ button {
     .tags-btn {
       position: absolute;
       top: 6px;
-      left: 50px;
+      left: 48px;
       z-index: 10;
       width: 36px;
       height: 36px;
@@ -319,11 +319,56 @@ button {
         transform: scale(1.05);
       }
 
+      &.active {
+        opacity: 1;
+        background: #ff5ca8;
+        color: white;
+      }
+
       &.tags-btn-max {
         width: 50px;
         height: 50px;
         top: 12px;
         left: 75px;
+        opacity: 1;
+      }
+    }
+
+    .info-btn {
+      position: absolute;
+      top: 6px;
+      left: 90px;
+      z-index: 10;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      background: #35354b;
+      color: #5ca8ff;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      padding: 0;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+
+      &.active {
+        opacity: 1;
+        background: #5ca8ff;
+        color: white;
+      }
+
+      &.info-btn-max {
+        width: 50px;
+        height: 50px;
+        top: 12px;
+        left: 140px;
         opacity: 1;
       }
     }
@@ -334,7 +379,7 @@ button {
       justify-content: center;
       position: absolute;
       top: 6px;
-      left: 95px;
+      left: 132px;
       z-index: 10;
       width: 36px;
       height: 36px;
@@ -371,7 +416,7 @@ button {
         width: 50px;
         height: 50px;
         top: 12px;
-        left: 140px;
+        left: 205px;
         opacity: 1;
       }
     }
@@ -379,19 +424,107 @@ button {
     .tags-popup {
       position: absolute;
       top: 50px;
-      left: 0;
-      max-height: 200px;
+      left: 8px;
+      max-height: 300px;
       overflow-y: auto;
-      overflow-x: hidden;
-      width: max-content;
+      width: calc(100% - 16px);
       background: #1b1b24;
       color: #fff;
       border-radius: 8px;
       padding: 8px 12px;
       z-index: 20;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
 
       &.tags-popup-max {
         top: 75px;
+      }
+
+      // Custom scrollbar for better UX
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #ff5ca8;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #35354b;
+        border-radius: 3px;
+      }
+    }
+
+    .info-popup {
+      position: absolute;
+      top: 50px;
+      left: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      width: calc(100% - 16px);
+      background: #1b1b24;
+      color: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+
+      &.info-popup-max {
+        top: 75px;
+        left: 140px;
+      }
+
+      // Custom scrollbar for better UX
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #5ca8ff;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #35354b;
+        border-radius: 3px;
+      }
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #35354b;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-weight: 600;
+          color: #5ca8ff;
+          min-width: 70px;
+        }
+
+        .info-value {
+          text-align: right;
+          color: #eaeaea;
+          word-break: break-all;
+          max-width: 250px;
+        }
+
+        .info-link {
+          color: #5ca8ff;
+          text-decoration: none;
+          transition: color 0.2s ease;
+
+          &:hover {
+            color: #ff5ca8;
+            text-decoration: underline;
+          }
+        }
       }
     }
 
@@ -443,6 +576,10 @@ button {
     }
 
     &:hover .tags-btn {
+      opacity: 1;
+    }
+
+    &:hover .info-btn {
       opacity: 1;
     }
 

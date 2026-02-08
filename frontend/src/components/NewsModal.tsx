@@ -64,6 +64,7 @@ const NewsModal = ({
   const [isReloading, setIsReloading] = useState(false);
   const [maximizedPost, setMaximizedPost] = useState<Post | null>(null);
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
+  const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
 
   // -------------------- REFS --------------------
   const isResizing = useRef(false);
@@ -73,6 +74,7 @@ const NewsModal = ({
   const rafRef = useRef<number | null>(null);
   const maximizedVideoRef = useRef<HTMLVideoElement | null>(null);
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
+  const infoPopupRef = useRef<HTMLDivElement | null>(null);
 
   // -------------------- FUNCTIONS --------------------
   const startResize = (e: React.MouseEvent) => {
@@ -106,6 +108,41 @@ const NewsModal = ({
       groups[date].push(post);
     });
     return groups;
+  };
+
+  // 🔥 Helper functions for info modal
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return 'Unknown';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
+
+  const getRatingText = (rating: 's' | 'q' | 'e'): string => {
+    switch (rating) {
+      case 's':
+        return 'Safe';
+      case 'q':
+        return 'Questionable';
+      case 'e':
+        return 'Explicit';
+      default:
+        return 'Unknown';
+    }
   };
 
   // -------------------- USE EFFECTS --------------------
@@ -180,11 +217,21 @@ const NewsModal = ({
           setShowTagsFor(null);
         }
       }
+      if (showInfoFor !== null) {
+        const popup = infoPopupRef.current;
+        const button = document
+          .getElementById(`news-post-${showInfoFor}`)
+          ?.querySelector('.news-info-btn');
+
+        if (popup && !popup.contains(target) && button && !button.contains(target)) {
+          setShowInfoFor(null);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTagsFor]);
+  }, [showTagsFor, showInfoFor]);
 
   // Countdown timer for auto reload
   useEffect(() => {
@@ -381,7 +428,7 @@ const NewsModal = ({
                       >
                         {/* Przyciski - tags i favorites */}
                         <button
-                          className="news-tags-btn"
+                          className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowTagsFor((prev) => (prev === post.id ? null : post.id));
@@ -402,6 +449,30 @@ const NewsModal = ({
                             <line x1="16" y1="2" x2="16" y2="22" />
                             <line x1="2" y1="8" x2="22" y2="8" />
                             <line x1="2" y1="16" x2="22" y2="16" />
+                          </svg>
+                        </button>
+
+                        <button
+                          className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowInfoFor((prev) => (prev === post.id ? null : post.id));
+                          }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
                           </svg>
                         </button>
 
@@ -431,7 +502,20 @@ const NewsModal = ({
 
                         {/* Tags popup */}
                         {showTagsFor === post.id && (
-                          <div className="news-tags-popup" ref={tagsPopupRef}>
+                          <div
+                            className="news-tags-popup"
+                            ref={tagsPopupRef}
+                            onWheel={(e) => {
+                              const target = e.currentTarget;
+                              const atTop = target.scrollTop === 0;
+                              const atBottom =
+                                target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                              if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
                             {post.tags.length > 0 ? (
                               post.tags.map((tag: PostTag) => {
                                 let color = '#fff';
@@ -541,6 +625,93 @@ const NewsModal = ({
                             ) : (
                               <div className="news-tag-item">No tags</div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Info popup */}
+                        {showInfoFor === post.id && (
+                          <div
+                            className="news-info-popup"
+                            ref={infoPopupRef}
+                            onWheel={(e) => {
+                              const target = e.currentTarget;
+                              const atTop = target.scrollTop === 0;
+                              const atBottom =
+                                target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                              if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
+                            <div className="info-row">
+                              <span className="info-label">Source:</span>
+                              <span className="info-value">
+                                {post.sources && post.sources.length > 0 ? (
+                                  <a
+                                    href={post.sources[0]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="info-link"
+                                  >
+                                    {post.sources[0].length > 40
+                                      ? post.sources[0].substring(0, 40) + '...'
+                                      : post.sources[0]}
+                                  </a>
+                                ) : (
+                                  'None'
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">ID:</span>
+                              <span className="info-value">
+                                <a
+                                  href={`https://e621.net/posts/${post.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="info-link"
+                                >
+                                  {post.id}
+                                </a>
+                              </span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Size:</span>
+                              <span className="info-value">
+                                {post.file.width}x{post.file.height} (
+                                {formatFileSize(post.file.size)})
+                              </span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Type:</span>
+                              <span className="info-value">
+                                {post.file.ext?.toUpperCase() || 'Unknown'}
+                              </span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Rating:</span>
+                              <span className="info-value">{getRatingText(post.rating)}</span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Score:</span>
+                              <span className="info-value">{post.score.total}</span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Faves:</span>
+                              <span className="info-value">{post.fav_count}</span>
+                            </div>
+
+                            <div className="info-row">
+                              <span className="info-label">Posted:</span>
+                              <span className="info-value">{formatTimeAgo(post.created_at)}</span>
+                            </div>
                           </div>
                         )}
 

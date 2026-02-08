@@ -13,6 +13,7 @@ export interface StoredSettings {
   defaultVolume: number;
   autoPlayOnMaximize: boolean;
   autoPauseOnMinimize: boolean;
+  pauseVideoOutOfFocus: boolean;
   loopVideos: boolean;
   videoResolution: VideoResolution;
   gifsAutoplay: boolean;
@@ -25,6 +26,12 @@ export interface StoredSettings {
   hideFavorites: boolean;
   showHiddenFavCount: boolean;
   infiniteScroll: boolean;
+  sexSearch: {
+    female: boolean;
+    male: boolean;
+    intersex: boolean;
+    ambiguous: boolean;
+  };
 }
 
 const getDefaults = (): StoredSettings => ({
@@ -32,6 +39,7 @@ const getDefaults = (): StoredSettings => ({
   defaultVolume: 1,
   autoPlayOnMaximize: true,
   autoPauseOnMinimize: true,
+  pauseVideoOutOfFocus: true,
   loopVideos: false,
   videoResolution: 'best',
   gifsAutoplay: false,
@@ -44,6 +52,12 @@ const getDefaults = (): StoredSettings => ({
   hideFavorites: false,
   showHiddenFavCount: false,
   infiniteScroll: false,
+  sexSearch: {
+    female: false,
+    male: false,
+    intersex: false,
+    ambiguous: false,
+  },
 });
 
 type SettingValidator = (value: unknown) => boolean;
@@ -56,6 +70,16 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   layout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   newsLayout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   videoResolution: (v): v is VideoResolution => ['best', 'worse'].includes(v as string),
+  sexSearch: (v): v is StoredSettings['sexSearch'] => {
+    if (typeof v !== 'object' || v === null) return false;
+    const obj = v as Record<string, unknown>;
+    return (
+      typeof obj.female === 'boolean' &&
+      typeof obj.male === 'boolean' &&
+      typeof obj.intersex === 'boolean' &&
+      typeof obj.ambiguous === 'boolean'
+    );
+  },
 };
 
 function validateSetting<K extends keyof StoredSettings>(
@@ -169,6 +193,8 @@ export function useSettings() {
     setAutoPlayOnMaximize: (v: boolean) => updateSetting('autoPlayOnMaximize', v),
     autoPauseOnMinimize: settings.autoPauseOnMinimize,
     setAutoPauseOnMinimize: (v: boolean) => updateSetting('autoPauseOnMinimize', v),
+    pauseVideoOutOfFocus: settings.pauseVideoOutOfFocus,
+    setPauseVideoOutOfFocus: (v: boolean) => updateSetting('pauseVideoOutOfFocus', v),
     loopVideos: settings.loopVideos,
     setLoopVideos: (v: boolean) => updateSetting('loopVideos', v),
     videoResolution: settings.videoResolution,
@@ -193,6 +219,8 @@ export function useSettings() {
     setShowHiddenFavCount: (v: boolean) => updateSetting('showHiddenFavCount', v),
     infiniteScroll: settings.infiniteScroll,
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
+    sexSearch: settings.sexSearch,
+    setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,
     updateSettings,
     reset,

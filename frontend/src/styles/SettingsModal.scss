@@ -38,7 +38,9 @@
       border: none;
       color: #fff;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
       width: fit-content;
       padding: 14px;
       background: #35354b;
@@ -134,26 +136,40 @@
             font-size: 1.1rem;
           }
 
-          input[type='range'] {
-            appearance: none;
-            overflow: hidden;
-            height: 15px;
-            border-radius: 2px;
-            background: linear-gradient(
-              to right,
-              #ff5ca8 0%,
-              #ff298d var(--value),
-              #1b1b24 var(--value),
-              #1b1b24 100%
-            );
-            cursor: pointer;
-          }
+          .input-slider {
+            position: relative;
+            display: flex;
 
-          input[type='range']::-webkit-slider-thumb {
-            width: 0px;
-            -webkit-appearance: none;
-            height: 20px;
-            background: #ff298d;
+            input[type='range'] {
+              appearance: none;
+              overflow: hidden;
+              border-radius: 2px;
+              background: linear-gradient(
+                to right,
+                #ff5ca8 0%,
+                #ff298d var(--value),
+                #1b1b24 var(--value),
+                #1b1b24 100%
+              );
+              cursor: pointer;
+              height: 100%;
+            }
+
+            input[type='range']::-webkit-slider-thumb {
+              width: 0px;
+              -webkit-appearance: none;
+              height: 20px;
+              background: #ff298d;
+            }
+
+            .input-slider-number {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              user-select: none;
+              pointer-events: none;
+            }
           }
 
           input[type='checkbox'] {
@@ -218,7 +234,9 @@
             border: none;
             color: #fff;
             cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition:
+              background 0.2s ease,
+              transform 0.2s ease;
             width: 100%;
             padding: 14px;
             background: #1b1b24;
@@ -228,6 +246,46 @@
             &:hover {
               transform: scale(1.05);
               background: #ff5ca8;
+            }
+          }
+
+          .sex-search-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+
+            .sex-search-btn {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding: 5px 10px;
+              background: #1b1b24;
+              border: 2px solid transparent;
+              border-radius: 12px;
+              color: #fff;
+              cursor: pointer;
+              transition: all 0.3s ease;
+
+              &.active {
+                background-color: #ff5ca8;
+              }
+
+              &.top-left {
+                border-radius: 6px 0 0 0;
+              }
+
+              &.top-right {
+                border-radius: 0 6px 0 0;
+              }
+
+              &.bottom-left {
+                border-radius: 0 0 0 6px;
+              }
+
+              &.bottom-right {
+                border-radius: 0 0 6px 0;
+              }
             }
           }
         }

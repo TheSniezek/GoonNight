@@ -34,6 +34,9 @@ export const mapE621Post = (post: E621Post): Post => {
     file: {
       url: post.file.url,
       ext: post.file.ext,
+      size: post.file.size,
+      width: post.sample?.width ?? post.preview?.width ?? 0,
+      height: post.sample?.height ?? post.preview?.height ?? 0,
     },
 
     preview: {
@@ -53,6 +56,10 @@ export const mapE621Post = (post: E621Post): Post => {
 
     tags,
     is_favorited: post.is_favorited,
+    rating: post.rating,
+    score: post.score,
+    fav_count: post.fav_count,
+    sources: post.sources || [],
   };
 };
 

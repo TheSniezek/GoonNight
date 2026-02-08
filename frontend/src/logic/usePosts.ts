@@ -14,6 +14,12 @@ interface UsePostsOptions {
   postsPerPage: number;
   infiniteScroll?: boolean;
   blacklist?: string; // 🔥 DODANE
+  sexSearch?: {
+    female: boolean;
+    male: boolean;
+    intersex: boolean;
+    ambiguous: boolean;
+  };
 }
 
 export function usePosts(initialTags: string, options?: UsePostsOptions) {
@@ -59,6 +65,19 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
     return negativeTags;
   };
 
+  // 🔥 NOWA FUNKCJA - buduj tagi dla sex search
+  const buildSexSearchTags = (sexSearch?: UsePostsOptions['sexSearch']): string => {
+    if (!sexSearch) return '';
+
+    const activeTags: string[] = [];
+    if (sexSearch.female) activeTags.push('~female');
+    if (sexSearch.male) activeTags.push('~male');
+    if (sexSearch.intersex) activeTags.push('~intersex');
+    if (sexSearch.ambiguous) activeTags.push('~ambiguous_gender');
+
+    return activeTags.join(' ');
+  };
+
   // Usuwa order: z tagów jeśli istnieje
   const stripOrderFromTags = (baseTags: string) => {
     return baseTags
@@ -77,6 +96,14 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
       const blacklistTags = buildBlacklistTags(options.blacklist);
       if (blacklistTags) {
         result += ` ${blacklistTags}`;
+      }
+    }
+
+    // 🔥 DODAJ SEX SEARCH TAGI
+    if (options?.sexSearch) {
+      const sexSearchTags = buildSexSearchTags(options.sexSearch);
+      if (sexSearchTags) {
+        result += ` ${sexSearchTags}`;
       }
     }
 

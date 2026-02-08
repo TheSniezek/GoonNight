@@ -81,13 +81,20 @@ type E621Tags = {
 export type E621Post = {
   id: number;
   created_at: string;
-  file: E621File;
+  file: E621File & { size?: number }; // Add size
   preview?: E621Preview;
   sample?: E621Sample;
   tags: E621Tags;
   rating: 's' | 'q' | 'e';
   duration?: number | null;
   is_favorited?: boolean;
+  score: {
+    up: number;
+    down: number;
+    total: number;
+  };
+  fav_count: number;
+  sources: string[];
 };
 
 export type PostTag = {
@@ -103,6 +110,9 @@ export type Post = {
     url?: string;
     sample_url?: string; // tutaj będzie np. 480p video
     ext?: 'jpg' | 'png' | 'gif' | 'webm' | 'mp4';
+    size?: number; // in bytes
+    width?: number;
+    height?: number;
   };
 
   preview: {
@@ -122,4 +132,12 @@ export type Post = {
 
   tags: PostTag[];
   is_favorited?: boolean;
+  rating: 's' | 'q' | 'e';
+  score: {
+    up: number;
+    down: number;
+    total: number;
+  };
+  fav_count: number;
+  sources: string[];
 };

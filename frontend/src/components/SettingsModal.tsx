@@ -12,6 +12,8 @@ interface SettingsModalProps {
   setAutoPlayOnMaximize: (v: boolean) => void;
   autoPauseOnMinimize: boolean;
   setAutoPauseOnMinimize: (v: boolean) => void;
+  pauseVideoOutOfFocus: boolean;
+  setPauseVideoOutOfFocus: (v: boolean) => void;
   layout: 'masonry' | 'grid' | 'accurate-grid';
   setLayout: (l: 'masonry' | 'grid' | 'accurate-grid') => void;
   postColumns: number;
@@ -36,6 +38,13 @@ interface SettingsModalProps {
   setGifsAutoplay: (v: boolean) => void;
   showHiddenFavCount: boolean;
   setShowHiddenFavCount: (v: boolean) => void;
+  sexSearch: {
+    female: boolean;
+    male: boolean;
+    intersex: boolean;
+    ambiguous: boolean;
+  };
+  setSexSearch: (v: SettingsModalProps['sexSearch']) => void;
 }
 
 export default function SettingsModal({
@@ -46,6 +55,8 @@ export default function SettingsModal({
   setAutoPlayOnMaximize,
   autoPauseOnMinimize,
   setAutoPauseOnMinimize,
+  pauseVideoOutOfFocus,
+  setPauseVideoOutOfFocus,
   layout,
   setLayout,
   postColumns,
@@ -70,6 +81,8 @@ export default function SettingsModal({
   setGifsAutoplay,
   showHiddenFavCount,
   setShowHiddenFavCount,
+  sexSearch,
+  setSexSearch,
 }: SettingsModalProps) {
   const {
     observedTags,
@@ -182,18 +195,22 @@ export default function SettingsModal({
 
               <label className="settings-row">
                 <span className="settings-names">Number of columns</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={postColumns}
-                  style={{ '--value': `${((postColumns - 1) / 9) * 100}%` } as React.CSSProperties}
-                  onChange={(e) => {
-                    const val = Math.max(1, Math.min(10, Number(e.target.value)));
-                    setPostColumns(val);
-                  }}
-                />
-                <span>{postColumns}</span>
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={postColumns}
+                    style={
+                      { '--value': `${((postColumns - 1) / 9) * 100}%` } as React.CSSProperties
+                    }
+                    onChange={(e) => {
+                      const val = Math.max(1, Math.min(10, Number(e.target.value)));
+                      setPostColumns(val);
+                    }}
+                  />
+                  <span className="input-slider-number">{postColumns}</span>
+                </div>
               </label>
 
               <label
@@ -261,19 +278,79 @@ export default function SettingsModal({
 
               <label className="settings-row">
                 <span className="settings-names">Posts per page</span>
-                <input
-                  type="range"
-                  min={10}
-                  max={60}
-                  step={1}
-                  value={postsPerPage}
-                  style={
-                    { '--value': `${((postsPerPage - 10) / 50) * 100}%` } as React.CSSProperties
-                  }
-                  onChange={(e) => setPostsPerPage(Number(e.target.value))}
-                />
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={10}
+                    max={60}
+                    step={1}
+                    value={postsPerPage}
+                    style={
+                      { '--value': `${((postsPerPage - 10) / 50) * 100}%` } as React.CSSProperties
+                    }
+                    onChange={(e) => setPostsPerPage(Number(e.target.value))}
+                  />
 
-                <span>{postsPerPage}</span>
+                  <span className="input-slider-number">{postsPerPage}</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Search</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Gender</span>
+                <div className="sex-search-grid">
+                  <button
+                    className={`sex-search-btn ${sexSearch.female ? 'active' : ''} top-left`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        female: !sexSearch.female,
+                      })
+                    }
+                  >
+                    <span>Female</span>
+                  </button>
+
+                  <button
+                    className={`sex-search-btn ${sexSearch.male ? 'active' : ''} top-right`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        male: !sexSearch.male,
+                      })
+                    }
+                  >
+                    <span>Male</span>
+                  </button>
+
+                  <button
+                    className={`sex-search-btn ${sexSearch.intersex ? 'active' : ''} bottom-left`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        intersex: !sexSearch.intersex,
+                      })
+                    }
+                  >
+                    <span>Intersex</span>
+                  </button>
+
+                  <button
+                    className={`sex-search-btn ${sexSearch.ambiguous ? 'active' : ''} bottom-right`}
+                    onClick={() =>
+                      setSexSearch({
+                        ...sexSearch,
+                        ambiguous: !sexSearch.ambiguous,
+                      })
+                    }
+                  >
+                    <span>Ambiguous</span>
+                  </button>
+                </div>
               </label>
             </div>
           </div>
@@ -283,17 +360,19 @@ export default function SettingsModal({
             <div className="settings-section-content">
               <label className="settings-row">
                 <span className="settings-names">Default video volume</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={Math.round(defaultVolume * 100)}
-                  style={
-                    { '--value': `${Math.round(defaultVolume * 100)}%` } as React.CSSProperties
-                  }
-                  onChange={(e) => setDefaultVolume(Number(e.target.value) / 100)}
-                />
-                <span>{Math.round(defaultVolume * 100)}%</span>
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(defaultVolume * 100)}
+                    style={
+                      { '--value': `${Math.round(defaultVolume * 100)}%` } as React.CSSProperties
+                    }
+                    onChange={(e) => setDefaultVolume(Number(e.target.value) / 100)}
+                  />
+                  <span className="input-slider-number">{Math.round(defaultVolume * 100)}%</span>
+                </div>
               </label>
 
               <label className="settings-row">
@@ -349,6 +428,16 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
+                <span className="settings-names">Pause video out of focus</span>
+                <input
+                  type="checkbox"
+                  checked={pauseVideoOutOfFocus}
+                  onChange={(e) => setPauseVideoOutOfFocus(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
                 <span className="settings-names">GIFs autoplay</span>
                 <input
                   type="checkbox"
@@ -395,22 +484,24 @@ export default function SettingsModal({
 
               <label className="settings-row">
                 <span className="settings-names">Number of columns</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={newsPostColumns}
-                  style={
-                    {
-                      '--value': `${((newsPostColumns - 1) / 9) * 100}%`,
-                    } as React.CSSProperties
-                  }
-                  onChange={(e) => {
-                    const val = Math.max(1, Math.min(10, Number(e.target.value)));
-                    setNewsPostColumns(val);
-                  }}
-                />
-                <span>{newsPostColumns}</span>
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={newsPostColumns}
+                    style={
+                      {
+                        '--value': `${((newsPostColumns - 1) / 9) * 100}%`,
+                      } as React.CSSProperties
+                    }
+                    onChange={(e) => {
+                      const val = Math.max(1, Math.min(10, Number(e.target.value)));
+                      setNewsPostColumns(val);
+                    }}
+                  />
+                  <span className="input-slider-number">{newsPostColumns}</span>
+                </div>
               </label>
             </div>
           </div>
@@ -445,6 +536,8 @@ export default function SettingsModal({
                               setAutoPlayOnMaximize(newSettings.autoPlayOnMaximize);
                             if (newSettings.autoPauseOnMinimize !== undefined)
                               setAutoPauseOnMinimize(newSettings.autoPauseOnMinimize);
+                            if (newSettings.pauseVideoOutOfFocus !== undefined)
+                              setPauseVideoOutOfFocus(newSettings.pauseVideoOutOfFocus);
                             if (newSettings.layout) setLayout(newSettings.layout);
                             if (newSettings.postColumns) setPostColumns(newSettings.postColumns);
                             if (newSettings.newsLayout) setNewsLayout(newSettings.newsLayout);
@@ -459,6 +552,7 @@ export default function SettingsModal({
                               setLoopVideos(newSettings.loopVideos);
                             if (newSettings.videoResolution)
                               setVideoResolution(newSettings.videoResolution);
+                            if (newSettings.sexSearch) setSexSearch(newSettings.sexSearch);
                           },
                           (tags) => {
                             setObservedTags(tags);
@@ -478,6 +572,7 @@ export default function SettingsModal({
                         defaultVolume,
                         autoPlayOnMaximize,
                         autoPauseOnMinimize,
+                        pauseVideoOutOfFocus,
                         layout,
                         postColumns,
                         newsLayout,
@@ -487,6 +582,7 @@ export default function SettingsModal({
                         hideFavorites,
                         loopVideos,
                         videoResolution,
+                        sexSearch,
                       },
                       observedTags,
                     )

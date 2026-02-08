@@ -26,6 +26,8 @@ function App() {
     setAutoPlayOnMaximize,
     autoPauseOnMinimize,
     setAutoPauseOnMinimize,
+    pauseVideoOutOfFocus,
+    setPauseVideoOutOfFocus,
     layout,
     setLayout,
     postColumns,
@@ -50,6 +52,8 @@ function App() {
     setGifsAutoplay,
     showHiddenFavCount,
     setShowHiddenFavCount,
+    sexSearch,
+    setSexSearch,
   } = useSettings();
 
   const { observedTags, toggleTag } = useObservedTags();
@@ -90,6 +94,7 @@ function App() {
     postsPerPage,
     infiniteScroll,
     blacklist, // 🔥 DODANE - przekazuj blacklist do usePosts
+    sexSearch, // 🔥 DODANE - przekazuj sexSearch do usePosts
   });
 
   // ✅ NOWY hook useFavorites - tylko do toggle'owania
@@ -120,7 +125,9 @@ function App() {
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
 
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
+  const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
+  const infoPopupRef = useRef<HTMLDivElement | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const prevMaximizedPostId = useRef<number | null>(null);
   const [showNewsPopup, setShowNewsPopup] = useState(false);
@@ -150,11 +157,19 @@ function App() {
           setShowTagsFor(null);
         }
       }
+      if (showInfoFor !== null) {
+        const popup = infoPopupRef.current;
+        const button = document.getElementById(`post-${showInfoFor}`)?.querySelector('.info-btn');
+
+        if (popup && !popup.contains(target) && button && !button.contains(target)) {
+          setShowInfoFor(null);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTagsFor, maximizedPostId]);
+  }, [showTagsFor, showInfoFor, maximizedPostId]);
 
   useEffect(() => {
     console.log('Current E621 login:', e621User, e621ApiKey);
@@ -180,9 +195,47 @@ function App() {
     prevMaximizedPostId.current = maximizedPostId;
   }, [maximizedPostId, autoPlayOnMaximize, autoPauseOnMinimize]);
 
+  // 🔥 NOWY useEffect - Pause video out of focus
+  useEffect(() => {
+    if (!pauseVideoOutOfFocus) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target as HTMLVideoElement;
+          if (!video.paused && !entry.isIntersecting) {
+            video.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Video musi być przynajmniej w 50% w viewport
+      },
+    );
+
+    // Obserwuj wszystkie wideo
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) observer.observe(video);
+    });
+
+    return () => observer.disconnect();
+  }, [pauseVideoOutOfFocus, allPosts]); // Re-run gdy zmienią się posty
+
+  // 🔥 NOWY useEffect - Odświeżaj wyniki gdy zmieni się sexSearch
+  useEffect(() => {
+    if (tags) {
+      // Tylko odśwież jeśli już coś wyszukiwaliśmy
+      newSearch(tags, { username: e621User, apiKey: e621ApiKey }, { order });
+    }
+  }, [sexSearch]); // Tylko sexSearch w dependencies
+
   const handleSearch = useCallback(
     async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
       console.log('🔍 [App.handleSearch]', searchTags, newOrder, clearTags);
+
+      // Close popups when searching
+      setShowTagsFor(null);
+      setShowInfoFor(null);
 
       // ✅ UPROSZCZONE - zawsze normalne wyszukiwanie
       await newSearch(
@@ -193,6 +246,41 @@ function App() {
     },
     [newSearch, e621User, e621ApiKey, order],
   );
+
+  // 🔥 Helper functions for info modal
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return 'Unknown';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
+
+  const getRatingText = (rating: 's' | 'q' | 'e'): string => {
+    switch (rating) {
+      case 's':
+        return 'Safe';
+      case 'q':
+        return 'Questionable';
+      case 'e':
+        return 'Explicit';
+      default:
+        return 'Unknown';
+    }
+  };
 
   // 🔥 Funkcje do modyfikacji SearchBar
   const searchTag = useCallback(
@@ -683,7 +771,9 @@ function App() {
                 )}
               </button>
               <button
-                className={`tags-btn ${isMaximized ? 'tags-btn-max' : ''}`}
+                className={`tags-btn ${isMaximized ? 'tags-btn-max' : ''} ${
+                  showTagsFor === post.id ? 'active' : ''
+                }`}
                 onClick={() => setShowTagsFor((prev) => (prev === post.id ? null : post.id))}
               >
                 {isMaximized ? (
@@ -721,6 +811,46 @@ function App() {
 
                     <line x1="2" y1="8" x2="22" y2="8" />
                     <line x1="2" y1="16" x2="22" y2="16" />
+                  </svg>
+                )}
+              </button>
+              <button
+                className={`info-btn ${isMaximized ? 'info-btn-max' : ''} ${
+                  showInfoFor === post.id ? 'active' : ''
+                }`}
+                onClick={() => setShowInfoFor(showInfoFor === post.id ? null : post.id)}
+              >
+                {isMaximized ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="30"
+                    height="30"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                 )}
               </button>
@@ -785,6 +915,15 @@ function App() {
                 <div
                   className={`tags-popup ${isMaximized ? 'tags-popup-max' : ''}`}
                   ref={tagsPopupRef}
+                  onWheel={(e) => {
+                    const target = e.currentTarget;
+                    const atTop = target.scrollTop === 0;
+                    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                      e.stopPropagation();
+                    }
+                  }}
                 >
                   {post.tags.length > 0 ? (
                     post.tags.map((tag: PostTag) => {
@@ -888,6 +1027,88 @@ function App() {
                 </div>
               )}
 
+              {showInfoFor === post.id && (
+                <div
+                  className={`info-popup ${isMaximized ? 'info-popup-max' : ''}`}
+                  ref={infoPopupRef}
+                  onWheel={(e) => {
+                    const target = e.currentTarget;
+                    const atTop = target.scrollTop === 0;
+                    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  <div className="info-row">
+                    <span className="info-label">Source:</span>
+                    <span className="info-value">
+                      {post.sources && post.sources.length > 0 ? (
+                        <a
+                          href={post.sources[0]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="info-link"
+                        >
+                          {post.sources[0].length > 50
+                            ? post.sources[0].substring(0, 50) + '...'
+                            : post.sources[0]}
+                        </a>
+                      ) : (
+                        'None'
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">ID:</span>
+                    <span className="info-value">
+                      <a
+                        href={`https://e621.net/posts/${post.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="info-link"
+                      >
+                        {post.id}
+                      </a>
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Size:</span>
+                    <span className="info-value">
+                      {post.file.width}x{post.file.height} ({formatFileSize(post.file.size)})
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Type:</span>
+                    <span className="info-value">{post.file.ext?.toUpperCase() || 'Unknown'}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Rating:</span>
+                    <span className="info-value">{getRatingText(post.rating)}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Score:</span>
+                    <span className="info-value">{post.score.total}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Faves:</span>
+                    <span className="info-value">{post.fav_count}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Posted:</span>
+                    <span className="info-value">{formatTimeAgo(post.created_at)}</span>
+                  </div>
+                </div>
+              )}
+
               {isVideo ? (
                 isMaximized ? (
                   <video
@@ -981,6 +1202,8 @@ function App() {
             setAutoPlayOnMaximize={setAutoPlayOnMaximize}
             autoPauseOnMinimize={autoPauseOnMinimize}
             setAutoPauseOnMinimize={setAutoPauseOnMinimize}
+            pauseVideoOutOfFocus={pauseVideoOutOfFocus}
+            setPauseVideoOutOfFocus={setPauseVideoOutOfFocus}
             layout={layout}
             setLayout={setLayout}
             postColumns={postColumns}
@@ -1005,6 +1228,8 @@ function App() {
             setGifsAutoplay={setGifsAutoplay}
             showHiddenFavCount={showHiddenFavCount}
             setShowHiddenFavCount={setShowHiddenFavCount}
+            sexSearch={sexSearch}
+            setSexSearch={setSexSearch}
           />
         )}
 
