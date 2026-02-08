@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { useObservedTags } from '../logic/useObservedTags';
 import type { StoredSettings } from '../logic/useSettings';
 import '../styles/SettingsModal.scss';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -90,6 +90,8 @@ export default function SettingsModal({
     saveObservedTags,
   } = useObservedTags();
 
+  const [exportFilename, setExportFilename] = useState('goonnight_data');
+
   const setObservedTags = (tags: string[]) => {
     originalSetObservedTags(tags);
     saveObservedTags(tags);
@@ -105,7 +107,21 @@ export default function SettingsModal({
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'goonnight_data.json';
+
+    // Użyj custom filename lub fallback na domyślny
+    let filename = exportFilename.trim() || 'goonnight_data';
+
+    // Dodaj .json jeśli nie ma
+    if (!filename.endsWith('.json')) {
+      filename += '.json';
+    }
+
+    // Zawsze dodaj timestamp aby uniknąć konfliktów
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const namePart = filename.replace('.json', '');
+    filename = `${namePart}_${timestamp}.json`;
+
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -213,48 +229,28 @@ export default function SettingsModal({
                 </div>
               </label>
 
-              <label
-                className={`settings-row ${!infiniteScroll ? 'disabled' : ''}  ${
-                  hideFavorites ? 'hide-favorites' : ''
-                }`}
-              >
-                <div className="hide-favorites-content">
-                  <span className="settings-names">Hide favorite posts</span>
+              <label className="settings-row">
+                <span className="settings-names">Posts per page</span>
+                <div className="input-slider">
                   <input
-                    type="checkbox"
-                    checked={hideFavorites}
-                    disabled={!infiniteScroll}
-                    onChange={(e) => setHideFavorites(e.target.checked)}
+                    type="range"
+                    min={10}
+                    max={320}
+                    step={10}
+                    value={postsPerPage}
+                    style={
+                      {
+                        '--value': `${((postsPerPage - 10) / 310) * 100}%`,
+                      } as React.CSSProperties
+                    }
+                    onChange={(e) => {
+                      const val = Math.max(10, Math.min(320, Number(e.target.value)));
+                      setPostsPerPage(val);
+                    }}
                   />
-                  <span className="checkmark"></span>
+                  <span className="input-slider-number">{postsPerPage}</span>
                 </div>
-
-                {hideFavorites && infiniteScroll && (
-                  <div className="settings-warning">
-                    ⚠ Experimental feature – may put more load on RAM and also randomly break.
-                  </div>
-                )}
               </label>
-
-              {hideFavorites && (
-                <label className={`settings-row ${hideFavorites ? 'hide-favorites-count' : ''}`}>
-                  <div className="hide-favorites-count-content">
-                    <span className="settings-names">Show hidden favorites count</span>
-                    <input
-                      type="checkbox"
-                      checked={showHiddenFavCount}
-                      onChange={(e) => setShowHiddenFavCount(e.target.checked)}
-                    />
-                    <span className="checkmark"></span>
-                  </div>
-
-                  {hideFavorites && showHiddenFavCount && (
-                    <div className="settings-warning">
-                      ⚠ To show all your hide favorites you need to load all the pages.
-                    </div>
-                  )}
-                </label>
-              )}
 
               <label className="settings-row">
                 <span className="settings-names">Infinite scroll</span>
@@ -277,99 +273,86 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Posts per page</span>
-                <div className="input-slider">
-                  <input
-                    type="range"
-                    min={10}
-                    max={60}
-                    step={1}
-                    value={postsPerPage}
-                    style={
-                      { '--value': `${((postsPerPage - 10) / 50) * 100}%` } as React.CSSProperties
-                    }
-                    onChange={(e) => setPostsPerPage(Number(e.target.value))}
-                  />
+                <span className="settings-names">Hide favorites</span>
+                <input
+                  type="checkbox"
+                  checked={hideFavorites}
+                  onChange={(e) => setHideFavorites(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
 
-                  <span className="input-slider-number">{postsPerPage}</span>
-                </div>
+              <label className="settings-row">
+                <span className="settings-names">Show hidden favorites count</span>
+                <input
+                  type="checkbox"
+                  checked={showHiddenFavCount}
+                  onChange={(e) => setShowHiddenFavCount(e.target.checked)}
+                />
+                <span className="checkmark"></span>
               </label>
             </div>
           </div>
 
           <div className="settings-section">
-            <span className="settings-section-tittle">Search</span>
+            <span className="settings-section-tittle">Sex Search</span>
             <div className="settings-section-content">
               <label className="settings-row">
-                <span className="settings-names">Gender</span>
-                <div className="sex-search-grid">
-                  <button
-                    className={`sex-search-btn ${sexSearch.female ? 'active' : ''} top-left`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        female: !sexSearch.female,
-                      })
-                    }
-                  >
-                    <span>Female</span>
-                  </button>
+                <span className="settings-names">Female</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.female}
+                  onChange={(e) => setSexSearch({ ...sexSearch, female: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
 
-                  <button
-                    className={`sex-search-btn ${sexSearch.male ? 'active' : ''} top-right`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        male: !sexSearch.male,
-                      })
-                    }
-                  >
-                    <span>Male</span>
-                  </button>
+              <label className="settings-row">
+                <span className="settings-names">Male</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.male}
+                  onChange={(e) => setSexSearch({ ...sexSearch, male: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
 
-                  <button
-                    className={`sex-search-btn ${sexSearch.intersex ? 'active' : ''} bottom-left`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        intersex: !sexSearch.intersex,
-                      })
-                    }
-                  >
-                    <span>Intersex</span>
-                  </button>
+              <label className="settings-row">
+                <span className="settings-names">Intersex</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.intersex}
+                  onChange={(e) => setSexSearch({ ...sexSearch, intersex: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
 
-                  <button
-                    className={`sex-search-btn ${sexSearch.ambiguous ? 'active' : ''} bottom-right`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        ambiguous: !sexSearch.ambiguous,
-                      })
-                    }
-                  >
-                    <span>Ambiguous</span>
-                  </button>
-                </div>
+              <label className="settings-row">
+                <span className="settings-names">Ambiguous gender</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.ambiguous}
+                  onChange={(e) => setSexSearch({ ...sexSearch, ambiguous: e.target.checked })}
+                />
+                <span className="checkmark"></span>
               </label>
             </div>
           </div>
 
           <div className="settings-section">
-            <span className="settings-section-tittle">Media</span>
+            <span className="settings-section-tittle">Video & Media</span>
             <div className="settings-section-content">
               <label className="settings-row">
-                <span className="settings-names">Default video volume</span>
+                <span className="settings-names">Default volume</span>
                 <div className="input-slider">
                   <input
                     type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(defaultVolume * 100)}
-                    style={
-                      { '--value': `${Math.round(defaultVolume * 100)}%` } as React.CSSProperties
-                    }
-                    onChange={(e) => setDefaultVolume(Number(e.target.value) / 100)}
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={defaultVolume}
+                    style={{ '--value': `${defaultVolume * 100}%` } as React.CSSProperties}
+                    onChange={(e) => setDefaultVolume(Number(e.target.value))}
                   />
                   <span className="input-slider-number">{Math.round(defaultVolume * 100)}%</span>
                 </div>
@@ -384,7 +367,7 @@ export default function SettingsModal({
                     }`}
                     onClick={() => setVideoResolution('best')}
                   >
-                    Best ★
+                    Best
                   </button>
                   <button
                     className={`left-settings-btn button ${
@@ -392,7 +375,7 @@ export default function SettingsModal({
                     }`}
                     onClick={() => setVideoResolution('worse')}
                   >
-                    Worse than the best
+                    Worse
                   </button>
                 </div>
               </label>
@@ -509,6 +492,17 @@ export default function SettingsModal({
           <div className="settings-section">
             <span className="settings-section-tittle">Data</span>
             <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Export filename</span>
+                <input
+                  type="text"
+                  className="filename-input"
+                  value={exportFilename}
+                  onChange={(e) => setExportFilename(e.target.value)}
+                  placeholder="goonnight_data"
+                />
+              </label>
+
               <div className="settings-row importexport">
                 <label className="settings-btn settings-names">
                   <span>Import Data</span>

@@ -75,6 +75,6 @@ export default function BlacklistModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

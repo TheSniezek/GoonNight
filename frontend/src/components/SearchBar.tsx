@@ -86,7 +86,7 @@ export default function SearchBar({
 
     // Ustaw order na hot i wpisz do search bara
     setOrder('hot');
-    setInput('order:hot');
+    setInput('');
     onSearch('order:hot', 'hot');
   };
 

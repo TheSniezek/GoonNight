@@ -136,6 +136,26 @@
             font-size: 1.1rem;
           }
 
+          .filename-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #1b1b24;
+            border: 2px solid #35354b;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+
+            &:focus {
+              border-color: #ff5ca8;
+            }
+
+            &::placeholder {
+              color: #666;
+            }
+          }
+
           .input-slider {
             position: relative;
             display: flex;
