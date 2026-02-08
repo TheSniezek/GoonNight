@@ -423,6 +423,196 @@
       padding: 12px;
       flex: 1;
 
+      .date-picker-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        .picker-nav-btn {
+          all: unset;
+          padding: 8px;
+          background: #0d0d12;
+          border-radius: 6px;
+          color: #ff5ca8;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:hover:not(:disabled) {
+            background: #35354b;
+            transform: scale(1.1);
+          }
+
+          &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+          }
+        }
+
+        .picker-value-btn {
+          padding: 12px 24px;
+          background: #0d0d12;
+          border-radius: 6px;
+          color: #eaeaea;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 1.1rem;
+          font-weight: 600;
+          min-width: 140px;
+          text-align: center;
+          border: none;
+
+          &:hover {
+            background: #35354b;
+          }
+        }
+      }
+
+      .year-selector-dropdown {
+        max-height: 200px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 16px;
+        padding: 8px;
+        background: #0d0d12;
+        border-radius: 6px;
+
+        .year-option {
+          all: unset;
+          padding: 10px 16px;
+          background: #1c1c26;
+          border-radius: 4px;
+          color: #eaeaea;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+
+          &:hover {
+            background: #35354b;
+          }
+
+          &.active {
+            background: #ff5ca8;
+            color: #fff;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .day-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+
+        .day-option {
+          all: unset;
+          padding: 12px;
+          background: #0d0d12;
+          border-radius: 6px;
+          color: #eaeaea;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+          font-size: 1rem;
+
+          &:hover:not(:disabled) {
+            background: #35354b;
+            transform: scale(1.05);
+          }
+
+          &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            color: #555;
+          }
+        }
+      }
+
+      .week-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+
+        .week-option {
+          all: unset;
+          padding: 14px 16px;
+          background: #0d0d12;
+          border-radius: 6px;
+          color: #eaeaea;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+          font-size: 1rem;
+
+          &:hover {
+            background: #35354b;
+            transform: translateX(4px);
+          }
+        }
+      }
+
+      .week-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+
+        .week-option {
+          all: unset;
+          padding: 14px 12px;
+          background: #0d0d12;
+          border-radius: 6px;
+          color: #eaeaea;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+          font-size: 0.95rem;
+
+          &:hover:not(:disabled) {
+            background: #35354b;
+            transform: scale(1.05);
+          }
+
+          &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            color: #555;
+          }
+        }
+      }
+
+      .month-confirm {
+        margin-top: 24px;
+        display: flex;
+        justify-content: center;
+
+        .confirm-month-btn {
+          all: unset;
+          padding: 16px 32px;
+          background: #ff5ca8;
+          border-radius: 8px;
+          color: #fff;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 1.1rem;
+          font-weight: 600;
+          text-align: center;
+
+          &:hover {
+            background: #ff3d96;
+            transform: scale(1.05);
+          }
+        }
+      }
+
       .date-list {
         display: flex;
         flex-direction: column;

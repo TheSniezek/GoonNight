@@ -144,6 +144,9 @@ function App() {
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
   const savedOrderRef = useRef<Order | null>(null);
 
+  // ⚡ Abort controller dla canceling fetch requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // 🌟 Popular mode state
   const [isPopularMode, setIsPopularMode] = useState(false);
   const [popularDate, setPopularDate] = useState(() => {
@@ -152,6 +155,23 @@ function App() {
     return today.toISOString().split('T')[0];
   });
   const [popularScale, setPopularScale] = useState<PopularScale>('day');
+  const [shouldRestorePopular, setShouldRestorePopular] = useState(false);
+
+  // 🔥 Parsuj popular mode z tags przy inicjalizacji (po odświeżeniu)
+  useEffect(() => {
+    const savedTags = localStorage.getItem('searchTags') || '';
+    const popularMatch = savedTags.match(/^popular:(day|week|month):(\d{4}-\d{2}-\d{2})$/);
+
+    if (popularMatch) {
+      const [, scale, date] = popularMatch;
+      setIsPopularMode(true);
+      setPopularScale(scale as PopularScale);
+      setPopularDate(date);
+      setShouldRestorePopular(true);
+
+      console.log('🔄 Preparing to restore popular mode:', scale, date);
+    }
+  }, []); // Tylko przy mount
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
@@ -231,12 +251,43 @@ function App() {
       if (video) observer.observe(video);
     });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [pauseVideoOutOfFocus, allPosts]); // Re-run gdy zmienią się posty
+
+  // ⚡ CLEANUP - usuń stare video refs gdy posty się zmienią
+  useEffect(() => {
+    const currentPostIds = new Set(allPosts.map((p) => p.id));
+
+    // Usuń refs dla postów które już nie istnieją
+    Object.keys(videoRefs.current).forEach((idStr) => {
+      const id = parseInt(idStr, 10);
+      if (!currentPostIds.has(id)) {
+        const video = videoRefs.current[id];
+        if (video) {
+          // Pause i wyczyść src aby zwolnić pamięć
+          video.pause();
+          video.src = '';
+          video.load();
+        }
+        delete videoRefs.current[id];
+      }
+    });
+  }, [allPosts]);
 
   const handleSearch = useCallback(
     async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
       console.log('🔍 [App.handleSearch]', searchTags, newOrder, clearTags);
+
+      // ⚡ Anuluj poprzedni request
+      if (abortControllerRef.current) {
+        console.log('🛑 [handleSearch] Aborting previous request');
+        abortControllerRef.current.abort();
+      }
+
+      // ⚡ Stwórz nowy AbortController (będzie użyty w usePosts)
+      abortControllerRef.current = new AbortController();
 
       // Close popups when searching
       setShowTagsFor(null);
@@ -260,6 +311,16 @@ function App() {
     async (date: string, scale: PopularScale) => {
       console.log('⭐ [App.handlePopularSearch] START', { date, scale });
 
+      // ⚡ Anuluj poprzedni request
+      if (abortControllerRef.current) {
+        console.log('🛑 [handlePopularSearch] Aborting previous request');
+        abortControllerRef.current.abort();
+      }
+
+      // ⚡ Stwórz nowy AbortController
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       // Close popups when searching
       setShowTagsFor(null);
       setShowInfoFor(null);
@@ -272,7 +333,7 @@ function App() {
           e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
         console.log('⭐ [handlePopularSearch] Auth:', auth ? 'YES' : 'NO');
 
-        const posts = await fetchPopularPosts(date, scale, auth);
+        const posts = await fetchPopularPosts(date, scale, auth, signal);
 
         console.log('⭐ [handlePopularSearch] Received posts:', posts.length);
         console.log('⭐ [handlePopularSearch] First post:', posts[0]);
@@ -286,6 +347,13 @@ function App() {
 
         console.log('⭐ [handlePopularSearch] State updated, posts should display');
       } catch (err) {
+        if (
+          err instanceof Error &&
+          (err.name === 'CanceledError' || err.message?.includes('cancel'))
+        ) {
+          console.log('⚠️ [handlePopularSearch] Request was cancelled');
+          return; // Nie pokazuj błędu dla cancelled requests
+        }
         console.error('❌ [handlePopularSearch] Error:', err);
       } finally {
         setLoading(false);
@@ -303,6 +371,19 @@ function App() {
       setIsViewingRealFavorites,
     ],
   );
+
+  // 🔥 Automatycznie załaduj popular mode po odświeżeniu
+  useEffect(() => {
+    if (shouldRestorePopular && isPopularMode) {
+      console.log(
+        '🔄 Restoring popular mode - calling handlePopularSearch:',
+        popularScale,
+        popularDate,
+      );
+      handlePopularSearch(popularDate, popularScale);
+      setShouldRestorePopular(false);
+    }
+  }, [shouldRestorePopular, isPopularMode, popularDate, popularScale, handlePopularSearch]);
 
   // 🔥 Helper functions for info modal
   const formatFileSize = (bytes?: number): string => {
@@ -402,6 +483,19 @@ function App() {
 
     console.log('📥 [loadRealFavorites] Loading favorites from /favorites.json');
 
+    // ⚡ Anuluj poprzedni request
+    if (abortControllerRef.current) {
+      console.log('🛑 [loadRealFavorites] Aborting previous request');
+      abortControllerRef.current.abort();
+    }
+
+    // ⚡ Stwórz nowy AbortController
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    // Wyłącz Popular Mode przy wejściu w Favorites
+    setIsPopularMode(false);
+
     // Wyczyść obecne posty
     setAllPosts([]);
     setUiPage(1);
@@ -416,6 +510,7 @@ function App() {
 
       const response = await fetch(
         `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
+        { signal },
       );
 
       if (!response.ok) {
@@ -433,6 +528,10 @@ function App() {
 
       console.log('✅ [loadRealFavorites] Loaded successfully');
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('⚠️ [loadRealFavorites] Request was cancelled');
+        return;
+      }
       console.error('❌ [loadRealFavorites] Error:', error);
       alert('Failed to load favorites');
       // ✅ RESET FLAGI przy błędzie
@@ -736,6 +835,13 @@ function App() {
                 const auth =
                   e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
                 const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
+
+                // ⚡ Limit cache size - max 5 entries
+                const cacheKeys = Object.keys(newsCache.current);
+                if (cacheKeys.length >= 5) {
+                  // Usuń najstarszy entry
+                  delete newsCache.current[cacheKeys[0]];
+                }
 
                 newsCache.current[key] = allPosts;
                 setNewsPosts(allPosts);

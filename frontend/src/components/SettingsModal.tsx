@@ -116,11 +116,6 @@ export default function SettingsModal({
       filename += '.json';
     }
 
-    // Zawsze dodaj timestamp aby uniknąć konfliktów
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const namePart = filename.replace('.json', '');
-    filename = `${namePart}_${timestamp}.json`;
-
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);

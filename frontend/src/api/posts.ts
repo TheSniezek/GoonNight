@@ -67,9 +67,11 @@ export const fetchPosts = async (
   tags: string,
   page = 1,
   auth?: { username: string; apiKey: string },
+  signal?: AbortSignal,
 ): Promise<Post[]> => {
   const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, {
     params: { tags, page, username: auth?.username, apiKey: auth?.apiKey },
+    signal,
   });
   return data.posts.map(mapE621Post);
 };
@@ -133,6 +135,7 @@ export const fetchPopularPosts = async (
   date: string, // format: YYYY-MM-DD
   scale: PopularScale,
   auth?: { username: string; apiKey: string },
+  signal?: AbortSignal,
 ): Promise<Post[]> => {
   const { data } = await axios.get<{ posts: E621Post[] }>(`${E621_API}/popular`, {
     params: {
@@ -141,6 +144,7 @@ export const fetchPopularPosts = async (
       username: auth?.username,
       apiKey: auth?.apiKey,
     },
+    signal,
   });
   return data.posts.map(mapE621Post);
 };

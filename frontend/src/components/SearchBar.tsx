@@ -49,10 +49,104 @@ export default function SearchBar({
 
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // 🔥 State dla nowego date pickera
+  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(new Date().getMonth()); // 0-11
+  const [showYearSelector, setShowYearSelector] = useState(false);
+
+  // 🔥 Helper: Oblicz początek tygodnia (poniedziałek)
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Niedziela = 0, więc -6; Poniedziałek = 1, więc 0
+    d.setDate(d.getDate() + diff);
+    return d;
+  };
+
+  // 🔥 Helper: Sprawdź czy rok jest przestępny
+  const isLeapYear = (year: number): boolean => {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  };
+
+  // 🔥 Helper: Sprawdź czy data już wystąpiła (czy możemy ją wybrać)
+  const isDateInPast = (year: number, month: number, day: number = 1): boolean => {
+    const targetDate = new Date(year, month, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+    return targetDate <= today;
+  };
+
+  // 🔥 Helper: Sprawdź czy cały miesiąc już wystąpił
+  const isMonthInPast = (year: number, month: number): boolean => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    if (year < currentYear) return true;
+    if (year === currentYear && month <= currentMonth) return true;
+    return false;
+  };
+
+  // 🔥 Helper: Sprawdź czy tydzień już wystąpił
+  const isWeekInPast = (mondayDate: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    mondayDate.setHours(0, 0, 0, 0);
+    return mondayDate <= today;
+  };
+
+  // 🔥 Helper: Ile dni ma miesiąc
+  const getDaysInMonth = (year: number, month: number): number => {
+    // Luty - sprawdź czy rok przestępny
+    if (month === 1) {
+      return isLeapYear(year) ? 29 : 28;
+    }
+    // Miesiące z 30 dniami: kwiecień, czerwiec, wrzesień, listopad
+    if ([3, 5, 8, 10].includes(month)) {
+      return 30;
+    }
+    // Pozostałe miesiące mają 31 dni
+    return 31;
+  };
+
+  // 🔥 Helper: Ile tygodni w miesiącu (tylko te które zaczynają się w tym miesiącu)
+  const getWeeksInMonth = (year: number, month: number): number => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    let count = 0;
+    let currentMonday = getWeekStart(firstDay);
+
+    // Jeśli pierwszy poniedziałek jest przed pierwszym dniem miesiąca, przejdź do następnego
+    if (currentMonday < firstDay) {
+      currentMonday = new Date(currentMonday);
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+
+    // Zlicz tygodnie które zaczynają się w tym miesiącu
+    while (currentMonday.getMonth() === month && currentMonday <= lastDay) {
+      count++;
+      currentMonday = new Date(currentMonday);
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+
+    return count;
+  };
+
   // 🔥 Synchronizuj input z initialTags z zewnątrz
   useEffect(() => {
     setInput(initialTags);
   }, [initialTags]);
+
+  // 🔥 Synchronizuj picker state z popularDate
+  useEffect(() => {
+    if (popularDate) {
+      const date = new Date(popularDate);
+      setPickerYear(date.getFullYear());
+      setPickerMonth(date.getMonth());
+    }
+  }, [popularDate, showDatePicker]);
 
   const ORDER_FILTERS: { label: string; value: Order }[] = [
     { label: 'Newest', value: 'id_desc' },
@@ -285,7 +379,21 @@ export default function SearchBar({
 
   const changeScale = (newScale: PopularScale) => {
     setPopularScale(newScale);
-    onPopularSearch(popularDate, newScale);
+
+    const today = new Date();
+    let targetDate: Date;
+
+    if (newScale === 'week') {
+      // Dla week - znajdź poniedziałek bieżącego tygodnia
+      targetDate = getWeekStart(today);
+    } else {
+      // Dla day i month - dzisiejsza data
+      targetDate = today;
+    }
+
+    const currentDate = targetDate.toISOString().split('T')[0];
+    setPopularDate(currentDate);
+    onPopularSearch(currentDate, newScale);
   };
 
   const selectDate = (newDate: string) => {
@@ -294,47 +402,186 @@ export default function SearchBar({
     onPopularSearch(newDate, popularScale);
   };
 
-  // Generuj listę ostatnich 90 dni
-  const generateDateOptions = () => {
-    const options: { value: string; label: string }[] = [];
-    const today = new Date();
+  // 🔥 Nowe funkcje dla date pickera
 
-    for (let i = 1; i <= 90; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const value = date.toISOString().split('T')[0];
-      const label = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      options.push({ value, label });
-    }
+  const MONTH_NAMES = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
-    return options;
+  const changePickerYear = (direction: 'prev' | 'next') => {
+    const newYear = direction === 'next' ? pickerYear + 1 : pickerYear - 1;
+    const currentYear = new Date().getFullYear();
+
+    // Nie pozwól na lata przyszłe lub starsze niż 2007
+    if (newYear > currentYear || newYear < 2007) return;
+
+    setPickerYear(newYear);
   };
 
-  // Generuj listę miesięcy (ostatnie 12 miesięcy)
-  const generateMonthOptions = () => {
-    const options: { value: string; label: string }[] = [];
-    const today = new Date();
+  const changePickerMonth = (direction: 'prev' | 'next') => {
+    let newMonth = direction === 'next' ? pickerMonth + 1 : pickerMonth - 1;
+    let newYear = pickerYear;
 
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const value = date.toISOString().split('T')[0];
-      const label = date.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      });
-      options.push({ value, label });
+    // Obsługa przeskoku roku
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
     }
 
-    return options;
+    // Sprawdź czy nowy miesiąc już wystąpił
+    if (!isMonthInPast(newYear, newMonth)) {
+      return; // Nie pozwól na przyszłe miesiące
+    }
+
+    // Sprawdź czy nie wychodzimy poza zakres lat
+    if (newYear > new Date().getFullYear() || newYear < 2007) {
+      return;
+    }
+
+    setPickerYear(newYear);
+    setPickerMonth(newMonth);
+  };
+
+  const selectDay = (day: number) => {
+    const date = new Date(pickerYear, pickerMonth, day);
+    // Użyj lokalnego formatowania zamiast UTC (toISOString może zmienić dzień przez timezone)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${dayStr}`;
+    selectDate(dateString);
+  };
+
+  const selectWeek = (weekNumber: number) => {
+    // Znajdź poniedziałek danego tygodnia w miesiącu
+    const firstDay = new Date(pickerYear, pickerMonth, 1);
+    let firstMonday = getWeekStart(firstDay);
+
+    // Jeśli pierwszy poniedziałek jest przed pierwszym dniem miesiąca, przejdź do następnego
+    if (firstMonday < firstDay) {
+      firstMonday = new Date(firstMonday);
+      firstMonday.setDate(firstMonday.getDate() + 7);
+    }
+
+    const targetMonday = new Date(firstMonday);
+    targetMonday.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
+
+    // Użyj lokalnego formatowania
+    const year = targetMonday.getFullYear();
+    const month = String(targetMonday.getMonth() + 1).padStart(2, '0');
+    const day = String(targetMonday.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    selectDate(dateString);
+  };
+
+  const selectMonth = () => {
+    const date = new Date(pickerYear, pickerMonth, 1);
+    // Użyj lokalnego formatowania
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    selectDate(dateString);
+  };
+
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+
+    for (let y = currentYear; y >= 2007; y--) {
+      years.push(y);
+    }
+
+    return years;
+  };
+
+  // Generuj dni dla wybranego miesiąca
+  const generateDaysForPicker = () => {
+    const daysInMonth = getDaysInMonth(pickerYear, pickerMonth);
+    const days: { day: number; disabled: boolean }[] = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const disabled = !isDateInPast(pickerYear, pickerMonth, d);
+      days.push({ day: d, disabled });
+    }
+
+    return days;
+  };
+
+  // Generuj tygodnie dla wybranego miesiąca
+  const generateWeeksForPicker = () => {
+    const weeksCount = getWeeksInMonth(pickerYear, pickerMonth);
+    const weeks: { weekNumber: number; label: string; displayLabel: string; disabled: boolean }[] =
+      [];
+
+    const firstDay = new Date(pickerYear, pickerMonth, 1);
+    let currentMonday = getWeekStart(firstDay);
+
+    // Jeśli pierwszy poniedziałek jest przed pierwszym dniem miesiąca, przejdź do następnego
+    if (currentMonday < firstDay) {
+      currentMonday = new Date(currentMonday);
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+
+    for (let i = 0; i < weeksCount; i++) {
+      const weekEnd = new Date(currentMonday);
+      weekEnd.setDate(currentMonday.getDate() + 6);
+
+      const label = `${currentMonday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+      // Format displayLabel: "Week of Feb 02"
+      const monthShort = currentMonday.toLocaleDateString('en-US', { month: 'short' });
+      const day = currentMonday.getDate().toString().padStart(2, '0');
+      const displayLabel = `Week of ${monthShort} ${day}`;
+
+      // Sprawdź czy tydzień już wystąpił
+      const disabled = !isWeekInPast(new Date(currentMonday));
+
+      weeks.push({ weekNumber: i + 1, label, displayLabel, disabled });
+
+      // Przejdź do następnego poniedziałku
+      currentMonday = new Date(currentMonday);
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+
+    return weeks;
   };
 
   // Format daty do wyświetlenia
   const formatDisplayDate = () => {
-    const date = new Date(popularDate);
+    // Gdy picker jest otwarty, użyj pickerYear i pickerMonth dla podglądu
+    let date: Date;
+
+    if (showDatePicker) {
+      if (popularScale === 'week') {
+        // Dla week - znajdź pierwszy poniedziałek miesiąca
+        const firstDay = new Date(pickerYear, pickerMonth, 1);
+        let firstMonday = getWeekStart(firstDay);
+        if (firstMonday < firstDay) {
+          firstMonday = new Date(firstMonday);
+          firstMonday.setDate(firstMonday.getDate() + 7);
+        }
+        date = firstMonday;
+      } else {
+        date = new Date(pickerYear, pickerMonth, 1);
+      }
+    } else {
+      date = new Date(popularDate);
+    }
 
     if (popularScale === 'day') {
       return date.toLocaleDateString('en-US', {
@@ -343,9 +590,12 @@ export default function SearchBar({
         day: 'numeric',
       });
     } else if (popularScale === 'week') {
-      const weekEnd = new Date(date);
-      weekEnd.setDate(date.getDate() + 6);
-      return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      // Zawsze pokaż początek tygodnia (poniedziałek)
+      const weekStart = getWeekStart(date);
+      // Format: "Week of Feb 02"
+      const monthShort = weekStart.toLocaleDateString('en-US', { month: 'short' });
+      const day = weekStart.getDate().toString().padStart(2, '0');
+      return `Week of ${monthShort} ${day}`;
     } else {
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -558,55 +808,132 @@ export default function SearchBar({
                   </div>
 
                   <div className="date-picker-content">
+                    {/* Year Selector */}
+                    <div className="date-picker-row">
+                      <button
+                        type="button"
+                        className="picker-nav-btn"
+                        onClick={() => changePickerYear('prev')}
+                        disabled={pickerYear <= 2007}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="picker-value-btn"
+                        onClick={() => setShowYearSelector(!showYearSelector)}
+                      >
+                        {pickerYear}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="picker-nav-btn"
+                        onClick={() => changePickerYear('next')}
+                        disabled={pickerYear >= new Date().getFullYear()}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Year Dropdown */}
+                    {showYearSelector && (
+                      <div className="year-selector-dropdown">
+                        {generateYearOptions().map((year) => (
+                          <button
+                            key={year}
+                            type="button"
+                            className={`year-option ${year === pickerYear ? 'active' : ''}`}
+                            onClick={() => {
+                              setPickerYear(year);
+                              setShowYearSelector(false);
+                            }}
+                          >
+                            {year}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Month Selector */}
+                    <div className="date-picker-row">
+                      <button
+                        type="button"
+                        className="picker-nav-btn"
+                        onClick={() => changePickerMonth('prev')}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                      </button>
+
+                      <div className="picker-value-btn">{MONTH_NAMES[pickerMonth]}</div>
+
+                      <button
+                        type="button"
+                        className="picker-nav-btn"
+                        onClick={() => changePickerMonth('next')}
+                        disabled={(() => {
+                          let nextMonth = pickerMonth + 1;
+                          let nextYear = pickerYear;
+                          if (nextMonth > 11) {
+                            nextMonth = 0;
+                            nextYear++;
+                          }
+                          return !isMonthInPast(nextYear, nextMonth);
+                        })()}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Day Selector (dla scale=day) */}
                     {popularScale === 'day' && (
-                      <div className="date-list">
-                        {generateDateOptions().map((option) => (
+                      <div className="day-grid">
+                        {generateDaysForPicker().map((dayObj) => (
                           <button
-                            key={option.value}
+                            key={dayObj.day}
                             type="button"
-                            className={`date-option ${popularDate === option.value ? 'active' : ''}`}
-                            onClick={() => selectDate(option.value)}
+                            className="day-option"
+                            onClick={() => selectDay(dayObj.day)}
+                            disabled={dayObj.disabled}
                           >
-                            {option.label}
+                            {dayObj.day}
                           </button>
                         ))}
                       </div>
                     )}
 
+                    {/* Week Selector (dla scale=week) */}
                     {popularScale === 'week' && (
-                      <div className="date-list">
-                        {generateDateOptions().map((option) => {
-                          const date = new Date(option.value);
-                          const weekEnd = new Date(date);
-                          weekEnd.setDate(date.getDate() + 6);
-                          const label = `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              className={`date-option ${popularDate === option.value ? 'active' : ''}`}
-                              onClick={() => selectDate(option.value)}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
+                      <div className="week-grid">
+                        {generateWeeksForPicker().map((week) => (
+                          <button
+                            key={week.weekNumber}
+                            type="button"
+                            className="week-option"
+                            onClick={() => selectWeek(week.weekNumber)}
+                            disabled={week.disabled}
+                          >
+                            {week.displayLabel}
+                          </button>
+                        ))}
                       </div>
                     )}
 
+                    {/* Month Selector (dla scale=month) */}
                     {popularScale === 'month' && (
-                      <div className="date-list">
-                        {generateMonthOptions().map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`date-option ${popularDate.startsWith(option.value.substring(0, 7)) ? 'active' : ''}`}
-                            onClick={() => selectDate(option.value)}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
+                      <div className="month-confirm">
+                        <button type="button" className="confirm-month-btn" onClick={selectMonth}>
+                          Select {MONTH_NAMES[pickerMonth]} {pickerYear}
+                        </button>
                       </div>
                     )}
                   </div>
