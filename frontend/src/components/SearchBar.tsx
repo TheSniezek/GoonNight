@@ -409,6 +409,32 @@ export default function SearchBar({
     onPopularSearch(newDateString, popularScale);
   };
 
+  // 🔥 Sprawdź czy można przejść do następnego (w przyszłość)
+  const canGoNext = (): boolean => {
+    const currentDate = new Date(popularDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (popularScale === 'day') {
+      currentDate.setHours(0, 0, 0, 0);
+      return currentDate < today;
+    } else if (popularScale === 'week') {
+      // Sprawdź czy następny tydzień byłby w przyszłości
+      const nextWeekStart = new Date(currentDate);
+      nextWeekStart.setDate(currentDate.getDate() + 7);
+      const nextWeekMonday = getWeekStart(nextWeekStart);
+      nextWeekMonday.setHours(0, 0, 0, 0);
+      return nextWeekMonday <= today;
+    } else {
+      // month - sprawdź czy następny miesiąc byłby w przyszłości
+      const nextMonth = new Date(currentDate);
+      nextMonth.setMonth(currentDate.getMonth() + 1);
+      nextMonth.setDate(1); // Pierwszy dzień następnego miesiąca
+      nextMonth.setHours(0, 0, 0, 0);
+      return nextMonth <= today;
+    }
+  };
+
   const changeScale = (newScale: PopularScale) => {
     setPopularScale(newScale);
 
@@ -1004,7 +1030,12 @@ export default function SearchBar({
               </>
             )}
 
-            <button type="button" className="nav-arrow" onClick={() => changeDate('next')}>
+            <button
+              type="button"
+              className="nav-arrow"
+              onClick={() => changeDate('next')}
+              disabled={!canGoNext()}
+            >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M9 18L15 12L9 6"

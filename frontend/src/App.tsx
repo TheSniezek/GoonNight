@@ -148,7 +148,6 @@ function App() {
   const [isPopularMode, setIsPopularMode] = useState(false);
   const [popularDate, setPopularDate] = useState(() => {
     const today = new Date();
-    today.setDate(today.getDate() - 1); // Wczorajszy dzień jako domyślny
     return today.toISOString().split('T')[0];
   });
   const [popularScale, setPopularScale] = useState<PopularScale>('day');

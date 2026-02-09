@@ -305,14 +305,22 @@
       color: #ff5ca8;
       cursor: pointer;
       padding: 0;
+      transition: all 0.2s ease;
 
-      &:hover {
+      &:hover:not(:disabled) {
         transform: scale(1.05);
         background: #45455b;
       }
 
-      &:active {
+      &:active:not(:disabled) {
         transform: scale(0.95);
+      }
+
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        background: #2a2a3b;
+        color: #666;
       }
     }
 
