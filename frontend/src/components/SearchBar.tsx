@@ -624,10 +624,11 @@ export default function SearchBar({
     } else if (popularScale === 'week') {
       // Zawsze pokaż początek tygodnia (poniedziałek)
       const weekStart = getWeekStart(date);
-      // Format: "Week of Feb 02"
+      // Format: "Week of Feb 02, 2026"
       const monthShort = weekStart.toLocaleDateString('en-US', { month: 'short' });
       const day = weekStart.getDate().toString().padStart(2, '0');
-      return `Week of ${monthShort} ${day}`;
+      const year = weekStart.getFullYear();
+      return `Week of ${monthShort} ${day}, ${year}`;
     } else {
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -795,9 +796,12 @@ export default function SearchBar({
                       </span>
                     )}
 
-                    <div>
-                      <small>{item.post_count.toLocaleString()}</small>
-                    </div>
+                    {/* Ukryj post_count dla historii wyszukiwań (ID zaczyna się od "history-") */}
+                    {!item.id.startsWith('history-') && (
+                      <div>
+                        <small>{item.post_count.toLocaleString()}</small>
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
