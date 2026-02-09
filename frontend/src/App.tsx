@@ -714,6 +714,7 @@ function App() {
             setPopularDate={setPopularDate}
             popularScale={popularScale}
             setPopularScale={setPopularScale}
+            loading={loading}
           />
 
           {!infiniteScroll && (
@@ -748,8 +749,8 @@ function App() {
           <button
             className="fav-btn"
             onClick={handleFavoritesClick}
-            disabled={!isLoggedIn}
-            title={!isLoggedIn ? 'Login required' : 'Favorites'}
+            disabled={!isLoggedIn || loading}
+            title={!isLoggedIn ? 'Login required' : loading ? 'Loading...' : 'Favorites'}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

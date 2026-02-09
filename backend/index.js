@@ -617,13 +617,13 @@ app.get('/api/e621/popular', async (req, res) => {
     const username = req.query.username || E621_USER;
     const apiKey = req.query.apiKey || E621_API_KEY;
 
-    const cacheKey = `popular:${date}:${scale}:${username || 'anon'}`;
-    const cached = cache.get(cacheKey, 300000); // 5 min cache dla popular
-
-    if (cached) {
-      console.log('📦 [Popular] Using cached data');
-      return res.json({ ...cached, fromCache: true });
-    }
+    // ⚡ WYŁĄCZONY CACHE dla popular - is_favorited musi być zawsze aktualne
+    // const cacheKey = `popular:${date}:${scale}:${username || 'anon'}`;
+    // const cached = cache.get(cacheKey, 300000);
+    // if (cached) {
+    //   console.log('📦 [Popular] Using cached data');
+    //   return res.json({ ...cached, fromCache: true });
+    // }
 
     const auth = username && apiKey ? { username, password: apiKey } : undefined;
 
@@ -659,7 +659,8 @@ app.get('/api/e621/popular', async (req, res) => {
 
     const payload = { posts, anonymous: !auth };
 
-    cache.set(cacheKey, payload);
+    // ⚡ WYŁĄCZONY CACHE
+    // cache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
     console.error('❌ [Popular]', err.message);
