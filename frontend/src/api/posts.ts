@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { Post, E621Post, PostTag, AutocompleteItem, PopularScale } from './types';
 
-const E621_API = 'http://localhost:3001/api/e621';
+const BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
+const E621_API = `${BASE_URL}/api/e621`;
 
 export const getPreviewVideoUrl = (post: E621Post): string | undefined => {
   // najpierw spróbuj 480p
@@ -123,7 +124,7 @@ export const fetchPostsForMultipleTags = async (
 };
 
 export const fetchTagSuggestions = async (query: string) => {
-  const { data } = await axios.get<AutocompleteItem[]>('http://localhost:3001/api/e621/tags', {
+  const { data } = await axios.get<AutocompleteItem[]>(`${BASE_URL}/api/tags`, {
     params: { q: query },
   });
   return data;
