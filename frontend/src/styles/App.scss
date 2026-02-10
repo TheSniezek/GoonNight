@@ -57,9 +57,7 @@ button {
 
     .top-bar {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
+      align-items: flex-start;
       gap: 40px;
 
       .hidden-fav-count-container {

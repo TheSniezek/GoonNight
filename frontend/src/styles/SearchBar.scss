@@ -2,9 +2,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   width: 100%;
-  max-width: 900px; /* Ogranicz szerokość aby nie kolidować z przyciskami */
+  max-width: 900px;
 }
 
 .search-bar {
@@ -285,6 +286,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 700px;
 

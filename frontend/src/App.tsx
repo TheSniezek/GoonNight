@@ -55,8 +55,6 @@ function App() {
     setInfiniteScroll,
     gifsAutoplay,
     setGifsAutoplay,
-    showHiddenFavCount,
-    setShowHiddenFavCount,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -544,11 +542,6 @@ function App() {
     return tags.toLowerCase().includes(`fav:${e621User.toLowerCase()}`);
   }, [tags, e621User]);
 
-  const hiddenFavoritesCount = useMemo(() => {
-    if (!hideFavorites || isViewingFavorites) return 0; // ✅ NIE liczę gdy oglądam favorites
-    return allPosts.filter((p) => p.is_favorited).length;
-  }, [allPosts, hideFavorites, isViewingFavorites]);
-
   const filteredPosts = useMemo(() => {
     let result = allPosts;
 
@@ -681,29 +674,6 @@ function App() {
           </svg>
         </button>
         <div className="top-bar">
-          {showHiddenFavCount && hideFavorites && (
-            <div className={`hidden-fav-count-container ${isViewingFavorites ? 'disabled' : ''}`}>
-              <div className="hidden-fav-count-icon">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 96 96"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                >
-                  <path d="M82.24 22.244a5.999 5.999 0 1 0-8.484-8.484l-4.301 4.301A41.15 41.15 0 0 0 48 12.002c-22.159 0-35.681 15.702-46.99 32.67a5.98 5.98 0 0 0 0 6.656 110.7 110.7 0 0 0 15.811 19.367l-3.061 3.061a5.999 5.999 0 1 0 8.484 8.484ZM13.268 48C25.326 30.792 35.274 24.002 48 24.002a29.35 29.35 0 0 1 12.672 2.843l-9.593 9.592A11.2 11.2 0 0 0 48 36.001 12.01 12.01 0 0 0 36 48a11.2 11.2 0 0 0 .437 3.079L25.301 62.215A88 88 0 0 1 13.268 48m81.722-3.328a154 154 0 0 0-7.672-10.553l-8.546 8.546A128 128 0 0 1 82.732 48C71.176 64.492 61.531 71.342 49.548 71.89L38.57 82.866A42.6 42.6 0 0 0 48 83.998c22.159 0 35.681-15.702 46.99-32.67a5.98 5.98 0 0 0 0-6.656" />
-                </svg>
-              </div>
-              <div className="hidden-fav-count-textbox">
-                <span className="hidden-fav-count-label">
-                  {isViewingFavorites ? 'Hide favorites (disabled)' : 'Hidden posts'}
-                </span>
-                <span className="hidden-fav-count">
-                  {isViewingFavorites ? '—' : hiddenFavoritesCount}
-                </span>
-              </div>
-            </div>
-          )}
           <SearchBar
             onSearch={handleSearch}
             onPopularSearch={handlePopularSearch}
@@ -1375,8 +1345,6 @@ function App() {
             setInfiniteScroll={setInfiniteScroll}
             gifsAutoplay={gifsAutoplay}
             setGifsAutoplay={setGifsAutoplay}
-            showHiddenFavCount={showHiddenFavCount}
-            setShowHiddenFavCount={setShowHiddenFavCount}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
           />

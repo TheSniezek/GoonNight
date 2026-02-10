@@ -36,8 +36,6 @@ interface SettingsModalProps {
   setInfiniteScroll: (v: boolean) => void;
   gifsAutoplay: boolean;
   setGifsAutoplay: (v: boolean) => void;
-  showHiddenFavCount: boolean;
-  setShowHiddenFavCount: (v: boolean) => void;
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -79,8 +77,6 @@ export default function SettingsModal({
   setInfiniteScroll,
   gifsAutoplay,
   setGifsAutoplay,
-  showHiddenFavCount,
-  setShowHiddenFavCount,
   sexSearch,
   setSexSearch,
 }: SettingsModalProps) {
@@ -231,7 +227,7 @@ export default function SettingsModal({
                     type="range"
                     min={10}
                     max={60}
-                    step={10}
+                    step={5}
                     value={postsPerPage}
                     style={
                       {
@@ -273,16 +269,6 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={hideFavorites}
                   onChange={(e) => setHideFavorites(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Show hidden favorites count</span>
-                <input
-                  type="checkbox"
-                  checked={showHiddenFavCount}
-                  onChange={(e) => setShowHiddenFavCount(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>

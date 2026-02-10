@@ -24,7 +24,6 @@ export interface StoredSettings {
   fixedHeader: boolean;
   postsPerPage: number;
   hideFavorites: boolean;
-  showHiddenFavCount: boolean;
   infiniteScroll: boolean;
   sexSearch: {
     female: boolean;
@@ -50,7 +49,6 @@ const getDefaults = (): StoredSettings => ({
   fixedHeader: true,
   postsPerPage: 50,
   hideFavorites: false,
-  showHiddenFavCount: false,
   infiniteScroll: false,
   sexSearch: {
     female: false,
@@ -215,8 +213,6 @@ export function useSettings() {
     setPostsPerPage: (v: number) => updateSetting('postsPerPage', v),
     hideFavorites: settings.hideFavorites,
     setHideFavorites: (v: boolean) => updateSetting('hideFavorites', v),
-    showHiddenFavCount: settings.showHiddenFavCount,
-    setShowHiddenFavCount: (v: boolean) => updateSetting('showHiddenFavCount', v),
     infiniteScroll: settings.infiniteScroll,
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
     sexSearch: settings.sexSearch,
