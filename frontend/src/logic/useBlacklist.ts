@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
+const IS_PROD = import.meta.env.PROD;
+const BASE_URL = IS_PROD ? '' : 'http://localhost:3001';
+const BLACKLIST_ENDPOINT = IS_PROD ? '/api/blacklist' : '/api/e621/blacklist';
+
 interface UseBlacklistArgs {
   username: string;
   apiKey: string;
@@ -40,7 +44,7 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:3001/api/e621/blacklist?username=${encodeURIComponent(
+        `${BASE_URL}${BLACKLIST_ENDPOINT}?username=${encodeURIComponent(
           username,
         )}&apiKey=${encodeURIComponent(apiKey)}`,
       );
@@ -65,7 +69,7 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
       console.log('🚫 [useBlacklist] Updating blacklist');
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:3001/api/e621/blacklist', {
+        const res = await fetch(`${BASE_URL}${BLACKLIST_ENDPOINT}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, apiKey, blacklist: blacklistString }),

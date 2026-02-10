@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchPosts, mapE621Post } from '../api/posts';
 import type { E621Post, Order, Post } from '../api/types';
 
+const IS_PROD = import.meta.env.PROD;
+const BASE_URL = IS_PROD ? '' : 'http://localhost:3001';
+const FAVORITES_ENDPOINT = IS_PROD ? '/api/favorites' : '/api/e621/favorites';
+
 interface Auth {
   username: string;
   apiKey: string;
@@ -115,7 +119,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
         }
 
         const response = await fetch(
-          `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&page=${apiPage}&limit=50`,
+          `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&page=${apiPage}&limit=50`,
         );
 
         if (!response.ok) {

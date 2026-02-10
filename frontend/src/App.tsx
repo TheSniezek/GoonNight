@@ -16,6 +16,10 @@ import { useBlacklist } from './logic/useBlacklist';
 import { filterPostsByBlacklist, filterPostsBySexSearch } from './logic/blacklistFilter';
 import BlacklistModal from './components/BlacklistModal';
 
+const IS_PROD = import.meta.env.PROD;
+const BASE_URL = IS_PROD ? '' : 'http://localhost:3001';
+const FAVORITES_ENDPOINT = IS_PROD ? '/api/favorites' : '/api/e621/favorites';
+
 function App() {
   const [e621User, setE621User] = useState(localStorage.getItem('e621User') || '');
   const [e621ApiKey, setE621ApiKey] = useState(localStorage.getItem('e621ApiKey') || '');
@@ -476,7 +480,7 @@ function App() {
       setTags(`fav:${e621User}`);
 
       const response = await fetch(
-        `http://localhost:3001/api/e621/favorites?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
+        `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
         {},
       );
 

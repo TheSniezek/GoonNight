@@ -1,8 +1,9 @@
 import axios from 'axios';
 import type { Post, E621Post, PostTag, AutocompleteItem, PopularScale } from './types';
 
-const BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
-const E621_API = `${BASE_URL}/api/e621`;
+const IS_PROD = import.meta.env.PROD;
+const BASE_URL = IS_PROD ? '' : 'http://localhost:3001';
+const E621_API = IS_PROD ? `${BASE_URL}/api/e621` : `${BASE_URL}/api/e621`;
 
 export const getPreviewVideoUrl = (post: E621Post): string | undefined => {
   // najpierw spróbuj 480p
@@ -78,7 +79,7 @@ export const fetchPosts = async (
 export const fetchPostsForMultipleTags = async (
   observedTags: string[],
   baseQuery: string, // np. "date:week"
-  auth?: { username: string; apiKey: string }, // 🔥 DODANE - auth do sprawdzania favorites
+  auth?: { username: string; apiKey: string },
 ): Promise<Post[]> => {
   const results: Post[] = [];
   const seen = new Set<number>();
@@ -103,8 +104,8 @@ export const fetchPostsForMultipleTags = async (
             tags: query,
             page: 1,
             limit: 320,
-            username: auth?.username, // 🔥 DODANE
-            apiKey: auth?.apiKey, // 🔥 DODANE
+            username: auth?.username,
+            apiKey: auth?.apiKey,
           },
         });
 
@@ -124,7 +125,8 @@ export const fetchPostsForMultipleTags = async (
 };
 
 export const fetchTagSuggestions = async (query: string) => {
-  const { data } = await axios.get<AutocompleteItem[]>(`${BASE_URL}/api/tags`, {
+  const endpoint = IS_PROD ? `${BASE_URL}/api/tags` : `${BASE_URL}/api/e621/tags`;
+  const { data } = await axios.get<AutocompleteItem[]>(endpoint, {
     params: { q: query },
   });
   return data;
@@ -135,7 +137,8 @@ export const fetchPopularPosts = async (
   scale: PopularScale,
   auth?: { username: string; apiKey: string },
 ): Promise<Post[]> => {
-  const { data } = await axios.get<{ posts: E621Post[] }>(`${E621_API}/popular`, {
+  const endpoint = IS_PROD ? `${BASE_URL}/api/popular` : `${BASE_URL}/api/e621/popular`;
+  const { data } = await axios.get<{ posts: E621Post[] }>(endpoint, {
     params: {
       date,
       scale,

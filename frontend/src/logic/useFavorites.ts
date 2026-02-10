@@ -4,7 +4,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const API_BASE = 'http://localhost:3001';
+const IS_PROD = import.meta.env.PROD;
+const API_BASE = IS_PROD ? '' : 'http://localhost:3001';
+const FAVORITES_ENDPOINT = IS_PROD ? '/api/favorites' : '/api/e621/favorites';
 
 // ============================================================================
 // TYPES
@@ -93,7 +95,7 @@ class FavoriteOperationQueue {
       if (action === 'add') {
         console.log(`📤 [Queue] POST to /api/e621/favorites`, { postId, username });
 
-        const response = await fetch(`${API_BASE}/api/e621/favorites`, {
+        const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ postId, username, apiKey }),
@@ -113,7 +115,7 @@ class FavoriteOperationQueue {
       } else {
         console.log(`📤 [Queue] DELETE to /api/e621/favorites/${postId}`);
 
-        const response = await fetch(`${API_BASE}/api/e621/favorites/${postId}`, {
+        const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}/${postId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, apiKey }),
