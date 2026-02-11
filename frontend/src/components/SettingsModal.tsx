@@ -36,6 +36,9 @@ interface SettingsModalProps {
   setInfiniteScroll: (v: boolean) => void;
   gifsAutoplay: boolean;
   setGifsAutoplay: (v: boolean) => void;
+  hideNavArrows: boolean; // ✅ DODAJ TO
+  setHideNavArrows: (v: boolean) => void; // ✅ DODAJ TO
+  isMobile: boolean;
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -77,6 +80,9 @@ export default function SettingsModal({
   setInfiniteScroll,
   gifsAutoplay,
   setGifsAutoplay,
+  hideNavArrows, // ✅ DODAJ TO
+  setHideNavArrows, // ✅ DODAJ TO
+  isMobile,
   sexSearch,
   setSexSearch,
 }: SettingsModalProps) {
@@ -253,15 +259,17 @@ export default function SettingsModal({
                 <span className="checkmark"></span>
               </label>
 
-              <label className="settings-row">
-                <span className="settings-names">Fixed header</span>
-                <input
-                  type="checkbox"
-                  checked={fixedHeader}
-                  onChange={(e) => setFixedHeader(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
+              {!isMobile && (
+                <label className="settings-row">
+                  <span className="settings-names">Fixed header</span>
+                  <input
+                    type="checkbox"
+                    checked={fixedHeader}
+                    onChange={(e) => setFixedHeader(e.target.checked)}
+                  />
+                  <span className="checkmark"></span>
+                </label>
+              )}
 
               <label className="settings-row">
                 <span className="settings-names">Hide favorites</span>
@@ -269,6 +277,16 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={hideFavorites}
                   onChange={(e) => setHideFavorites(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Hide navigation arrows</span>
+                <input
+                  type="checkbox"
+                  checked={hideNavArrows}
+                  onChange={(e) => setHideNavArrows(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>
@@ -533,6 +551,8 @@ export default function SettingsModal({
                               setNewsPostColumns(newSettings.newsPostColumns);
                             if (newSettings.fixedHeader !== undefined)
                               setFixedHeader(newSettings.fixedHeader);
+                            if (newSettings.hideNavArrows !== undefined)
+                              setHideNavArrows(newSettings.hideNavArrows);
                             if (newSettings.postsPerPage) setPostsPerPage(newSettings.postsPerPage);
                             if (newSettings.hideFavorites !== undefined)
                               setHideFavorites(newSettings.hideFavorites);
@@ -566,6 +586,7 @@ export default function SettingsModal({
                         newsLayout,
                         newsPostColumns,
                         fixedHeader,
+                        hideNavArrows,
                         postsPerPage,
                         hideFavorites,
                         loopVideos,

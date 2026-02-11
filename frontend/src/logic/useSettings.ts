@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3; // ✅ Zwiększam wersję bo dodaję nowe pole
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid';
@@ -25,6 +25,7 @@ export interface StoredSettings {
   postsPerPage: number;
   hideFavorites: boolean;
   infiniteScroll: boolean;
+  hideNavArrows: boolean; // ✅ NOWE: Ukrywa strzałki nawigacji (ale pozostawia klikanie)
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -50,6 +51,7 @@ const getDefaults = (): StoredSettings => ({
   postsPerPage: 50,
   hideFavorites: false,
   infiniteScroll: false,
+  hideNavArrows: false, // ✅ DOMYŚLNIE: Strzałki widoczne
   sexSearch: {
     female: false,
     male: false,
@@ -100,6 +102,10 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
   }
   if (stored.version === SETTINGS_VERSION) {
     return { ...defaults, ...stored };
+  }
+  // ✅ Migracja z wersji 2 do 3 - dodaj hideNavArrows
+  if (stored.version === 2) {
+    return { ...defaults, ...stored, hideNavArrows: false, version: SETTINGS_VERSION };
   }
   return { ...defaults, ...stored, version: SETTINGS_VERSION };
 }
@@ -215,6 +221,8 @@ export function useSettings() {
     setHideFavorites: (v: boolean) => updateSetting('hideFavorites', v),
     infiniteScroll: settings.infiniteScroll,
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
+    hideNavArrows: settings.hideNavArrows, // ✅ NOWE
+    setHideNavArrows: (v: boolean) => updateSetting('hideNavArrows', v), // ✅ NOWE
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

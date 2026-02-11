@@ -13,6 +13,12 @@
     height: 60px;
     border-radius: 0;
 
+    @media (max-width: 768px) {
+      height: 40px;
+      font-size: 1rem;
+      width: 100%;
+    }
+
     &:focus:not(:focus-visible) {
       outline: none;
     }
@@ -47,9 +53,16 @@
     height: 60px;
     padding: 8px 12px;
     width: 100px;
+
+    @media (max-width: 768px) {
+      height: 40px;
+      padding: 0;
+      font-size: 1rem;
+      width: 100%;
+    }
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     width: 100%;
   }
 }
