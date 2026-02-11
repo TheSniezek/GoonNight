@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { page = 1, limit = 50 } = req.query;
       
-      console.log('💖 Fetching favorites for:', username);
+      console.log('💖 [Vercel] Fetching favorites for:', username, 'page:', page);
       
       const response = await axios.get('https://e621.net/favorites.json', {
         params: { page: Number(page), limit: Number(limit) },
@@ -40,8 +40,13 @@ export default async function handler(req, res) {
         (post) => post.file?.ext !== 'swf' && !post.flags?.deleted
       );
       
-      console.log('✅ Fetched', posts.length, 'favorites');
-      return res.json({ posts });
+      // ✅ FIX: Dodaj hasMore - jeśli dostaliśmy pełną stronę, prawdopodobnie są następne
+      const hasMore = posts.length >= Number(limit);
+      
+      console.log('✅ [Vercel] Fetched', posts.length, 'favorites, hasMore:', hasMore);
+      
+      // ✅ FIX: Zwróć posts i hasMore (poprzednio było tylko { posts })
+      return res.json({ posts, hasMore });
     }
 
     // POST - Dodaj do ulubionych
@@ -50,7 +55,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing postId' });
       }
       
-      console.log('💖 Adding favorite:', postId);
+      console.log('💖 [Vercel] Adding favorite:', postId);
       
       await axios.post(
         `https://e621.net/favorites.json`,
@@ -65,7 +70,7 @@ export default async function handler(req, res) {
         }
       );
       
-      console.log('✅ Added favorite:', postId);
+      console.log('✅ [Vercel] Added favorite:', postId);
       return res.json({ success: true });
     }
 
@@ -75,7 +80,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing postId' });
       }
       
-      console.log('💔 Removing favorite:', postId);
+      console.log('💔 [Vercel] Removing favorite:', postId);
       
       await axios.delete(`https://e621.net/favorites/${postId}.json`, {
         headers: { 'User-Agent': USER_AGENT },
@@ -83,13 +88,13 @@ export default async function handler(req, res) {
         timeout: 10000,
       });
       
-      console.log('✅ Removed favorite:', postId);
+      console.log('✅ [Vercel] Removed favorite:', postId);
       return res.json({ success: true });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('❌ Favorites error:', err.message);
+    console.error('❌ [Vercel] Favorites error:', err.message);
     res.status(err.response?.status || 500).json({ 
       error: err.response?.data?.message || err.message 
     });

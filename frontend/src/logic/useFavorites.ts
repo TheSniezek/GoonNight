@@ -1,5 +1,5 @@
 // ============================================================
-// useFavorites.ts - NAPRAWIONA WERSJA
+// useFavorites.ts - NAPRAWIONA WERSJA (VERCEL COMPATIBLE)
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -65,7 +65,7 @@ class FavoriteOperationQueue {
     }
 
     if (this.queue.length === 0) {
-      console.log('📭 [FavoriteQueue] Queue is empty, nothing to flush');
+      console.log('🔭 [FavoriteQueue] Queue is empty, nothing to flush');
       return;
     }
 
@@ -93,7 +93,7 @@ class FavoriteOperationQueue {
 
     try {
       if (action === 'add') {
-        console.log(`📤 [Queue] POST to /api/e621/favorites`, { postId, username });
+        console.log(`📤 [Queue] POST to ${FAVORITES_ENDPOINT}`, { postId, username });
 
         const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}`, {
           method: 'POST',
@@ -106,19 +106,25 @@ class FavoriteOperationQueue {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`❌ [Queue] Response not OK:`, errorText);
-          const error = JSON.parse(errorText).catch(() => ({ error: errorText }));
+          let error;
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            error = { error: errorText };
+          }
           throw new Error(error.error || `HTTP ${response.status}`);
         }
 
         const result = await response.json();
         console.log(`✅ [Queue] ADD response:`, result);
       } else {
-        console.log(`📤 [Queue] DELETE to /api/e621/favorites/${postId}`);
+        // ✅ FIX: Nie dodawaj postId do URL dla Vercel, tylko w body
+        console.log(`📤 [Queue] DELETE to ${FAVORITES_ENDPOINT}`, { postId, username });
 
-        const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}/${postId}`, {
+        const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, apiKey }),
+          body: JSON.stringify({ postId, username, apiKey }),
         });
 
         console.log(`📥 [Queue] Response status: ${response.status}`);
@@ -126,7 +132,12 @@ class FavoriteOperationQueue {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`❌ [Queue] Response not OK:`, errorText);
-          const error = JSON.parse(errorText).catch(() => ({ error: errorText }));
+          let error;
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            error = { error: errorText };
+          }
           throw new Error(error.error || `HTTP ${response.status}`);
         }
 
