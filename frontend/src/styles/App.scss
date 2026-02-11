@@ -341,6 +341,11 @@ button {
         border-radius: 0;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
         display: block;
+
+        @media (max-width: 768px) {
+          width: 100%;
+          height: auto;
+        }
       }
 
       .post-item-max {
