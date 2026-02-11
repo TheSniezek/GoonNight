@@ -334,6 +334,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
 
     // ✅ DODAJ TO
     setIsViewingRealFavorites,
+    isViewingRealFavorites, // ⭐ DODANE
     setTags,
   };
 }

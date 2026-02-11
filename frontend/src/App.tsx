@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './styles/App.scss';
 import SearchBar from './components/SearchBar';
+import MobileBottomNav from './components/MobileBottomNav';
 import PageButtonsTop from './components/PageButtons/PageButtonsTop';
 import PageButtonsBottom from './components/PageButtons/PageButtonsBottom';
 import type { Order, Post, PostTag, PopularScale } from './api/types';
@@ -95,6 +96,7 @@ function App() {
     setUiPage,
     setTags,
     setIsViewingRealFavorites, // ✅ DODAJ TO
+    isViewingRealFavorites, // ⭐ DODANE
   } = usePosts('', {
     hideFavorites,
     username: e621User,
@@ -129,6 +131,18 @@ function App() {
   });
 
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // 🔥 Sprawdzanie rozmiaru ekranu
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
@@ -658,7 +672,14 @@ function App() {
       className={`app-container ${fixedHeader ? 'fixed' : ''} ${isPopularMode && fixedHeader ? 'popular-fixed' : ''}`}
     >
       <div className={`app-header ${fixedHeader ? 'fixed' : ''}`}>
-        <button className="settings-btn" onClick={() => setShowSettings(true)}>
+        {/* Burger menu - tylko mobile */}
+        <button className="burger-menu-btn mobile-only" onClick={() => setShowMobileSidebar(true)}>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z" />
+          </svg>
+        </button>
+
+        <button className="settings-btn desktop-only" onClick={() => setShowSettings(true)}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="50"
@@ -700,7 +721,7 @@ function App() {
             />
           )}
         </div>
-        <div className="top-bar-right">
+        <div className="top-bar-right desktop-only">
           <button
             className="blacklist-btn"
             onClick={() => setShowBlacklistModal(true)}
@@ -1260,6 +1281,20 @@ function App() {
                       }
                     }}
                     loop={loopVideos}
+                    onClick={
+                      isMobile
+                        ? (e) => {
+                            // Na mobile: Jeśli kliknięcie nie było na kontrolki, zmaksymalizuj
+                            const target = e.target as HTMLVideoElement;
+                            const rect = target.getBoundingClientRect();
+                            const clickY = e.clientY - rect.top;
+                            // Sprawdź czy klik był w dolnej części (kontrolki)
+                            if (clickY < rect.height - 50) {
+                              toggleMaximize(post.id);
+                            }
+                          }
+                        : undefined
+                    }
                   />
                 )
               ) : (
@@ -1273,7 +1308,8 @@ function App() {
                       ? post.file.url || post.sample?.url
                       : post.preview?.url || post.sample?.url || post.file.url
                   }
-                  onDoubleClick={() => toggleMaximize(post.id)}
+                  onClick={isMobile ? () => toggleMaximize(post.id) : undefined}
+                  onDoubleClick={!isMobile ? () => toggleMaximize(post.id) : undefined}
                 />
               )}
               {isMaximized && (
@@ -1410,6 +1446,163 @@ function App() {
 
       {loading && <p style={{ marginTop: 10 }}>Loading posts...</p>}
       {infiniteScroll && <div ref={infiniteTriggerRef} style={{ height: 1 }} />}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        onSearch={handleSearch}
+        onPopularSearch={handlePopularSearch}
+        initialTags={isPopularMode ? '' : tags}
+        order={order}
+        setOrder={setOrder}
+        savedOrderRef={savedOrderRef}
+        isPopularMode={isPopularMode}
+        setIsPopularMode={setIsPopularMode}
+        popularDate={popularDate}
+        setPopularDate={setPopularDate}
+        popularScale={popularScale}
+        setPopularScale={setPopularScale}
+        loading={loading}
+        onFavoritesClick={handleFavoritesClick}
+        isFavoritesActive={isViewingRealFavorites}
+        isFavoritesDisabled={!isLoggedIn || loading}
+      />
+
+      {/* Mobile Sidebar */}
+      {showMobileSidebar && (
+        <>
+          {/* Overlay */}
+          <div className="mobile-sidebar-overlay" onClick={() => setShowMobileSidebar(false)} />
+
+          {/* Sidebar */}
+          <div className="mobile-sidebar">
+            <div className="mobile-sidebar-header">
+              <h2>Menu</h2>
+              <button className="close-btn" onClick={() => setShowMobileSidebar(false)}>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mobile-sidebar-items">
+              <button
+                className="sidebar-item"
+                onClick={() => {
+                  setShowMobileSidebar(false);
+                  setShowLoginModal(true);
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.6515 19.4054C20.2043 19.2902 20.5336 18.7117 20.2589 18.2183C19.6533 17.1307 18.6993 16.1749 17.4788 15.4465C15.907 14.5085 13.9812 14 12 14C10.0188 14 8.09292 14.5085 6.52112 15.4465C5.30069 16.1749 4.34666 17.1307 3.74108 18.2183C3.46638 18.7117 3.79562 19.2902 4.34843 19.4054C9.39524 20.4572 14.6047 20.4572 19.6515 19.4054Z" />
+                  <circle cx="12" cy="8" r="5" />
+                </svg>
+                <span>Konto</span>
+              </button>
+
+              <button
+                className="sidebar-item"
+                onClick={async () => {
+                  setShowMobileSidebar(false);
+
+                  if (observedTags.length === 0) return alert('No tags observed yet!');
+
+                  const key = observedTags.sort().join(',');
+                  const lastReload = Number(localStorage.getItem('newsLastReload')) || 0;
+                  const timeSinceReload = Date.now() - lastReload;
+                  const ONE_HOUR = 3600 * 1000;
+
+                  const cachedForUser = localStorage.getItem('newsCacheUser') || '';
+                  const userChanged = cachedForUser !== e621User;
+
+                  if (newsCache.current[key] && timeSinceReload < ONE_HOUR && !userChanged) {
+                    console.log('📦 [News] Using cached posts');
+                    setNewsPosts(newsCache.current[key]);
+                    setShowNewsPopup(true);
+                    return;
+                  }
+
+                  if (userChanged) {
+                    console.log('🔄 [News] User changed, clearing cache');
+                    newsCache.current = {};
+                    localStorage.setItem('newsCacheUser', e621User);
+                  }
+
+                  setShowNewsPopup(true);
+
+                  try {
+                    const auth =
+                      e621User && e621ApiKey
+                        ? { username: e621User, apiKey: e621ApiKey }
+                        : undefined;
+                    const allPosts = await fetchPostsForMultipleTags(
+                      observedTags,
+                      'date:week',
+                      auth,
+                    );
+
+                    const cacheKeys = Object.keys(newsCache.current);
+                    if (cacheKeys.length >= 5) {
+                      delete newsCache.current[cacheKeys[0]];
+                    }
+
+                    newsCache.current[key] = allPosts;
+                    setNewsPosts(allPosts);
+                    localStorage.setItem('newsLastReload', Date.now().toString());
+
+                    if (allPosts.length === 0) {
+                      console.log('DEBUG: No posts returned for these queries');
+                    }
+                  } catch (err) {
+                    console.error('Failed to fetch news posts', err);
+                  }
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <g transform="scale(0.046875)">
+                    <path d="M455.973 357.336C443.559 350.167 436 336.835 436 322.5V230c0-82.238-55.152-151.593-130.485-173.101A50.5 50.5 0 0 0 306 50c0-27.614-22.386-50-50-50s-50 22.386-50 50c0 2.342.174 4.643.485 6.899C131.151 78.407 76 147.762 76 230v92.5c0 14.335-7.559 27.667-19.973 34.836-11.76 6.791-19.742 19.394-20.019 33.884C35.577 413.738 54.268 432 76.79 432H176c0 44.183 35.817 80 80 80s80-35.817 80-80h99.21c22.523 0 41.214-18.262 40.783-40.781-.278-14.489-8.26-27.093-20.02-33.883" />
+                  </g>
+                </svg>
+                <span>Notyfikacje</span>
+              </button>
+
+              <button
+                className="sidebar-item"
+                onClick={() => {
+                  setShowMobileSidebar(false);
+                  setShowBlacklistModal(true);
+                }}
+                disabled={!isLoggedIn}
+              >
+                <svg width="24" height="24" viewBox="0 0 120 120" fill="currentColor">
+                  <path d="M60.005 23.299c9.799 0 19.014 3.817 25.946 10.75C92.884 40.98 96.701 50.197 96.701 60s-3.817 19.02-10.75 25.952C79.02 92.884 69.803 96.701 60 96.701s-19.02-3.817-25.952-10.75C27.116 79.02 23.299 69.804 23.299 60s3.817-19.02 10.75-25.952c6.931-6.931 16.148-10.749 25.955-10.75zm-.005-20C45.491 3.3 30.977 8.836 19.906 19.906c-22.144 22.144-22.143 58.045 0 80.188C30.978 111.166 45.489 116.701 60 116.701s29.021-5.535 40.094-16.607c22.144-22.144 22.144-58.044 0-80.188C89.021 8.833 74.513 3.297 60 3.299" />
+                  <path d="m18.184 33.033 14.848-14.848 68.397 68.397-14.848 14.848z" />
+                </svg>
+                <span>Blacklista</span>
+              </button>
+
+              <button
+                className="sidebar-item"
+                onClick={() => {
+                  setShowMobileSidebar(false);
+                  setShowSettings(true);
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.013 2.25c.734.008 1.465.093 2.182.253a.75.75 0 0 1 .582.649l.17 1.527a1.384 1.384 0 0 0 1.928 1.116l1.4-.615a.75.75 0 0 1 .85.174 9.8 9.8 0 0 1 2.204 3.792.75.75 0 0 1-.271.825l-1.242.916a1.38 1.38 0 0 0 0 2.226l1.243.915a.75.75 0 0 1 .272.826 9.8 9.8 0 0 1-2.203 3.792.75.75 0 0 1-.849.175l-1.406-.617a1.38 1.38 0 0 0-1.927 1.114l-.169 1.526a.75.75 0 0 1-.572.647 9.5 9.5 0 0 1-4.406 0 .75.75 0 0 1-.572-.647l-.168-1.524a1.382 1.382 0 0 0-1.926-1.11l-1.406.616a.75.75 0 0 1-.849-.175 9.8 9.8 0 0 1-2.204-3.796.75.75 0 0 1 .272-.826l1.243-.916a1.38 1.38 0 0 0 0-2.226l-1.243-.914a.75.75 0 0 1-.271-.826 9.8 9.8 0 0 1 2.204-3.792.75.75 0 0 1 .85-.174l1.4.615a1.387 1.387 0 0 0 1.93-1.118l.17-1.526a.75.75 0 0 1 .583-.65c.717-.159 1.45-.243 2.201-.252M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6" />
+                </svg>
+                <span>Ustawienia</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

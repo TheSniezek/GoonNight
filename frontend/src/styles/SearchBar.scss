@@ -6,6 +6,16 @@
   gap: 16px;
   width: 100%;
   max-width: 900px;
+
+  // Hide navigation buttons on mobile (moved to bottom nav)
+  @media (max-width: 768px) {
+    .home-search-btn,
+    .hot-search-btn,
+    .popular-search-btn,
+    .filter-btn {
+      display: none !important;
+    }
+  }
 }
 
 .search-bar {
@@ -19,6 +29,10 @@
     width: 100%;
     max-width: 500px;
 
+    @media (max-width: 768px) {
+      max-width: 100%; // Zajmij całą dostępną szerokość
+    }
+
     input {
       padding: 8px 12px;
       width: 100%;
@@ -28,6 +42,13 @@
       border: none;
       background: #1c1c26;
       color: #eaeaea;
+
+      @media (max-width: 768px) {
+        height: 40px; // Zmniejszona wysokość dla mobile
+        font-size: 1rem;
+        max-width: 100%;
+        border-radius: 6px;
+      }
 
       &:focus {
         outline: none;
@@ -153,6 +174,12 @@
     color: #fff;
     cursor: pointer;
 
+    @media (max-width: 768px) {
+      height: 40px; // Taka sama wysokość jak input
+      font-size: 1rem;
+      padding: 8px 12px;
+    }
+
     &:focus:not(:focus-visible) {
       outline: none;
     }
@@ -248,6 +275,17 @@
   .search-btn {
     background: #1c1c26;
     color: #ff5ca8;
+    position: absolute;
+    top: 0;
+    right: -60px;
+
+    @media (max-width: 768px) {
+      background: transparent;
+      width: 50px;
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
 
     &:hover {
       svg {
@@ -289,6 +327,11 @@
   justify-content: center;
   width: 100%;
   max-width: 700px;
+
+  // Hide on mobile (shown in MobileBottomNav overlay instead)
+  @media (max-width: 768px) {
+    display: none;
+  }
 
   .date-navigation {
     display: flex;

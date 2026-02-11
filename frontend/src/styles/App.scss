@@ -29,14 +29,30 @@ button {
   min-height: 100%;
   background: #0f0f14;
 
+  // Mobile bottom nav padding
+  @media (max-width: 768px) {
+    padding: 80px 10px 80px 10px; // top right bottom left
+  }
+
   &.fixed {
     padding: 0;
     padding-top: 100px;
     padding-bottom: 20px;
+
+    @media (max-width: 768px) {
+      padding: 60px 10px 80px 10px; // top right bottom left
+    }
   }
 
   &.popular-fixed {
     padding-top: 170px;
+
+    @media (max-width: 768px) {
+      padding-top: 125px;
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-bottom: 80px;
+    }
   }
 
   .app-header {
@@ -47,12 +63,21 @@ button {
     z-index: 11;
     width: 100%;
 
+    @media (max-width: 768px) {
+      padding: 10px;
+    }
+
     &.fixed {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       padding: 20px;
+
+      @media (max-width: 768px) {
+        padding: 10px;
+        gap: 10px;
+      }
     }
 
     .top-bar {
@@ -97,10 +122,10 @@ button {
         flex-direction: column;
         align-items: center;
         gap: 10px;
+        width: calc(100% - 40px);
 
         form.search-bar {
-          width: 90%;
-          max-width: none;
+          width: 100%;
         }
 
         .page-buttons {
@@ -113,6 +138,19 @@ button {
       display: flex;
       justify-items: center;
       gap: 15px;
+
+      @media (max-width: 768px) {
+        order: 1; // Searchbar będzie pierwszy
+        flex: 1; // Searchbar zajmie dostępne miejsce
+      }
+
+      // Hide favorites and blacklist on mobile (moved to bottom nav)
+      @media (max-width: 768px) {
+        .fav-btn,
+        .blacklist-btn {
+          display: none;
+        }
+      }
 
       .news-btn,
       .login-btn,
@@ -248,6 +286,10 @@ button {
         opacity 0.2s ease,
         background 0.2s ease;
 
+      @media (max-width: 768px) {
+        display: none !important; // Ukryj całkowicie na mobile
+      }
+
       &:hover {
         transform: scale(1.05);
       }
@@ -258,6 +300,10 @@ button {
         width: 50px;
         height: 50px;
         opacity: 1;
+
+        @media (max-width: 768px) {
+          display: flex !important; // Pokaż tylko w trybie maximized
+        }
 
         &:hover {
           background: #e0094a;
@@ -315,6 +361,10 @@ button {
       transition: opacity 0.2s ease;
       padding: 0;
 
+      @media (max-width: 768px) {
+        display: none !important; // Ukryj na mobile
+      }
+
       &:hover {
         transform: scale(1.05);
       }
@@ -331,6 +381,10 @@ button {
         top: 12px;
         left: 75px;
         opacity: 1;
+
+        @media (max-width: 768px) {
+          display: flex !important; // Pokaż w trybie maximized
+        }
       }
     }
 
@@ -354,6 +408,10 @@ button {
       transition: opacity 0.2s ease;
       padding: 0;
 
+      @media (max-width: 768px) {
+        display: none !important; // Ukryj na mobile
+      }
+
       &:hover {
         transform: scale(1.05);
       }
@@ -370,6 +428,10 @@ button {
         top: 12px;
         left: 140px;
         opacity: 1;
+
+        @media (max-width: 768px) {
+          display: flex !important; // Pokaż w trybie maximized
+        }
       }
     }
 
@@ -391,6 +453,10 @@ button {
       opacity: 0;
       transition: opacity 0.2s ease;
       padding: 0;
+
+      @media (max-width: 768px) {
+        display: none !important; // Ukryj na mobile
+      }
 
       &:hover {
         transform: scale(1.05);
@@ -418,6 +484,10 @@ button {
         top: 12px;
         left: 205px;
         opacity: 1;
+
+        @media (max-width: 768px) {
+          display: flex !important; // Pokaż w trybie maximized
+        }
       }
     }
 
@@ -638,4 +708,183 @@ button {
   user-select: none;
   pointer-events: auto;
   display: block;
+}
+
+// ============================================
+// BURGER MENU I MOBILE SIDEBAR
+// ============================================
+
+.burger-menu-btn {
+  display: none;
+  width: 40px;
+  background: #35354b;
+  border: none;
+  border-radius: 6px;
+  color: #ff5ca8;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 768px) {
+    display: flex;
+    order: 2; // Przesuwa na prawo (po searchbarze)
+  }
+}
+
+.mobile-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  animation: fadeIn 0.3s ease;
+}
+
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100%;
+  background: #1b1b24;
+  z-index: 999;
+  animation: slideIn 0.3s ease forwards;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+
+  .mobile-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #35354b;
+
+    h2 {
+      margin: 0;
+      color: #ff5ca8;
+      font-size: 1.5rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #eaeaea;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+
+      &:hover {
+        background: #35354b;
+      }
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+  }
+
+  .mobile-sidebar-items {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #35354b;
+      border: none;
+      border-radius: 8px;
+      color: #eaeaea;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      svg {
+        width: 24px;
+        height: 24px;
+        color: #ff5ca8;
+        flex-shrink: 0;
+      }
+
+      span {
+        flex: 1;
+        text-align: left;
+      }
+
+      &:hover {
+        background: #ff5ca8;
+        color: #fff;
+
+        svg {
+          color: #fff;
+        }
+      }
+
+      &:disabled {
+        background: #2a2a35;
+        color: #6f6f7f;
+        cursor: not-allowed;
+
+        svg {
+          color: #6f6f7f;
+        }
+
+        &:hover {
+          background: #2a2a35;
+          color: #6f6f7f;
+
+          svg {
+            color: #6f6f7f;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideIn {
+  from {
+    right: -100%;
+  }
+  to {
+    right: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Klasy pomocnicze dla responsywności
+.mobile-only {
+  display: none;
+  @media (max-width: 768px) {
+    display: flex;
+  }
+}
+
+.desktop-only {
+  @media (max-width: 768px) {
+    display: none !important;
+  }
 }
