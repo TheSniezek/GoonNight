@@ -28,6 +28,7 @@
     position: relative;
     width: 100%;
     max-width: 500px;
+    display: flex;
 
     @media (max-width: 768px) {
       max-width: 100%; // Zajmij całą dostępną szerokość
@@ -275,9 +276,6 @@
   .search-btn {
     background: #1c1c26;
     color: #ff5ca8;
-    position: absolute;
-    top: 0;
-    right: -60px;
 
     @media (max-width: 768px) {
       background: transparent;
