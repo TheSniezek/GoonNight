@@ -220,6 +220,10 @@ button {
   width: 100%;
   max-width: 1400px;
 
+  @media (max-width: 768px) {
+    column-gap: 10px;
+  }
+
   &.masonry {
     column-gap: 20px;
     column-count: var(--columns, 3);
@@ -228,7 +232,6 @@ button {
   &.grid,
   &.accurate-grid {
     display: grid;
-    grid-gap: 20px;
     grid-template-columns: repeat(var(--columns, 3), 1fr);
   }
 
@@ -264,6 +267,10 @@ button {
     margin-bottom: 20px;
     position: relative;
     content-visibility: auto;
+
+    @media (max-width: 768px) {
+      margin-bottom: 10px;
+    }
 
     .maximize-btn {
       position: absolute;
@@ -508,6 +515,7 @@ button {
 
       &.tags-popup-max {
         top: 75px;
+        max-width: 400px;
       }
 
       // Custom scrollbar for better UX
@@ -544,7 +552,7 @@ button {
 
       &.info-popup-max {
         top: 75px;
-        left: 140px;
+        max-width: 400px;
       }
 
       // Custom scrollbar for better UX
@@ -686,6 +694,10 @@ button {
     transform 0.2s ease;
   background: #35354b;
   color: #ff5ca8;
+
+  @media (max-width: 768px) {
+    padding: 5px;
+  }
 
   &:hover {
     transform: scale(1.05);
