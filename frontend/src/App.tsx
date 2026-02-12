@@ -56,8 +56,12 @@ function App() {
     setInfiniteScroll,
     gifsAutoplay,
     setGifsAutoplay,
-    hideNavArrows, // ✅ DODAJ TO
+    hideNavArrows,
     setHideNavArrows,
+    postButtonsPosition,
+    setPostButtonsPosition,
+    maximizedButtonsPosition,
+    setMaximizedButtonsPosition,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -692,6 +696,74 @@ function App() {
     }
   }, [isMobile, maximizedPostId, goNextPost, goPrevPost]);
 
+  // 🔥 Swipe dla page buttons mode (przełączanie stron)
+  useEffect(() => {
+    if (!isMobile || infiniteScroll) return; // Tylko mobile + page buttons
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 100; // większa odległość dla stron
+    const maxVerticalDistance = 100;
+
+    const handleTouchStart = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.screenX;
+      touchStartY = touch.screenY;
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+
+      const swipeDistanceX = touch.screenX - touchStartX;
+      const swipeDistanceY = touch.screenY - touchStartY;
+
+      // Ignoruj pionowy scroll
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) return;
+
+      // Sprawdź minimalną odległość
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) return;
+
+      // Swipe dla page buttons
+      if (swipeDistanceX > 0) {
+        // Swipe w prawo → poprzednia strona
+        if (uiPage > 1) {
+          prevUiPage();
+        }
+      } else {
+        // Swipe w lewo → następna strona
+        const canGoNext = hasNextApiPage || uiPage * postsPerPage < allPosts.length;
+        if (canGoNext) {
+          nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey });
+        }
+      }
+    };
+
+    const postsGrid = document.querySelector('.posts-grid') as HTMLElement;
+
+    if (postsGrid) {
+      postsGrid.addEventListener('touchstart', handleTouchStart, { passive: true });
+      postsGrid.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        postsGrid.removeEventListener('touchstart', handleTouchStart);
+        postsGrid.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [
+    isMobile,
+    infiniteScroll,
+    uiPage,
+    hasNextApiPage,
+    allPosts.length,
+    postsPerPage,
+    prevUiPage,
+    nextUiPage,
+    e621User,
+    e621ApiKey,
+  ]);
+
   useEffect(() => {
     if (!infiniteScroll && hideFavorites) {
       setHideFavorites(false);
@@ -745,7 +817,7 @@ function App() {
 
   return (
     <div
-      className={`app-container ${fixedHeader ? 'fixed' : ''} ${isPopularMode && fixedHeader ? 'popular-fixed' : ''}`}
+      className={`app-container ${fixedHeader ? 'fixed' : ''} ${isPopularMode && fixedHeader ? 'popular-fixed' : ''} ${isMobile && !infiniteScroll ? 'mobile-page-buttons-padding' : ''}`}
     >
       <div className={`app-header ${fixedHeader ? 'fixed' : ''}`}>
         {/* Burger menu - tylko mobile */}
@@ -928,7 +1000,7 @@ function App() {
             <div
               key={post.id}
               id={`post-${post.id}`}
-              className={`post-wrapper ${isMaximized ? 'maximized' : ''}`}
+              className={`post-wrapper ${isMaximized ? 'maximized' : ''} ${isMaximized ? `buttons-${maximizedButtonsPosition}` : `buttons-${postButtonsPosition}`}   ${isMobile && !isMaximized ? 'mobile-no-buttons' : ''}`.trim()}
             >
               <button
                 className={`maximize-btn ${isMaximized ? 'maximized-btn' : ''}`}
@@ -1409,8 +1481,8 @@ function App() {
                     style={{
                       position: 'absolute',
                       left: 0,
-                      top: 0,
-                      bottom: 0,
+                      top: '30%',
+                      bottom: '30%',
                       width: '20%',
                       cursor: hideNavArrows ? 'pointer' : 'default',
                       zIndex: hideNavArrows ? 10 : -1,
@@ -1422,8 +1494,8 @@ function App() {
                     style={{
                       position: 'absolute',
                       right: 0,
-                      top: 0,
-                      bottom: 0,
+                      top: '30%',
+                      bottom: '30%',
                       width: '20%',
                       cursor: hideNavArrows ? 'pointer' : 'default',
                       zIndex: hideNavArrows ? 10 : -1,
@@ -1475,7 +1547,11 @@ function App() {
             gifsAutoplay={gifsAutoplay}
             setGifsAutoplay={setGifsAutoplay}
             hideNavArrows={hideNavArrows} // ✅ DODAJ TO
-            setHideNavArrows={setHideNavArrows} // ✅ DODAJ TO
+            setHideNavArrows={setHideNavArrows}
+            postButtonsPosition={postButtonsPosition} // ✅ DODAJ
+            setPostButtonsPosition={setPostButtonsPosition} // ✅ DODAJ
+            maximizedButtonsPosition={maximizedButtonsPosition} // ✅ DODAJ
+            setMaximizedButtonsPosition={setMaximizedButtonsPosition}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
@@ -1530,7 +1606,7 @@ function App() {
         )}
       </div>
 
-      {!infiniteScroll && (
+      {!infiniteScroll && !isMobile && (
         <PageButtonsBottom
           page={uiPage}
           loading={loading}
@@ -1543,7 +1619,6 @@ function App() {
       {loading && <p style={{ marginTop: 10 }}>Loading posts...</p>}
       {infiniteScroll && <div ref={infiniteTriggerRef} style={{ height: 1 }} />}
 
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         onSearch={handleSearch}
         onPopularSearch={handlePopularSearch}

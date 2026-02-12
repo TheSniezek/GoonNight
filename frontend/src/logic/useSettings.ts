@@ -1,12 +1,13 @@
-// useSettings z poprzedniego pliku - już jest OK
+// useSettings.ts - UPDATED z nowymi ustawieniami pozycji przycisków
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 3; // ✅ Zwiększam wersję bo dodaję nowe pole
+const SETTINGS_VERSION = 4; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid';
 export type VideoResolution = 'best' | 'worse';
+export type ButtonPosition = 'top' | 'bottom'; // ✅ NOWY TYP
 
 export interface StoredSettings {
   version: number;
@@ -25,7 +26,9 @@ export interface StoredSettings {
   postsPerPage: number;
   hideFavorites: boolean;
   infiniteScroll: boolean;
-  hideNavArrows: boolean; // ✅ NOWE: Ukrywa strzałki nawigacji (ale pozostawia klikanie)
+  hideNavArrows: boolean;
+  postButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków dla zwykłych postów
+  maximizedButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków w maximized mode
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -51,7 +54,9 @@ const getDefaults = (): StoredSettings => ({
   postsPerPage: 50,
   hideFavorites: false,
   infiniteScroll: false,
-  hideNavArrows: false, // ✅ DOMYŚLNIE: Strzałki widoczne
+  hideNavArrows: false,
+  postButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
+  maximizedButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
   sexSearch: {
     female: false,
     male: false,
@@ -70,6 +75,8 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   layout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   newsLayout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   videoResolution: (v): v is VideoResolution => ['best', 'worse'].includes(v as string),
+  postButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
+  maximizedButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   sexSearch: (v): v is StoredSettings['sexSearch'] => {
     if (typeof v !== 'object' || v === null) return false;
     const obj = v as Record<string, unknown>;
@@ -103,9 +110,15 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
   if (stored.version === SETTINGS_VERSION) {
     return { ...defaults, ...stored };
   }
-  // ✅ Migracja z wersji 2 do 3 - dodaj hideNavArrows
-  if (stored.version === 2) {
-    return { ...defaults, ...stored, hideNavArrows: false, version: SETTINGS_VERSION };
+  // ✅ Migracja z wersji 3 do 4 - dodaj button positions
+  if (stored.version === 3) {
+    return {
+      ...defaults,
+      ...stored,
+      postButtonsPosition: 'top',
+      maximizedButtonsPosition: 'top',
+      version: SETTINGS_VERSION,
+    };
   }
   return { ...defaults, ...stored, version: SETTINGS_VERSION };
 }
@@ -221,8 +234,13 @@ export function useSettings() {
     setHideFavorites: (v: boolean) => updateSetting('hideFavorites', v),
     infiniteScroll: settings.infiniteScroll,
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
-    hideNavArrows: settings.hideNavArrows, // ✅ NOWE
-    setHideNavArrows: (v: boolean) => updateSetting('hideNavArrows', v), // ✅ NOWE
+    hideNavArrows: settings.hideNavArrows,
+    setHideNavArrows: (v: boolean) => updateSetting('hideNavArrows', v),
+    postButtonsPosition: settings.postButtonsPosition, // ✅ NOWE
+    setPostButtonsPosition: (v: ButtonPosition) => updateSetting('postButtonsPosition', v), // ✅ NOWE
+    maximizedButtonsPosition: settings.maximizedButtonsPosition, // ✅ NOWE
+    setMaximizedButtonsPosition: (v: ButtonPosition) =>
+      updateSetting('maximizedButtonsPosition', v), // ✅ NOWE
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

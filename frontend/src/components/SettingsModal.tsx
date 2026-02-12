@@ -38,6 +38,10 @@ interface SettingsModalProps {
   setGifsAutoplay: (v: boolean) => void;
   hideNavArrows: boolean; // ✅ DODAJ TO
   setHideNavArrows: (v: boolean) => void; // ✅ DODAJ TO
+  postButtonsPosition: 'top' | 'bottom'; // ✅ DODAJ
+  setPostButtonsPosition: (v: 'top' | 'bottom') => void; // ✅ DODAJ
+  maximizedButtonsPosition: 'top' | 'bottom'; // ✅ DODAJ
+  setMaximizedButtonsPosition: (v: 'top' | 'bottom') => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -82,6 +86,10 @@ export default function SettingsModal({
   setGifsAutoplay,
   hideNavArrows, // ✅ DODAJ TO
   setHideNavArrows, // ✅ DODAJ TO
+  postButtonsPosition, // ✅ DODAJ
+  setPostButtonsPosition, // ✅ DODAJ
+  maximizedButtonsPosition, // ✅ DODAJ
+  setMaximizedButtonsPosition, // ✅ DODAJ
   isMobile,
   sexSearch,
   setSexSearch,
@@ -289,6 +297,46 @@ export default function SettingsModal({
                   onChange={(e) => setHideNavArrows(e.target.checked)}
                 />
                 <span className="checkmark"></span>
+              </label>
+
+              {!isMobile && (
+                <label className="settings-row">
+                  <span className="settings-names">Post buttons position</span>
+                  <select
+                    value={postButtonsPosition}
+                    onChange={(e) => setPostButtonsPosition(e.target.value as 'top' | 'bottom')}
+                    style={{
+                      padding: '8px 12px',
+                      background: '#1c1c26',
+                      color: '#fff',
+                      border: '1px solid #35354b',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                  </select>
+                </label>
+              )}
+
+              <label className="settings-row">
+                <span className="settings-names">Maximized buttons position</span>
+                <select
+                  value={maximizedButtonsPosition}
+                  onChange={(e) => setMaximizedButtonsPosition(e.target.value as 'top' | 'bottom')}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#1c1c26',
+                    color: '#fff',
+                    border: '1px solid #35354b',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                </select>
               </label>
             </div>
           </div>
@@ -553,6 +601,10 @@ export default function SettingsModal({
                               setFixedHeader(newSettings.fixedHeader);
                             if (newSettings.hideNavArrows !== undefined)
                               setHideNavArrows(newSettings.hideNavArrows);
+                            if (newSettings.postButtonsPosition !== undefined)
+                              setPostButtonsPosition(newSettings.postButtonsPosition);
+                            if (newSettings.maximizedButtonsPosition !== undefined)
+                              setMaximizedButtonsPosition(newSettings.maximizedButtonsPosition);
                             if (newSettings.postsPerPage) setPostsPerPage(newSettings.postsPerPage);
                             if (newSettings.hideFavorites !== undefined)
                               setHideFavorites(newSettings.hideFavorites);
@@ -587,6 +639,8 @@ export default function SettingsModal({
                         newsPostColumns,
                         fixedHeader,
                         hideNavArrows,
+                        postButtonsPosition, // ✅ DODAJ
+                        maximizedButtonsPosition,
                         postsPerPage,
                         hideFavorites,
                         loopVideos,
