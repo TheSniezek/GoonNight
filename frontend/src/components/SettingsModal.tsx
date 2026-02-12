@@ -36,11 +36,11 @@ interface SettingsModalProps {
   setInfiniteScroll: (v: boolean) => void;
   gifsAutoplay: boolean;
   setGifsAutoplay: (v: boolean) => void;
-  hideNavArrows: boolean; // ✅ DODAJ TO
-  setHideNavArrows: (v: boolean) => void; // ✅ DODAJ TO
-  postButtonsPosition: 'top' | 'bottom'; // ✅ DODAJ
-  setPostButtonsPosition: (v: 'top' | 'bottom') => void; // ✅ DODAJ
-  maximizedButtonsPosition: 'top' | 'bottom'; // ✅ DODAJ
+  hideNavArrows: boolean;
+  setHideNavArrows: (v: boolean) => void;
+  postButtonsPosition: 'top' | 'bottom';
+  setPostButtonsPosition: (v: 'top' | 'bottom') => void;
+  maximizedButtonsPosition: 'top' | 'bottom';
   setMaximizedButtonsPosition: (v: 'top' | 'bottom') => void;
   isMobile: boolean;
   sexSearch: {
@@ -84,12 +84,12 @@ export default function SettingsModal({
   setInfiniteScroll,
   gifsAutoplay,
   setGifsAutoplay,
-  hideNavArrows, // ✅ DODAJ TO
-  setHideNavArrows, // ✅ DODAJ TO
-  postButtonsPosition, // ✅ DODAJ
-  setPostButtonsPosition, // ✅ DODAJ
-  maximizedButtonsPosition, // ✅ DODAJ
-  setMaximizedButtonsPosition, // ✅ DODAJ
+  hideNavArrows,
+  setHideNavArrows,
+  postButtonsPosition,
+  setPostButtonsPosition,
+  maximizedButtonsPosition,
+  setMaximizedButtonsPosition,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -102,9 +102,87 @@ export default function SettingsModal({
 
   const [exportFilename, setExportFilename] = useState('goonnight_data');
 
+  // 🔥 NOWE - Stan dla pola edycji ustawień
+  const [settingsText, setSettingsText] = useState('');
+
   const setObservedTags = (tags: string[]) => {
     originalSetObservedTags(tags);
     saveObservedTags(tags);
+  };
+
+  // 🔥 NOWE - Funkcja do wczytania aktualnych ustawień do pola tekstowego
+  const loadSettingsToText = () => {
+    const currentSettings = {
+      settings: {
+        defaultVolume,
+        autoPlayOnMaximize,
+        autoPauseOnMinimize,
+        pauseVideoOutOfFocus,
+        layout,
+        postColumns,
+        newsLayout,
+        newsPostColumns,
+        fixedHeader,
+        hideNavArrows,
+        postButtonsPosition,
+        maximizedButtonsPosition,
+        postsPerPage,
+        hideFavorites,
+        loopVideos,
+        videoResolution,
+        sexSearch,
+      },
+      observedTags: [...observedTags].sort((a, b) => a.localeCompare(b)),
+    };
+    setSettingsText(JSON.stringify(currentSettings, null, 2));
+  };
+
+  // 🔥 NOWE - Funkcja do zastosowania ustawień z pola tekstowego
+  const applySettingsFromText = () => {
+    try {
+      const data = JSON.parse(settingsText) as {
+        settings?: Partial<StoredSettings>;
+        observedTags?: string[];
+      };
+
+      if (data.settings) {
+        if (data.settings.defaultVolume !== undefined)
+          setDefaultVolume(data.settings.defaultVolume);
+        if (data.settings.autoPlayOnMaximize !== undefined)
+          setAutoPlayOnMaximize(data.settings.autoPlayOnMaximize);
+        if (data.settings.autoPauseOnMinimize !== undefined)
+          setAutoPauseOnMinimize(data.settings.autoPauseOnMinimize);
+        if (data.settings.pauseVideoOutOfFocus !== undefined)
+          setPauseVideoOutOfFocus(data.settings.pauseVideoOutOfFocus);
+        if (data.settings.layout) setLayout(data.settings.layout);
+        if (data.settings.postColumns) setPostColumns(data.settings.postColumns);
+        if (data.settings.newsLayout) setNewsLayout(data.settings.newsLayout);
+        if (data.settings.newsPostColumns) setNewsPostColumns(data.settings.newsPostColumns);
+        if (data.settings.fixedHeader !== undefined) setFixedHeader(data.settings.fixedHeader);
+        if (data.settings.hideNavArrows !== undefined)
+          setHideNavArrows(data.settings.hideNavArrows);
+        if (data.settings.postButtonsPosition !== undefined)
+          setPostButtonsPosition(data.settings.postButtonsPosition);
+        if (data.settings.maximizedButtonsPosition !== undefined)
+          setMaximizedButtonsPosition(data.settings.maximizedButtonsPosition);
+        if (data.settings.postsPerPage) setPostsPerPage(data.settings.postsPerPage);
+        if (data.settings.hideFavorites !== undefined)
+          setHideFavorites(data.settings.hideFavorites);
+        if (data.settings.loopVideos !== undefined) setLoopVideos(data.settings.loopVideos);
+        if (data.settings.videoResolution) setVideoResolution(data.settings.videoResolution);
+        if (data.settings.sexSearch) setSexSearch(data.settings.sexSearch);
+      }
+
+      if (data.observedTags) {
+        setObservedTags(data.observedTags);
+      }
+
+      alert('Settings applied successfully!');
+      window.location.reload();
+    } catch (error) {
+      alert('Failed to apply settings. Invalid JSON format.');
+      console.error('Settings parse error:', error);
+    }
   };
 
   const exportSettings = (settings: Partial<StoredSettings>, observedTags: string[]) => {
@@ -118,10 +196,7 @@ export default function SettingsModal({
     const a = document.createElement('a');
     a.href = url;
 
-    // Użyj custom filename lub fallback na domyślny
     let filename = exportFilename.trim() || 'goonnight_data';
-
-    // Dodaj .json jeśli nie ma
     if (!filename.endsWith('.json')) {
       filename += '.json';
     }
@@ -139,10 +214,15 @@ export default function SettingsModal({
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target?.result as string) as {
+        const text = e.target?.result as string;
+        const data = JSON.parse(text) as {
           settings?: Partial<StoredSettings>;
           observedTags?: string[];
         };
+
+        // 🔥 NOWE - Wczytaj zawartość do pola tekstowego
+        setSettingsText(text);
+
         if (data.settings) applySettings(data.settings);
         if (data.observedTags) applyObservedTags(data.observedTags);
         alert('Settings imported successfully!');
@@ -204,9 +284,7 @@ export default function SettingsModal({
                     Grid
                   </button>
                   <button
-                    className={`left-settings-btn button ${
-                      layout === 'accurate-grid' ? 'active' : ''
-                    }`}
+                    className={`left-settings-btn button ${layout === 'accurate-grid' ? 'active' : ''}`}
                     onClick={() => setLayout('accurate-grid')}
                   >
                     Accurate Grid
@@ -223,7 +301,9 @@ export default function SettingsModal({
                     max={10}
                     value={postColumns}
                     style={
-                      { '--value': `${((postColumns - 1) / 9) * 100}%` } as React.CSSProperties
+                      {
+                        '--value': `${((postColumns - 1) / 9) * 100}%`,
+                      } as React.CSSProperties
                     }
                     onChange={(e) => {
                       const val = Math.max(1, Math.min(10, Number(e.target.value)));
@@ -239,32 +319,21 @@ export default function SettingsModal({
                 <div className="input-slider">
                   <input
                     type="range"
-                    min={10}
-                    max={60}
-                    step={5}
+                    min={1}
+                    max={320}
                     value={postsPerPage}
                     style={
                       {
-                        '--value': `${((postsPerPage - 10) / 50) * 100}%`,
+                        '--value': `${((postsPerPage - 1) / 319) * 100}%`,
                       } as React.CSSProperties
                     }
                     onChange={(e) => {
-                      const val = Math.max(10, Math.min(320, Number(e.target.value)));
+                      const val = Math.max(1, Math.min(320, Number(e.target.value)));
                       setPostsPerPage(val);
                     }}
                   />
                   <span className="input-slider-number">{postsPerPage}</span>
                 </div>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Infinite scroll</span>
-                <input
-                  type="checkbox"
-                  checked={infiniteScroll}
-                  onChange={(e) => setInfiniteScroll(e.target.checked)}
-                />
-                <span className="checkmark"></span>
               </label>
 
               {!isMobile && (
@@ -280,7 +349,75 @@ export default function SettingsModal({
               )}
 
               <label className="settings-row">
-                <span className="settings-names">Hide favorites</span>
+                <span className="settings-names">Infinite scroll</span>
+                <input
+                  type="checkbox"
+                  checked={infiniteScroll}
+                  onChange={(e) => setInfiniteScroll(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Post buttons position</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${postButtonsPosition === 'top' ? 'active' : ''}`}
+                    onClick={() => setPostButtonsPosition('top')}
+                  >
+                    Top
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${postButtonsPosition === 'bottom' ? 'active' : ''}`}
+                    onClick={() => setPostButtonsPosition('bottom')}
+                  >
+                    Bottom
+                  </button>
+                </div>
+              </label>
+
+              {!isMobile && (
+                <label className="settings-row">
+                  <span className="settings-names">Hide nav arrows</span>
+                  <input
+                    type="checkbox"
+                    checked={hideNavArrows}
+                    onChange={(e) => setHideNavArrows(e.target.checked)}
+                  />
+                  <span className="checkmark"></span>
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Maximized Mode</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Buttons position</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${maximizedButtonsPosition === 'top' ? 'active' : ''}`}
+                    onClick={() => setMaximizedButtonsPosition('top')}
+                  >
+                    Top
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${maximizedButtonsPosition === 'bottom' ? 'active' : ''}`}
+                    onClick={() => setMaximizedButtonsPosition('bottom')}
+                  >
+                    Bottom
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Favorites</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Hide favorites from search</span>
                 <input
                   type="checkbox"
                   checked={hideFavorites}
@@ -288,130 +425,71 @@ export default function SettingsModal({
                 />
                 <span className="checkmark"></span>
               </label>
+            </div>
+          </div>
 
+          <div className="settings-section">
+            <span className="settings-section-tittle">Sex search</span>
+            <div className="settings-section-content">
               <label className="settings-row">
-                <span className="settings-names">Hide navigation arrows</span>
+                <span className="settings-names">Female</span>
                 <input
                   type="checkbox"
-                  checked={hideNavArrows}
-                  onChange={(e) => setHideNavArrows(e.target.checked)}
+                  checked={sexSearch.female}
+                  onChange={(e) => setSexSearch({ ...sexSearch, female: e.target.checked })}
                 />
                 <span className="checkmark"></span>
               </label>
 
-              {!isMobile && (
-                <label className="settings-row">
-                  <span className="settings-names">Post buttons position</span>
-                  <select
-                    value={postButtonsPosition}
-                    onChange={(e) => setPostButtonsPosition(e.target.value as 'top' | 'bottom')}
-                    style={{
-                      padding: '8px 12px',
-                      background: '#1c1c26',
-                      color: '#fff',
-                      border: '1px solid #35354b',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <option value="top">Top</option>
-                    <option value="bottom">Bottom</option>
-                  </select>
-                </label>
-              )}
+              <label className="settings-row">
+                <span className="settings-names">Male</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.male}
+                  onChange={(e) => setSexSearch({ ...sexSearch, male: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
 
               <label className="settings-row">
-                <span className="settings-names">Maximized buttons position</span>
-                <select
-                  value={maximizedButtonsPosition}
-                  onChange={(e) => setMaximizedButtonsPosition(e.target.value as 'top' | 'bottom')}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#1c1c26',
-                    color: '#fff',
-                    border: '1px solid #35354b',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option value="top">Top</option>
-                  <option value="bottom">Bottom</option>
-                </select>
+                <span className="settings-names">Intersex</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.intersex}
+                  onChange={(e) => setSexSearch({ ...sexSearch, intersex: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Ambiguous</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.ambiguous}
+                  onChange={(e) => setSexSearch({ ...sexSearch, ambiguous: e.target.checked })}
+                />
+                <span className="checkmark"></span>
               </label>
             </div>
           </div>
 
           <div className="settings-section">
-            <span className="settings-section-tittle">Search</span>
-            <div className="settings-section-content">
-              <label className="settings-row">
-                <span className="settings-names">Gender</span>
-                <div className="sex-search-grid">
-                  <button
-                    className={`sex-search-btn ${sexSearch.female ? 'active' : ''} top-left`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        female: !sexSearch.female,
-                      })
-                    }
-                  >
-                    <span>Female</span>
-                  </button>
-
-                  <button
-                    className={`sex-search-btn ${sexSearch.male ? 'active' : ''} top-right`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        male: !sexSearch.male,
-                      })
-                    }
-                  >
-                    <span>Male</span>
-                  </button>
-
-                  <button
-                    className={`sex-search-btn ${sexSearch.intersex ? 'active' : ''} bottom-left`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        intersex: !sexSearch.intersex,
-                      })
-                    }
-                  >
-                    <span>Intersex</span>
-                  </button>
-
-                  <button
-                    className={`sex-search-btn ${sexSearch.ambiguous ? 'active' : ''} bottom-right`}
-                    onClick={() =>
-                      setSexSearch({
-                        ...sexSearch,
-                        ambiguous: !sexSearch.ambiguous,
-                      })
-                    }
-                  >
-                    <span>Ambiguous</span>
-                  </button>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <span className="settings-section-tittle">Video & Media</span>
+            <span className="settings-section-tittle">Video</span>
             <div className="settings-section-content">
               <label className="settings-row">
                 <span className="settings-names">Default volume</span>
                 <div className="input-slider">
                   <input
                     type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
+                    min={0}
+                    max={1}
+                    step={0.01}
                     value={defaultVolume}
-                    style={{ '--value': `${defaultVolume * 100}%` } as React.CSSProperties}
+                    style={
+                      {
+                        '--value': `${defaultVolume * 100}%`,
+                      } as React.CSSProperties
+                    }
                     onChange={(e) => setDefaultVolume(Number(e.target.value))}
                   />
                   <span className="input-slider-number">{Math.round(defaultVolume * 100)}%</span>
@@ -419,23 +497,19 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Video resolution</span>
+                <span className="settings-names">Resolution</span>
                 <div className="layout-toggle">
                   <button
-                    className={`right-settings-btn button ${
-                      videoResolution === 'best' ? 'active' : ''
-                    }`}
+                    className={`right-settings-btn button ${videoResolution === 'best' ? 'active' : ''}`}
                     onClick={() => setVideoResolution('best')}
                   >
                     Best
                   </button>
                   <button
-                    className={`left-settings-btn button ${
-                      videoResolution === 'worse' ? 'active' : ''
-                    }`}
+                    className={`left-settings-btn button ${videoResolution === 'worse' ? 'active' : ''}`}
                     onClick={() => setVideoResolution('worse')}
                   >
-                    Worse then the best
+                    Worse
                   </button>
                 </div>
               </label>
@@ -451,7 +525,7 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Auto-play on maximize</span>
+                <span className="settings-names">Auto play on maximize</span>
                 <input
                   type="checkbox"
                   checked={autoPlayOnMaximize}
@@ -461,7 +535,7 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Auto-pause on minimize</span>
+                <span className="settings-names">Auto pause on minimize</span>
                 <input
                   type="checkbox"
                   checked={autoPauseOnMinimize}
@@ -563,6 +637,42 @@ export default function SettingsModal({
                 />
               </label>
 
+              {/* 🔥 NOWE - Pole do edycji ustawień */}
+              <div className="settings-row settings-editor-container">
+                <div className="settings-editor-header">
+                  <span className="settings-names">Settings Editor</span>
+                  <div className="settings-editor-buttons">
+                    <button
+                      className="settings-editor-btn load-btn"
+                      onClick={loadSettingsToText}
+                      title="Load current settings"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                      </svg>
+                      Load
+                    </button>
+                    <button
+                      className="settings-editor-btn apply-btn"
+                      onClick={applySettingsFromText}
+                      title="Apply settings from editor"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                      </svg>
+                      Apply
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  className="settings-editor-textarea"
+                  value={settingsText}
+                  onChange={(e) => setSettingsText(e.target.value)}
+                  placeholder="Paste settings JSON here or click Load to see current settings"
+                  spellCheck={false}
+                />
+              </div>
+
               <div className="settings-row importexport">
                 <label className="settings-btn settings-names">
                   <span>Import Data</span>
@@ -639,7 +749,7 @@ export default function SettingsModal({
                         newsPostColumns,
                         fixedHeader,
                         hideNavArrows,
-                        postButtonsPosition, // ✅ DODAJ
+                        postButtonsPosition,
                         maximizedButtonsPosition,
                         postsPerPage,
                         hideFavorites,

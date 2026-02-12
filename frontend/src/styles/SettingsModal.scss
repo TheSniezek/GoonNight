@@ -141,6 +141,121 @@
             justify-content: center;
           }
 
+          // 🔥 NOWE - Style dla kontenera edytora ustawień
+          &.settings-editor-container {
+            flex-direction: column;
+            align-items: stretch;
+
+            .settings-editor-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 8px;
+
+              .settings-editor-buttons {
+                display: flex;
+                gap: 8px;
+                height: 100%;
+
+                .settings-editor-btn {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  padding: 6px 12px;
+                  border: none;
+                  border-radius: 6px;
+                  font-size: 0.9rem;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  color: white;
+                  height: 100%;
+
+                  svg {
+                    width: 16px;
+                    height: 16px;
+                  }
+
+                  &.load-btn {
+                    background: #1b1b24;
+
+                    &:hover {
+                      background: #ff5ca8;
+                      transform: scale(1.05);
+                    }
+                  }
+
+                  &.apply-btn {
+                    background: #1b1b24;
+
+                    &:hover {
+                      background: #ff5ca8;
+                      transform: scale(1.05);
+                    }
+                  }
+
+                  @media (max-width: 768px) {
+                    font-size: 0.7rem;
+                    padding: 5px 10px;
+
+                    svg {
+                      width: 14px;
+                      height: 14px;
+                    }
+                  }
+                }
+              }
+            }
+
+            .settings-editor-textarea {
+              min-height: 200px;
+              max-height: 300px;
+              padding: 12px;
+              background: #1b1b24;
+              border: 2px solid #35354b;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 0.9rem;
+              line-height: 1.5;
+              resize: vertical;
+              outline: none;
+              transition: border-color 0.2s;
+
+              &:focus {
+                border-color: #ff5ca8;
+              }
+
+              &::placeholder {
+                color: #666;
+                font-style: italic;
+              }
+
+              // Scrollbar styling
+              &::-webkit-scrollbar {
+                width: 8px;
+              }
+
+              &::-webkit-scrollbar-track {
+                background: #0f0f14;
+                border-radius: 4px;
+              }
+
+              &::-webkit-scrollbar-thumb {
+                background: #35354b;
+                border-radius: 4px;
+
+                &:hover {
+                  background: #4a4a66;
+                }
+              }
+
+              @media (max-width: 768px) {
+                font-size: 0.75rem;
+                min-height: 150px;
+              }
+            }
+          }
+
           .settings-names {
             font-weight: 500;
             font-size: 1.1rem;
