@@ -274,6 +274,39 @@ button {
       margin-bottom: 10px;
     }
 
+    .video-thumb {
+      position: relative;
+      cursor: pointer;
+
+      .post-item {
+        width: 100%;
+        display: block;
+      }
+
+      .video-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        color: rgba(255, 255, 255, 0.8);
+        background: rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        border-radius: 6px;
+
+        &.gif {
+          color: rgba(255, 255, 255, 0.5);
+        }
+      }
+
+      svg {
+        @media (max-width: 768px) {
+          transform: scale(0.5);
+        }
+      }
+    }
+
     &.mobile-no-buttons {
       .maximize-btn,
       .tags-btn,

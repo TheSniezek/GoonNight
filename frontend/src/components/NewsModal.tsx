@@ -65,6 +65,7 @@ const NewsModal = ({
   const [maximizedPost, setMaximizedPost] = useState<Post | null>(null);
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // -------------------- REFS --------------------
   const isResizing = useRef(false);
@@ -146,8 +147,20 @@ const NewsModal = ({
   };
 
   // -------------------- USE EFFECTS --------------------
-  // Resizing sidebar
+  // Mobile detection
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Resizing sidebar (disabled on mobile)
+  useEffect(() => {
+    if (isMobile) return; // Disable resizing on mobile
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current || !sidebarRef.current) return;
 
@@ -182,7 +195,7 @@ const NewsModal = ({
       window.removeEventListener('mouseup', handleMouseUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [isMobile]);
 
   // Close on Escape key
   useEffect(() => {
@@ -352,7 +365,7 @@ const NewsModal = ({
               />
             </svg>
           </button>
-          <h2>Notifications from last week</h2>
+          {!isMobile && <h2>Notifications from last week</h2>}
         </div>
 
         {showObservedTags && (
@@ -426,81 +439,112 @@ const NewsModal = ({
                         id={`news-post-${post.id}`}
                         className={`news-post-wrapper ${isMaximized ? 'maximized' : ''}`}
                       >
-                        {/* Przyciski - tags i favorites */}
-                        <button
-                          className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowTagsFor((prev) => (prev === post.id ? null : post.id));
-                          }}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        {!isMobile && (
+                          <button
+                            className="news-maximize-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMaximizedPost(post);
+                            }}
                           >
-                            <line x1="8" y1="2" x2="8" y2="22" />
-                            <line x1="16" y1="2" x2="16" y2="22" />
-                            <line x1="2" y1="8" x2="22" y2="8" />
-                            <line x1="2" y1="16" x2="22" y2="16" />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M9 9L3.29 3.29M15 9l5.71-5.71M9 15L3.29 20.71m17.42 0L15 15" />
+                              <path d="M3 8V4a1 1 0 0 1 1-1h4" />
+                              <path d="M16 3h4a1 1 0 0 1 1 1v4" />
+                              <path d="M8 21H4a1 1 0 0 1-1-1v-4" />
+                              <path d="M21 16v4a1 1 0 0 1-1 1h-4" />
+                            </svg>
+                          </button>
+                        )}
 
-                        <button
-                          className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowInfoFor((prev) => (prev === post.id ? null : post.id));
-                          }}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        {!isMobile && (
+                          <button
+                            className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowTagsFor((prev) => (prev === post.id ? null : post.id));
+                            }}
                           >
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="8" y1="2" x2="8" y2="22" />
+                              <line x1="16" y1="2" x2="16" y2="22" />
+                              <line x1="2" y1="8" x2="22" y2="8" />
+                              <line x1="2" y1="16" x2="22" y2="16" />
+                            </svg>
+                          </button>
+                        )}
 
-                        <button
-                          className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''}`}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await toggleFavoritePost(post.id, post.is_favorited || false);
-                          }}
-                          title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                          disabled={!isLoggedIn || pendingFavorites.has(post.id)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        {!isMobile && (
+                          <button
+                            className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowInfoFor((prev) => (prev === post.id ? null : post.id));
+                            }}
                           >
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="16" x2="12" y2="12" />
+                              <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                          </button>
+                        )}
 
-                        {/* Tags popup */}
+                        {!isMobile && (
+                          <button
+                            className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''}`}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await toggleFavoritePost(post.id, post.is_favorited || false);
+                            }}
+                            title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
+                            disabled={!isLoggedIn || pendingFavorites.has(post.id)}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
+                          </button>
+                        )}
                         {showTagsFor === post.id && (
                           <div
                             className="news-tags-popup"
@@ -780,32 +824,350 @@ const NewsModal = ({
       {maximizedPost &&
         createPortal(
           <div className="news-maximized-overlay" onClick={() => setMaximizedPost(null)}>
-            {maximizedPost.file.ext === 'gif' ? (
-              <img
-                className="news-maximized-item"
-                src={maximizedPost.file.url || maximizedPost.file.sample_url}
-              />
-            ) : ['webm', 'mp4'].includes(maximizedPost.file.ext as string) ? (
-              <video
-                src={maximizedPost.file.url || maximizedPost.file.sample_url}
-                controls
-                autoPlay
-                className="news-maximized-item"
-                ref={(el) => {
-                  if (el) {
-                    maximizedVideoRef.current = el;
-                    el.volume = defaultVolume;
-                  }
+            <div className="news-maximized-wrapper">
+              {/* Close/Minimize button */}
+              <button
+                className="news-maximize-btn news-maximized-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMaximizedPost(null);
                 }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <img
-                src={maximizedPost.file.url || maximizedPost.file.sample_url}
-                className="news-maximized-item"
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8.71 15.29L3 21M8.71 8.71L3 3M21 21l-5.71-5.71M21 3L15.29 8.71" />
+                  <path d="M4 15H8a1 1 0 0 1 1 1v4" />
+                  <path d="M9 4V8a1 1 0 0 1-1 1H4" />
+                  <path d="M15 20V16a1 1 0 0 1 1-1h4" />
+                  <path d="M20 9H16a1 1 0 0 1-1-1V4" />
+                </svg>
+              </button>
+
+              {/* Tags button */}
+              <button
+                className={`news-tags-btn news-tags-btn-max ${
+                  showTagsFor === maximizedPost.id ? 'active' : ''
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTagsFor((prev) => (prev === maximizedPost.id ? null : maximizedPost.id));
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="8" y1="2" x2="8" y2="22" />
+                  <line x1="16" y1="2" x2="16" y2="22" />
+                  <line x1="2" y1="8" x2="22" y2="8" />
+                  <line x1="2" y1="16" x2="22" y2="16" />
+                </svg>
+              </button>
+
+              {/* Info button */}
+              <button
+                className={`news-info-btn news-info-btn-max ${
+                  showInfoFor === maximizedPost.id ? 'active' : ''
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowInfoFor(showInfoFor === maximizedPost.id ? null : maximizedPost.id);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              </button>
+
+              {/* Favorite button */}
+              <button
+                className={`news-fav-btn news-fav-btn-max ${
+                  maximizedPost.is_favorited ? 'is-favorite' : ''
+                }`}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await toggleFavoritePost(maximizedPost.id, maximizedPost.is_favorited || false);
+                }}
+                title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
+                disabled={!isLoggedIn || pendingFavorites.has(maximizedPost.id)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </button>
+
+              {/* Tags popup */}
+              {showTagsFor === maximizedPost.id && (
+                <div
+                  className="news-tags-popup news-tags-popup-max"
+                  ref={tagsPopupRef}
+                  onClick={(e) => e.stopPropagation()}
+                  onWheel={(e) => {
+                    const target = e.currentTarget;
+                    const atTop = target.scrollTop === 0;
+                    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {maximizedPost.tags.length > 0 ? (
+                    maximizedPost.tags.map((tag: PostTag) => {
+                      let color = '#fff';
+                      switch (tag.type) {
+                        case 'artist':
+                          color = 'orange';
+                          break;
+                        case 'copyright':
+                          color = '#db58e0';
+                          break;
+                        case 'general':
+                          color = '#ebdd65';
+                          break;
+                        case 'character':
+                          color = '#7fc97f';
+                          break;
+                        case 'species':
+                          color = '#eb6d6d';
+                          break;
+                        case 'meta':
+                          color = '#fff';
+                          break;
+                      }
+
+                      return (
+                        <div key={tag.name} className="news-tag-item">
+                          <button
+                            className={`news-tag-observe ${
+                              observedTags.includes(tag.name) ? 'active' : ''
+                            }`}
+                            onClick={() => {
+                              onToggleTag(tag.name);
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="M12 6.00019C10.2006 3.90317 7.19377 3.2551 4.93923 5.17534C2.68468 7.09558 2.36727 10.3061 4.13778 12.5772C5.60984 14.4654 10.0648 18.4479 11.5249 19.7369C11.6882 19.8811 11.7699 19.9532 11.8652 19.9815C11.9483 20.0062 12.0393 20.0062 12.1225 19.9815C12.2178 19.9532 12.2994 19.8811 12.4628 19.7369C13.9229 18.4479 18.3778 14.4654 19.8499 12.5772C21.6204 10.3061 21.3417 7.07538 19.0484 5.17534C16.7551 3.2753 13.7994 3.90317 12 6.00019Z"
+                              />
+                            </svg>
+                          </button>
+
+                          <button className="news-tag-add" onClick={() => addTag(tag.name)}>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+
+                          <button className="news-tag-remove" onClick={() => removeTag(tag.name)}>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+
+                          <span
+                            className="news-tag-name"
+                            style={{ color }}
+                            onClick={() => searchTag(tag.name)}
+                          >
+                            {tag.name}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="news-tag-item">No tags</div>
+                  )}
+                </div>
+              )}
+
+              {/* Info popup */}
+              {showInfoFor === maximizedPost.id && (
+                <div
+                  className="news-info-popup news-info-popup-max"
+                  ref={infoPopupRef}
+                  onClick={(e) => e.stopPropagation()}
+                  onWheel={(e) => {
+                    const target = e.currentTarget;
+                    const atTop = target.scrollTop === 0;
+                    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+
+                    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  <div className="info-row">
+                    <span className="info-label">Source:</span>
+                    <span className="info-value">
+                      {maximizedPost.sources && maximizedPost.sources.length > 0 ? (
+                        <a
+                          href={maximizedPost.sources[0]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="info-link"
+                        >
+                          {maximizedPost.sources[0].length > 40
+                            ? maximizedPost.sources[0].substring(0, 40) + '...'
+                            : maximizedPost.sources[0]}
+                        </a>
+                      ) : (
+                        'None'
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">ID:</span>
+                    <span className="info-value">
+                      <a
+                        href={`https://e621.net/posts/${maximizedPost.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="info-link"
+                      >
+                        {maximizedPost.id}
+                      </a>
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Size:</span>
+                    <span className="info-value">
+                      {maximizedPost.file.width}x{maximizedPost.file.height} (
+                      {formatFileSize(maximizedPost.file.size)})
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Type:</span>
+                    <span className="info-value">
+                      {maximizedPost.file.ext?.toUpperCase() || 'Unknown'}
+                    </span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Rating:</span>
+                    <span className="info-value">{getRatingText(maximizedPost.rating)}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Score:</span>
+                    <span className="info-value">{maximizedPost.score.total}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Faves:</span>
+                    <span className="info-value">{maximizedPost.fav_count}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <span className="info-label">Posted:</span>
+                    <span className="info-value">{formatTimeAgo(maximizedPost.created_at)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Media content */}
+              {maximizedPost.file.ext === 'gif' ? (
+                <img
+                  className="news-maximized-item"
+                  src={maximizedPost.file.url || maximizedPost.file.sample_url}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : ['webm', 'mp4'].includes(maximizedPost.file.ext as string) ? (
+                <video
+                  src={maximizedPost.file.url || maximizedPost.file.sample_url}
+                  controls
+                  autoPlay
+                  className="news-maximized-item"
+                  ref={(el) => {
+                    if (el) {
+                      maximizedVideoRef.current = el;
+                      el.volume = defaultVolume;
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <img
+                  src={maximizedPost.file.url || maximizedPost.file.sample_url}
+                  className="news-maximized-item"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </div>
           </div>,
           document.body,
         )}

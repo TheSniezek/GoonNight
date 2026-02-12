@@ -1400,7 +1400,32 @@ function App() {
                     }}
                     loop={loopVideos}
                   />
+                ) : isMobile ? (
+                  // Mobile - pokaż thumbnail z overlayem (jak w NewsModal)
+                  <div className="video-thumb" onClick={() => toggleMaximize(post.id)}>
+                    <img
+                      src={post.preview.url || post.sample.url}
+                      alt=""
+                      className="post-item"
+                      loading="lazy"
+                    />
+                    <div className="video-overlay">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="72"
+                        height="72"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <g transform="scale(0.046875)">
+                          <path d="M207.063,167.141c-1.031-0.609-2.344-0.641-3.406-0.031c-1.031,0.594-1.688,1.719-1.688,2.938v85.938v85.953 c0,1.234,0.656,2.344,1.688,2.938c1.063,0.625,2.375,0.594,3.406-0.031l144-85.953c1.031-0.594,1.641-1.703,1.641-2.906 c0-1.172-0.609-2.297-1.641-2.891L207.063,167.141z" />
+                          <path d="M256,0C114.625,0,0,114.625,0,256s114.625,256,256,256s256-114.625,256-256S397.375,0,256,0z M256,448 c-105.875,0-192-86.125-192-192S150.125,64,256,64s192,86.125,192,192S361.875,448,256,448z" />
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
                 ) : (
+                  // Desktop - pokazuj video z kontrolkami
                   <video
                     className="post-item"
                     controls
@@ -1415,20 +1440,45 @@ function App() {
                       }
                     }}
                     loop={loopVideos}
-                    onClick={
-                      isMobile
-                        ? (e) => {
-                            // Na mobile: Jeśli kliknięcie nie było na kontrolki, zmaksymalizuj
-                            const target = e.target as HTMLVideoElement;
-                            const rect = target.getBoundingClientRect();
-                            const clickY = e.clientY - rect.top;
-                            // Sprawdź czy klik był w dolnej części (kontrolki)
-                            if (clickY < rect.height - 50) {
-                              toggleMaximize(post.id);
-                            }
-                          }
-                        : undefined
-                    }
+                  />
+                )
+              ) : isGif ? (
+                isMaximized ? (
+                  // Maximized - pokaż pełny GIF
+                  <img
+                    className="post-item post-item-max"
+                    src={post.file.url || post.sample?.url}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : isMobile || !gifsAutoplay ? (
+                  // Mobile LUB gdy autoplay wyłączony - pokaż thumbnail z overlayem
+                  <div className="video-thumb" onClick={() => toggleMaximize(post.id)}>
+                    <img
+                      src={post.preview?.url || post.sample?.url}
+                      alt=""
+                      className="post-item"
+                      loading="lazy"
+                    />
+                    <div className="video-overlay gif">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="100"
+                        height="100"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M18.75 3.5A3.25 3.25 0 0 1 22 6.75v10.503a3.25 3.25 0 0 1-3.25 3.25H5.25A3.25 3.25 0 0 1 2 17.253V6.751A3.25 3.25 0 0 1 5.25 3.5zm0 1.5H5.25A1.75 1.75 0 0 0 3.5 6.75v10.503c0 .967.784 1.75 1.75 1.75h13.5a1.75 1.75 0 0 0 1.75-1.75V6.751A1.75 1.75 0 0 0 18.75 5M8.015 8.873c.596 0 1.019.081 1.502.313a.625.625 0 0 1-.541 1.127c-.3-.144-.54-.19-.961-.19-.867 0-1.504.796-1.504 1.872s.638 1.876 1.504 1.876c.428 0 .791-.18.98-.5L9 13.355v-.734h-.376a.625.625 0 0 1-.618-.532L8 11.996c0-.314.231-.573.533-.618l.092-.007h1.002c.314 0 .573.231.618.533l.007.092-.002 1.548-.006.055-.021.09-.02.055c-.377.89-1.241 1.376-2.188 1.376-1.626 0-2.754-1.412-2.754-3.126 0-1.712 1.127-3.122 2.754-3.122m4.614.122c.314 0 .574.231.618.533l.007.092v4.762a.625.625 0 0 1-1.243.092l-.007-.092V9.62c0-.345.28-.625.625-.625m2.996 0L17.622 9a.625.625 0 0 1 .088 1.243l-.092.007-1.371-.005V12h1.123c.314 0 .574.232.618.533l.007.092a.625.625 0 0 1-.533.619l-.092.006h-1.123v1.115a.625.625 0 0 1-.532.618l-.092.007a.625.625 0 0 1-.619-.533l-.006-.092V9.617A.625.625 0 0 1 15.532 9z" />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  // Desktop z autoplay - pokaż animowany GIF
+                  <img
+                    className="post-item"
+                    src={post.file.url || post.sample?.url}
+                    loading="lazy"
+                    onClick={() => toggleMaximize(post.id)}
+                    onDoubleClick={() => toggleMaximize(post.id)}
                   />
                 )
               ) : (
