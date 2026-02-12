@@ -618,54 +618,76 @@ function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize]);
 
-  // 🔥 Obsługa swipe dla mobile w maximized mode
-  // 🔥 Obsługa swipe dla mobile w maximized mode
+  // 🔥 Obsługa swipe dla mobile w maximized mode - BEST TYPESCRIPT
   useEffect(() => {
     if (!isMobile || maximizedPostId === null) return;
 
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
-    const minSwipeDistance = 50; // minimalna odległość swipe (w px)
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+    const maxVerticalDistance = 100;
 
-    const handleTouchStart = (e: TouchEvent) => {
+    // ✅ Type guard dla TouchEvent
+    const isTouchEvent = (e: Event): e is TouchEvent => {
+      return 'changedTouches' in e;
+    };
+
+    const handleTouchStart = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
+
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+      console.log('👆 Touch start', { x: touchStartX, y: touchStartY });
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
+
       touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    };
+      touchEndY = e.changedTouches[0].screenY;
 
-    const handleSwipe = () => {
-      const swipeDistance = touchEndX - touchStartX;
+      const swipeDistanceX = touchEndX - touchStartX;
+      const swipeDistanceY = touchEndY - touchStartY;
 
-      if (Math.abs(swipeDistance) < minSwipeDistance) {
-        return; // Zbyt krótki swipe, ignoruj
+      console.log('👆 Touch end', {
+        x: touchEndX,
+        y: touchEndY,
+        distanceX: swipeDistanceX,
+        distanceY: swipeDistanceY,
+      });
+
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) {
+        console.log('⏭️ Too much vertical - ignoring');
+        return;
       }
 
-      if (swipeDistance > 0) {
-        // Swipe w prawo → poprzedni post
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) {
+        console.log('⏭️ Too short - ignoring');
+        return;
+      }
+
+      if (swipeDistanceX > 0) {
+        console.log('⬅️ RIGHT swipe → PREV');
         goPrevPost();
       } else {
-        // Swipe w lewo → następny post
+        console.log('➡️ LEFT swipe → NEXT');
         goNextPost();
       }
     };
 
-    // ✅ POPRAWKA: Cast do HTMLElement który wspiera touch events
-    const maximizedElement = document.querySelector('.post-container.maximized') as HTMLElement;
+    const maximizedElement = document.querySelector('.post-wrapper.maximized') as HTMLElement;
 
     if (maximizedElement) {
-      // ✅ POPRAWKA: Użyj EventListener type-safe wrapper
-      const touchStartListener = handleTouchStart as EventListener;
-      const touchEndListener = handleTouchEnd as EventListener;
+      console.log('✅ Swipe listeners attached');
 
-      maximizedElement.addEventListener('touchstart', touchStartListener);
-      maximizedElement.addEventListener('touchend', touchEndListener);
+      maximizedElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      maximizedElement.addEventListener('touchend', handleTouchEnd, { passive: true });
 
       return () => {
-        maximizedElement.removeEventListener('touchstart', touchStartListener);
-        maximizedElement.removeEventListener('touchend', touchEndListener);
+        maximizedElement.removeEventListener('touchstart', handleTouchStart);
+        maximizedElement.removeEventListener('touchend', handleTouchEnd);
       };
     }
   }, [isMobile, maximizedPostId, goNextPost, goPrevPost]);
