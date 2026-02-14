@@ -48,6 +48,7 @@ export default function SearchBar({
   const filterRef = useRef<HTMLDivElement | null>(null);
   const filterBtnRef = useRef<HTMLButtonElement | null>(null);
   const datePickerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null); // FIX: Dodano ref do inputa
 
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -193,6 +194,11 @@ export default function SearchBar({
     } else {
       onSearch(input, order);
     }
+
+    // FIX: Ukryj sugestie i usuń focus po wyszukaniu
+    setShowSuggestions(false);
+    setSuggestions([]);
+    inputRef.current?.blur();
   };
 
   const handleDefaultSearch = () => {
@@ -739,6 +745,7 @@ export default function SearchBar({
 
         <div className="input-wrapper">
           <input
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => handleChange(e.target.value)}

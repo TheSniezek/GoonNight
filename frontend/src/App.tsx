@@ -58,6 +58,8 @@ function App() {
     setGifsAutoplay,
     hideNavArrows,
     setHideNavArrows,
+    disableArrowKeys, // ✅ NOWE
+    setDisableArrowKeys, // ✅ NOWE
     postButtonsPosition,
     setPostButtonsPosition,
     maximizedButtonsPosition,
@@ -570,6 +572,8 @@ function App() {
 
     console.log('⭐ [handleFavoritesClick] Loading favorites for:', e621User);
 
+    setShowNewsPopup(false);
+
     loadRealFavorites();
 
     // ✅ Opcja 2 (lepsze - sortuje po dacie dodania do fav):
@@ -631,6 +635,8 @@ function App() {
   // 🔥 Obsługa nawigacji strzałkami w maximized mode
   useEffect(() => {
     if (maximizedPostId === null) return;
+    // FIX: Jeśli wyłączone są strzałki, nie dodawaj handlera
+    if (disableArrowKeys) return;
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') goNextPost();
@@ -640,7 +646,7 @@ function App() {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize]);
+  }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize, disableArrowKeys]);
 
   // 🔥 Obsługa swipe dla mobile w maximized mode - BEST TYPESCRIPT
   useEffect(() => {
@@ -1587,7 +1593,7 @@ function App() {
                   onDoubleClick={!isMobile ? () => toggleMaximize(post.id) : undefined}
                 />
               )}
-              {isMaximized && (
+              {isMaximized && !disableArrowKeys && !isMobile && (
                 <>
                   {!hideNavArrows && (
                     <>
@@ -1615,7 +1621,6 @@ function App() {
                       </button>
                     </>
                   )}
-                  {/* ✅ KLIKALNE OBSZARY - zawsze obecne, nawet gdy strzałki ukryte */}
                   <div
                     className="nav-area left"
                     onClick={goPrevPost}
@@ -1689,6 +1694,8 @@ function App() {
             setGifsAutoplay={setGifsAutoplay}
             hideNavArrows={hideNavArrows} // ✅ DODAJ TO
             setHideNavArrows={setHideNavArrows}
+            disableArrowKeys={disableArrowKeys} // ✅ NOWE
+            setDisableArrowKeys={setDisableArrowKeys} // ✅ NOWE
             postButtonsPosition={postButtonsPosition} // ✅ DODAJ
             setPostButtonsPosition={setPostButtonsPosition} // ✅ DODAJ
             maximizedButtonsPosition={maximizedButtonsPosition} // ✅ DODAJ

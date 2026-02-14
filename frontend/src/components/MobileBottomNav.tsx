@@ -57,6 +57,7 @@ export default function MobileBottomNav({
   const navDropdownRef = useRef<HTMLDivElement | null>(null);
   const navBtnRef = useRef<HTMLButtonElement | null>(null);
   const datePickerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null); // FIX: Dodano ref do inputa
 
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -178,7 +179,10 @@ export default function MobileBottomNav({
       onSearch(input, order);
     }
 
+    // FIX: Ukryj sugestie i usuń focus po wyszukaniu
     setShowSuggestions(false);
+    setSuggestions([]);
+    inputRef.current?.blur();
   };
 
   const handleDefaultSearch = () => {
@@ -664,6 +668,7 @@ export default function MobileBottomNav({
             <form className="mobile-search-form" onSubmit={handleSubmit}>
               <div className="mobile-input-wrapper">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => handleInputChange(e.target.value)}

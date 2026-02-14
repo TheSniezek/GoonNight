@@ -38,6 +38,8 @@ interface SettingsModalProps {
   setGifsAutoplay: (v: boolean) => void;
   hideNavArrows: boolean;
   setHideNavArrows: (v: boolean) => void;
+  disableArrowKeys: boolean;
+  setDisableArrowKeys: (v: boolean) => void;
   postButtonsPosition: 'top' | 'bottom';
   setPostButtonsPosition: (v: 'top' | 'bottom') => void;
   maximizedButtonsPosition: 'top' | 'bottom';
@@ -86,6 +88,8 @@ export default function SettingsModal({
   setGifsAutoplay,
   hideNavArrows,
   setHideNavArrows,
+  disableArrowKeys,
+  setDisableArrowKeys,
   postButtonsPosition,
   setPostButtonsPosition,
   maximizedButtonsPosition,
@@ -377,15 +381,26 @@ export default function SettingsModal({
               </label>
 
               {!isMobile && (
-                <label className="settings-row">
-                  <span className="settings-names">Hide nav arrows</span>
-                  <input
-                    type="checkbox"
-                    checked={hideNavArrows}
-                    onChange={(e) => setHideNavArrows(e.target.checked)}
-                  />
-                  <span className="checkmark"></span>
-                </label>
+                <>
+                  <label className="settings-row">
+                    <span className="settings-names">Hide nav arrows</span>
+                    <input
+                      type="checkbox"
+                      checked={hideNavArrows}
+                      onChange={(e) => setHideNavArrows(e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                  </label>
+                  <label className="settings-row">
+                    <span className="settings-names">Disable nav arrows</span>
+                    <input
+                      type="checkbox"
+                      checked={disableArrowKeys}
+                      onChange={(e) => setDisableArrowKeys(e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                  </label>
+                </>
               )}
             </div>
           </div>

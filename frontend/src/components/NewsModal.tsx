@@ -329,6 +329,7 @@ const NewsModal = ({
               reloadCountdown % 60,
             ).padStart(2, '0')}`}
             aria-label="Reload"
+            disabled={loading || isReloading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -346,6 +347,7 @@ const NewsModal = ({
             className={`observed-tags-btn ${showObservedTags ? 'active' : ''}`}
             onClick={() => setShowObservedTags((prev) => !prev)}
             aria-label="Observed tags"
+            disabled={loading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -27,6 +27,7 @@ export interface StoredSettings {
   hideFavorites: boolean;
   infiniteScroll: boolean;
   hideNavArrows: boolean;
+  disableArrowKeys: boolean; // ✅ NOWE: wyłącz działanie strzałek
   postButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków dla zwykłych postów
   maximizedButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków w maximized mode
   sexSearch: {
@@ -55,6 +56,7 @@ const getDefaults = (): StoredSettings => ({
   hideFavorites: false,
   infiniteScroll: false,
   hideNavArrows: false,
+  disableArrowKeys: false, // ✅ DOMYŚLNIE: strzałki działają
   postButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
   maximizedButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
   sexSearch: {
@@ -236,6 +238,8 @@ export function useSettings() {
     setInfiniteScroll: (v: boolean) => updateSetting('infiniteScroll', v),
     hideNavArrows: settings.hideNavArrows,
     setHideNavArrows: (v: boolean) => updateSetting('hideNavArrows', v),
+    disableArrowKeys: settings.disableArrowKeys, // ✅ NOWE
+    setDisableArrowKeys: (v: boolean) => updateSetting('disableArrowKeys', v), // ✅ NOWE
     postButtonsPosition: settings.postButtonsPosition, // ✅ NOWE
     setPostButtonsPosition: (v: ButtonPosition) => updateSetting('postButtonsPosition', v), // ✅ NOWE
     maximizedButtonsPosition: settings.maximizedButtonsPosition, // ✅ NOWE
