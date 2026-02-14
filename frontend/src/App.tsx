@@ -371,6 +371,26 @@ function App() {
     ],
   );
 
+  // 🌟 Change Popular Date (dla swipe i button navigation)
+  const changePopularDate = useCallback(
+    (direction: 'prev' | 'next') => {
+      const currentDate = new Date(popularDate);
+
+      if (popularScale === 'day') {
+        currentDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
+      } else if (popularScale === 'week') {
+        currentDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
+      } else if (popularScale === 'month') {
+        currentDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+      }
+
+      const newDateStr = currentDate.toISOString().split('T')[0];
+      setPopularDate(newDateStr);
+      handlePopularSearch(newDateStr, popularScale);
+    },
+    [popularDate, popularScale, handlePopularSearch],
+  );
+
   // 🔥 Automatycznie załaduj popular mode po odświeżeniu
   useEffect(() => {
     if (shouldRestorePopular && isPopularMode) {
@@ -763,6 +783,77 @@ function App() {
     e621User,
     e621ApiKey,
   ]);
+
+  // 🔥 Swipe dla popular mode (przełączanie dat)
+  useEffect(() => {
+    if (!isMobile || !isPopularMode) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 100;
+    const maxVerticalDistance = 100;
+
+    const handleTouchStart = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.screenX;
+      touchStartY = touch.screenY;
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+
+      const swipeDistanceX = touch.screenX - touchStartX;
+      const swipeDistanceY = touch.screenY - touchStartY;
+
+      // Ignoruj pionowy scroll
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) return;
+
+      // Sprawdź minimalną odległość
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) return;
+
+      // Swipe dla popular mode
+      if (swipeDistanceX > 0) {
+        // Swipe w prawo → poprzednia data
+        changePopularDate('prev');
+      } else {
+        // Swipe w lewo → następna data (jeśli nie jesteśmy w przyszłości)
+        const currentDate = new Date(popularDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let canGoNext = false;
+        if (popularScale === 'day') {
+          canGoNext = currentDate < today;
+        } else if (popularScale === 'week') {
+          const nextWeek = new Date(currentDate);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          canGoNext = nextWeek <= today;
+        } else if (popularScale === 'month') {
+          const nextMonth = new Date(currentDate);
+          nextMonth.setMonth(nextMonth.getMonth() + 1);
+          canGoNext = nextMonth <= today;
+        }
+
+        if (canGoNext) {
+          changePopularDate('next');
+        }
+      }
+    };
+
+    const postsGrid = document.querySelector('.posts-grid') as HTMLElement;
+
+    if (postsGrid) {
+      postsGrid.addEventListener('touchstart', handleTouchStart, { passive: true });
+      postsGrid.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        postsGrid.removeEventListener('touchstart', handleTouchStart);
+        postsGrid.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isMobile, isPopularMode, popularDate, popularScale, changePopularDate]);
 
   useEffect(() => {
     if (!infiniteScroll && hideFavorites) {

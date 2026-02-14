@@ -492,7 +492,8 @@ export default function MobileBottomNav({
   };
 
   const selectDay = (day: number) => {
-    const newDate = new Date(pickerYear, pickerMonth, day);
+    // FIX: Używamy UTC aby uniknąć problemów z timezone
+    const newDate = new Date(Date.UTC(pickerYear, pickerMonth, day));
     const dateStr = newDate.toISOString().split('T')[0];
     setPopularDate(dateStr);
     onPopularSearch(dateStr, 'day');
@@ -513,14 +514,19 @@ export default function MobileBottomNav({
       currentMonday.setDate(currentMonday.getDate() + 7);
     }
 
-    const dateStr = currentMonday.toISOString().split('T')[0];
+    // FIX: Konwertujemy do UTC aby uniknąć problemów z timezone
+    const utcDate = new Date(
+      Date.UTC(currentMonday.getFullYear(), currentMonday.getMonth(), currentMonday.getDate()),
+    );
+    const dateStr = utcDate.toISOString().split('T')[0];
     setPopularDate(dateStr);
     onPopularSearch(dateStr, 'week');
     setShowDatePicker(false);
   };
 
   const selectMonth = () => {
-    const newDate = new Date(pickerYear, pickerMonth, 1);
+    // FIX: Używamy UTC aby uniknąć problemów z timezone
+    const newDate = new Date(Date.UTC(pickerYear, pickerMonth, 1));
     const dateStr = newDate.toISOString().split('T')[0];
     setPopularDate(dateStr);
     onPopularSearch(dateStr, 'month');
@@ -604,6 +610,14 @@ export default function MobileBottomNav({
                 className={order === filter.value ? 'active' : ''}
                 onClick={() => {
                   setOrder(filter.value);
+                  // FIX: Wywołujemy onSearch aby filtry faktycznie działały
+                  if (isPopularMode) {
+                    // W popular mode używamy handlePopularSearch
+                    onPopularSearch(popularDate, popularScale);
+                  } else {
+                    // W normalnym trybie używamy onSearch z aktualnym inputem
+                    onSearch(input, filter.value);
+                  }
                   setShowFilters(false);
                 }}
               >
