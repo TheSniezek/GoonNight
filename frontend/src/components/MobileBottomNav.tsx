@@ -21,6 +21,8 @@ type Props = {
   onFavoritesClick: () => void;
   isFavoritesActive: boolean;
   isFavoritesDisabled: boolean;
+  onCloseNewsModal?: () => void;
+  onOpenMobileSidebar?: () => void; // FIX: Dodano callback
 };
 
 export default function MobileBottomNav({
@@ -40,6 +42,8 @@ export default function MobileBottomNav({
   onFavoritesClick,
   isFavoritesActive,
   isFavoritesDisabled,
+  onCloseNewsModal,
+  onOpenMobileSidebar, // FIX: Dodano
 }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -193,6 +197,9 @@ export default function MobileBottomNav({
       setSavedOrder(null);
     }
 
+    // FIX: Zamknij NewsModal
+    onCloseNewsModal?.();
+
     setInput('');
     onSearch('', savedOrder || 'id_desc', true);
     setShowNavDropdown(false);
@@ -207,6 +214,9 @@ export default function MobileBottomNav({
         setSavedOrder(null);
       }
 
+      // FIX: Zamknij NewsModal
+      onCloseNewsModal?.();
+
       setInput('');
       onSearch('', savedOrder || 'id_desc', true);
     } else {
@@ -215,12 +225,19 @@ export default function MobileBottomNav({
       }
 
       setIsPopularMode(true);
+
+      // FIX: Zamknij NewsModal
+      onCloseNewsModal?.();
+
       onPopularSearch(popularDate, popularScale);
     }
     setShowNavDropdown(false);
   };
 
   const handleHotSearch = () => {
+    // FIX: Zamknij NewsModal
+    onCloseNewsModal?.();
+
     if (order === 'hot') {
       if (savedOrder !== null) {
         setOrder(savedOrder);
@@ -719,28 +736,38 @@ export default function MobileBottomNav({
       {isPopularMode && (
         <div className="mobile-popular-overlay">
           <div className="mobile-popular-controls">
-            <div className="mobile-scale-selector">
-              <button
-                type="button"
-                className={popularScale === 'day' ? 'active' : ''}
-                onClick={() => changeScale('day')}
-              >
-                Day
-              </button>
-              <button
-                type="button"
-                className={popularScale === 'week' ? 'active' : ''}
-                onClick={() => changeScale('week')}
-              >
-                Week
-              </button>
-              <button
-                type="button"
-                className={popularScale === 'month' ? 'active' : ''}
-                onClick={() => changeScale('month')}
-              >
-                Month
-              </button>
+            <div className="mobile-popular-top-controls">
+              <div className="mobile-scale-selector">
+                <button
+                  type="button"
+                  className={popularScale === 'day' ? 'active' : ''}
+                  onClick={() => changeScale('day')}
+                >
+                  Day
+                </button>
+                <button
+                  type="button"
+                  className={popularScale === 'week' ? 'active' : ''}
+                  onClick={() => changeScale('week')}
+                >
+                  Week
+                </button>
+                <button
+                  type="button"
+                  className={popularScale === 'month' ? 'active' : ''}
+                  onClick={() => changeScale('month')}
+                >
+                  Month
+                </button>
+              </div>
+
+              {onOpenMobileSidebar && (
+                <button type="button" className="popular-burger-btn" onClick={onOpenMobileSidebar}>
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z" />
+                  </svg>
+                </button>
+              )}
             </div>
             <div className="mobile-date-navigation">
               <button type="button" className="nav-arrow" onClick={() => changeDate('prev')}>

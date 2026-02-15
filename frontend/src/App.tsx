@@ -444,14 +444,13 @@ function App() {
   // 🔥 Funkcje do modyfikacji SearchBar
   const searchTag = useCallback(
     async (tag: string) => {
-      // Użyj zapisanego order jeśli istnieje, inaczej domyślny
-      const orderToUse = savedOrderRef.current || 'id_desc';
-      await handleSearch(tag, orderToUse);
+      // FIX: Zamknij NewsModal
+      setShowNewsPopup(false);
 
-      // Wyczyść zapisany order (już go użyliśmy)
-      savedOrderRef.current = null;
+      // FIX: Użyj obecnego order aby zachować filtry między wyszukiwaniami
+      await handleSearch(tag, order);
     },
-    [handleSearch],
+    [handleSearch, order],
   );
 
   const addTag = useCallback(
@@ -792,7 +791,8 @@ function App() {
 
   // 🔥 Swipe dla popular mode (przełączanie dat)
   useEffect(() => {
-    if (!isMobile || !isPopularMode) return;
+    // FIX: Jeśli post jest zmaksymalizowany, nie obsługuj swipe dla dat
+    if (!isMobile || !isPopularMode || maximizedPostId !== null) return;
 
     let touchStartX = 0;
     let touchStartY = 0;
@@ -859,7 +859,7 @@ function App() {
         postsGrid.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isMobile, isPopularMode, popularDate, popularScale, changePopularDate]);
+  }, [isMobile, isPopularMode, popularDate, popularScale, changePopularDate, maximizedPostId]);
 
   useEffect(() => {
     if (!infiniteScroll && hideFavorites) {
@@ -954,6 +954,7 @@ function App() {
             popularScale={popularScale}
             setPopularScale={setPopularScale}
             loading={loading}
+            onCloseNewsModal={() => setShowNewsPopup(false)}
           />
 
           {!infiniteScroll && (
@@ -1784,10 +1785,12 @@ function App() {
         onFavoritesClick={handleFavoritesClick}
         isFavoritesActive={isViewingRealFavorites}
         isFavoritesDisabled={!isLoggedIn || loading}
+        onCloseNewsModal={() => setShowNewsPopup(false)}
+        onOpenMobileSidebar={() => setShowMobileSidebar(true)}
       />
 
       {/* Mobile Sidebar */}
-      {showMobileSidebar && (
+      {showMobileSidebar && isMobile && (
         <>
           {/* Overlay */}
           <div className="mobile-sidebar-overlay" onClick={() => setShowMobileSidebar(false)} />

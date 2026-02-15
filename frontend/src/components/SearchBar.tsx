@@ -17,7 +17,8 @@ type Props = {
   setPopularDate: (date: string) => void;
   popularScale: PopularScale;
   setPopularScale: (scale: PopularScale) => void;
-  loading?: boolean; // ⚡ DODANE - blokuj przyciski podczas fetchowania
+  loading?: boolean;
+  onCloseNewsModal?: () => void;
 };
 
 export default function SearchBar({
@@ -33,7 +34,8 @@ export default function SearchBar({
   setPopularDate,
   popularScale,
   setPopularScale,
-  loading = false, // ⚡ DODANE
+  loading = false,
+  onCloseNewsModal,
 }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -211,6 +213,9 @@ export default function SearchBar({
       setSavedOrder(null);
     }
 
+    // FIX: Zamknij NewsModal
+    onCloseNewsModal?.();
+
     setInput('');
     onSearch('', savedOrder || 'id_desc', true);
   };
@@ -226,6 +231,9 @@ export default function SearchBar({
         setSavedOrder(null);
       }
 
+      // FIX: Zamknij NewsModal
+      onCloseNewsModal?.();
+
       setInput('');
       onSearch('', savedOrder || 'id_desc', true);
     } else {
@@ -237,6 +245,9 @@ export default function SearchBar({
       // Włącz popular mode
       setIsPopularMode(true);
       setInput('');
+
+      // FIX: Zamknij NewsModal
+      onCloseNewsModal?.();
 
       // Wywołaj wyszukiwanie popular
       onPopularSearch(popularDate, popularScale);
@@ -252,10 +263,13 @@ export default function SearchBar({
       setSavedOrder(order);
     }
 
-    // Ustaw order na hot i wpisz do search bara
+    // FIX: Zamknij NewsModal
+    onCloseNewsModal?.();
+
+    // FIX: Ustaw order na hot i wyczyść input - wyszukaj puste z hot
     setOrder('hot');
     setInput('');
-    onSearch('order:hot', 'hot');
+    onSearch('', 'hot', true); // true = clearTags
   };
 
   const handleChange = (value: string) => {

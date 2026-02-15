@@ -902,7 +902,7 @@ button {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 998;
+  z-index: 1000;
   animation: fadeIn 0.3s ease;
 }
 
@@ -913,7 +913,7 @@ button {
   width: 280px;
   height: 100%;
   background: #1b1b24;
-  z-index: 999;
+  z-index: 1001;
   animation: slideIn 0.3s ease forwards;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
   display: flex;
