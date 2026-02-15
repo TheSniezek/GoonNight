@@ -235,7 +235,6 @@ export default function MobileBottomNav({
   };
 
   const handleHotSearch = () => {
-    // FIX: Zamknij NewsModal
     onCloseNewsModal?.();
 
     if (order === 'hot') {
@@ -247,7 +246,7 @@ export default function MobileBottomNav({
     } else {
       setSavedOrder(order);
       setOrder('hot');
-      onSearch(input, 'hot');
+      onSearch('', 'hot', true);
     }
     setShowNavDropdown(false);
   };
