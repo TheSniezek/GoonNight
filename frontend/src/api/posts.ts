@@ -62,6 +62,9 @@ export const mapE621Post = (post: E621Post): Post => {
     score: post.score,
     fav_count: post.fav_count,
     sources: post.sources || [],
+    uploader_id: post.uploader_id, // FIX: Dodano
+    approver_id: post.approver_id, // FIX: Dodano
+    flags: post.flags, // FIX: Dodano
   };
 };
 

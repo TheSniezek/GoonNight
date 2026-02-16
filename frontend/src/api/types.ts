@@ -97,6 +97,17 @@ export type E621Post = {
   };
   fav_count: number;
   sources: string[];
+  uploader_id: number; // FIX: Dodano
+  approver_id?: number | null; // FIX: Dodano
+  flags: {
+    // FIX: Dodano
+    pending: boolean;
+    flagged: boolean;
+    note_locked: boolean;
+    status_locked: boolean;
+    rating_locked: boolean;
+    deleted: boolean;
+  };
 };
 
 export type PostTag = {
@@ -142,4 +153,15 @@ export type Post = {
   };
   fav_count: number;
   sources: string[];
+  uploader_id: number; // FIX: Dodano
+  approver_id?: number | null; // FIX: Dodano
+  flags: {
+    // FIX: Dodano
+    pending: boolean;
+    flagged: boolean;
+    note_locked: boolean;
+    status_locked: boolean;
+    rating_locked: boolean;
+    deleted: boolean;
+  };
 };

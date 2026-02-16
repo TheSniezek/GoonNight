@@ -152,6 +152,26 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 🔥 Blokowanie scrollu w maximized mode
+  useEffect(() => {
+    if (maximizedPostId !== null) {
+      const scrollY = window.scrollY;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [maximizedPostId]);
+
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
@@ -1475,6 +1495,43 @@ function App() {
                   </div>
 
                   <div className="info-row">
+                    <span className="info-label">Uploader:</span>
+                    <span className="info-value">
+                      <a
+                        href={`https://e621.net/users/${post.uploader_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="info-link"
+                      >
+                        User #{post.uploader_id}
+                      </a>
+                    </span>
+                  </div>
+
+                  {post.approver_id && (
+                    <div className="info-row">
+                      <span className="info-label">Approver:</span>
+                      <span className="info-value">
+                        <a
+                          href={`https://e621.net/users/${post.approver_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="info-link"
+                        >
+                          User #{post.approver_id}
+                        </a>
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="info-row">
+                    <span className="info-label">Status:</span>
+                    <span className="info-value">
+                      {post.flags.deleted ? 'Deleted' : post.flags.pending ? 'Pending' : 'Approved'}
+                    </span>
+                  </div>
+
+                  <div className="info-row">
                     <span className="info-label">Posted:</span>
                     <span className="info-value">{formatTimeAgo(post.created_at)}</span>
                   </div>
@@ -1730,6 +1787,9 @@ function App() {
             onToggleTag={toggleTag}
             onSearchTag={handleSearch}
             defaultVolume={defaultVolume}
+            loopVideos={loopVideos}
+            autoPlayOnMaximize={autoPlayOnMaximize}
+            videoResolution={videoResolution}
             toggleFavoritePost={toggleFavoritePost}
             pendingFavorites={pendingFavorites}
             isLoggedIn={isLoggedIn}

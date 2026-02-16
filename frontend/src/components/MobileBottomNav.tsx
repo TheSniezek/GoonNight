@@ -52,6 +52,7 @@ export default function MobileBottomNav({
   const [showFilters, setShowFilters] = useState(false);
   const [savedOrder, setSavedOrder] = useState<Order | null>(null);
   const [showNavDropdown, setShowNavDropdown] = useState(false);
+  const [currentMode, setCurrentMode] = useState<'home' | 'hot' | 'popular'>('home'); // FIX: Track current mode
 
   const debounceRef = useRef<number | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -191,6 +192,7 @@ export default function MobileBottomNav({
 
   const handleDefaultSearch = () => {
     setIsPopularMode(false);
+    setCurrentMode('home'); // FIX: Set mode
 
     if (savedOrder !== null) {
       setOrder(savedOrder);
@@ -206,48 +208,33 @@ export default function MobileBottomNav({
   };
 
   const handlePopularSearch = () => {
-    if (isPopularMode) {
-      setIsPopularMode(false);
-
-      if (savedOrder !== null) {
-        setOrder(savedOrder);
-        setSavedOrder(null);
-      }
-
-      // FIX: Zamknij NewsModal
-      onCloseNewsModal?.();
-
-      setInput('');
-      onSearch('', savedOrder || 'id_desc', true);
-    } else {
-      if (!isPopularMode && order !== 'hot') {
-        setSavedOrder(order);
-      }
-
-      setIsPopularMode(true);
-
-      // FIX: Zamknij NewsModal
-      onCloseNewsModal?.();
-
-      onPopularSearch(popularDate, popularScale);
+    // FIX: Nie toggle - zawsze włącz popular
+    if (!isPopularMode && order !== 'hot') {
+      setSavedOrder(order);
     }
+
+    setIsPopularMode(true);
+    setCurrentMode('popular'); // FIX: Set mode
+
+    // FIX: Zamknij NewsModal
+    onCloseNewsModal?.();
+
+    onPopularSearch(popularDate, popularScale);
     setShowNavDropdown(false);
   };
 
   const handleHotSearch = () => {
     onCloseNewsModal?.();
 
-    if (order === 'hot') {
-      if (savedOrder !== null) {
-        setOrder(savedOrder);
-        onSearch(input, savedOrder);
-        setSavedOrder(null);
-      }
-    } else {
+    // FIX: Nie toggle - zawsze włącz hot
+    setIsPopularMode(false);
+    setCurrentMode('hot'); // FIX: Set mode
+
+    if (order !== 'hot') {
       setSavedOrder(order);
-      setOrder('hot');
-      onSearch('', 'hot', true);
     }
+    setOrder('hot');
+    onSearch('', 'hot', true);
     setShowNavDropdown(false);
   };
 
@@ -564,12 +551,23 @@ export default function MobileBottomNav({
           onClick={() => setShowNavDropdown(!showNavDropdown)}
           disabled={loading}
         >
-          <svg width="30" height="30" viewBox="0 0 32 32" fill="currentColor">
-            <path d="M 17.381 1.55 C 18.853 1.51 18.826 2.337 19.193 3.517 L 19.62 4.872 C 19.925 5.846 20.105 6.541 19.911 7.558 C 19.857 7.848 19.782 8.12 19.773 8.42 C 19.725 9.959 21.085 11.157 22.613 10.845 C 23.21 10.723 23.513 10.546 24.172 10.564 C 24.726 10.578 27.624 11.079 28.233 11.302 C 29.166 11.643 29.443 12.797 28.692 13.465 C 28.404 13.723 24.93 15.189 24.179 15.491 C 23.54 15.749 23.083 15.751 22.546 16.25 C 21.279 17.427 21.89 18.539 22.261 19.775 L 23.206 22.82 C 23.351 23.28 23.537 23.785 23.64 24.252 C 23.717 24.697 22.15 26.128 23.472 27.45 C 24.466 28.443 23.973 30.47 22.399 30.389 C 21.064 30.32 20.513 28.65 21.223 27.631 C 21.544 27.17 21.671 27.025 21.704 26.449 C 21.704 25.259 20.582 24.732 19.752 24.041 L 16.829 21.604 C 15.68 20.642 14.892 21.088 13.906 21.854 C 12.729 22.773 11.641 23.784 10.477 24.72 C 9.89 25.192 9.273 25.998 8.414 25.481 C 7.557 24.965 7.868 24.157 8.116 23.394 L 8.528 22.144 C 8.782 21.356 9.038 20.573 9.313 19.794 C 9.763 18.497 10.017 17.578 11.359 16.912 C 12.375 16.411 13.761 16.308 14.395 15.256 C 14.719 14.718 14.816 13.824 14.634 13.221 C 14.149 11.708 12.659 11.052 13.422 8.876 C 13.733 7.988 14.607 7.568 14.986 6.726 C 15.2 6.247 15.302 5.751 15.458 5.254 C 15.688 4.579 15.943 3.906 16.177 3.233 C 16.429 2.516 16.498 1.746 17.381 1.55 Z" />
-            <path d="M 5.146 9.883 C 6.24 9.854 9.136 10.037 9.932 10.417 C 11.677 11.252 13.008 14.125 10.659 14.916 C 8.794 15.558 7.2 13.879 5.888 12.904 C 5.457 12.554 4.911 12.335 4.492 11.975 C 3.655 11.255 3.973 9.96 5.146 9.883 Z" />
-            <path d="M 25.447 4.335 C 27.252 4.142 27.85 6.754 25.496 7.596 C 25.146 7.721 24.782 7.903 24.431 8.053 C 24.142 8.219 23.591 8.346 23.309 8.117 C 22.772 7.674 23.341 6.869 23.542 6.393 C 23.943 5.456 24.274 4.482 25.447 4.335 Z" />
-            <path d="M 8.85 3.479 C 10.215 3.353 10.615 4.694 10.995 5.725 C 11.227 6.279 11.845 7.131 10.928 7.443 C 10.664 7.533 10.461 7.441 10.228 7.325 C 9.268 6.723 7.693 6.513 7.533 5.194 C 7.415 4.214 7.885 3.616 8.85 3.479 Z" />
-          </svg>
+          {/* FIX: Zmiana SVG w zależności od currentMode */}
+          {currentMode === 'home' ? (
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="currentColor">
+              <path d="M 17.381 1.55 C 18.853 1.51 18.826 2.337 19.193 3.517 L 19.62 4.872 C 19.925 5.846 20.105 6.541 19.911 7.558 C 19.857 7.848 19.782 8.12 19.773 8.42 C 19.725 9.959 21.085 11.157 22.613 10.845 C 23.21 10.723 23.513 10.546 24.172 10.564 C 24.726 10.578 27.624 11.079 28.233 11.302 C 29.166 11.643 29.443 12.797 28.692 13.465 C 28.404 13.723 24.93 15.189 24.179 15.491 C 23.54 15.749 23.083 15.751 22.546 16.25 C 21.279 17.427 21.89 18.539 22.261 19.775 L 23.206 22.82 C 23.351 23.28 23.537 23.785 23.64 24.252 C 23.717 24.697 22.15 26.128 23.472 27.45 C 24.466 28.443 23.973 30.47 22.399 30.389 C 21.064 30.32 20.513 28.65 21.223 27.631 C 21.544 27.17 21.671 27.025 21.704 26.449 C 21.704 25.259 20.582 24.732 19.752 24.041 L 16.829 21.604 C 15.68 20.642 14.892 21.088 13.906 21.854 C 12.729 22.773 11.641 23.784 10.477 24.72 C 9.89 25.192 9.273 25.998 8.414 25.481 C 7.557 24.965 7.868 24.157 8.116 23.394 L 8.528 22.144 C 8.782 21.356 9.038 20.573 9.313 19.794 C 9.763 18.497 10.017 17.578 11.359 16.912 C 12.375 16.411 13.761 16.308 14.395 15.256 C 14.719 14.718 14.816 13.824 14.634 13.221 C 14.149 11.708 12.659 11.052 13.422 8.876 C 13.733 7.988 14.607 7.568 14.986 6.726 C 15.2 6.247 15.302 5.751 15.458 5.254 C 15.688 4.579 15.943 3.906 16.177 3.233 C 16.429 2.516 16.498 1.746 17.381 1.55 Z" />
+              <path d="M 5.146 9.883 C 6.24 9.854 9.136 10.037 9.932 10.417 C 11.677 11.252 13.008 14.125 10.659 14.916 C 8.794 15.558 7.2 13.879 5.888 12.904 C 5.457 12.554 4.911 12.335 4.492 11.975 C 3.655 11.255 3.973 9.96 5.146 9.883 Z" />
+              <path d="M 25.447 4.335 C 27.252 4.142 27.85 6.754 25.496 7.596 C 25.146 7.721 24.782 7.903 24.431 8.053 C 24.142 8.219 23.591 8.346 23.309 8.117 C 22.772 7.674 23.341 6.869 23.542 6.393 C 23.943 5.456 24.274 4.482 25.447 4.335 Z" />
+              <path d="M 8.85 3.479 C 10.215 3.353 10.615 4.694 10.995 5.725 C 11.227 6.279 11.845 7.131 10.928 7.443 C 10.664 7.533 10.461 7.441 10.228 7.325 C 9.268 6.723 7.693 6.513 7.533 5.194 C 7.415 4.214 7.885 3.616 8.85 3.479 Z" />
+            </svg>
+          ) : currentMode === 'hot' ? (
+            <svg width="30" height="30" viewBox="0 0 448 512" fill="currentColor">
+              <path d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z" />
+            </svg>
+          ) : (
+            <svg width="30" height="30" viewBox="0 0 576 512" fill="currentColor">
+              <path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z" />
+            </svg>
+          )}
         </button>
 
         {showNavDropdown && (
@@ -581,24 +579,14 @@ export default function MobileBottomNav({
               <span>Home</span>
             </button>
 
-            <button
-              type="button"
-              className={order === 'hot' ? 'active' : ''}
-              onClick={handleHotSearch}
-              disabled={loading}
-            >
+            <button type="button" onClick={handleHotSearch} disabled={loading}>
               <svg height="24" width="24" viewBox="0 0 448 512" fill="currentColor">
                 <path d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z" />
               </svg>
               <span>Hot</span>
             </button>
 
-            <button
-              type="button"
-              className={isPopularMode ? 'active' : ''}
-              onClick={handlePopularSearch}
-              disabled={loading}
-            >
+            <button type="button" onClick={handlePopularSearch} disabled={loading}>
               <svg height="24" width="24" viewBox="0 0 576 512" fill="currentColor">
                 <path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z" />
               </svg>

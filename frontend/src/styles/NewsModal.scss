@@ -744,6 +744,7 @@
   .news-maximized-item {
     max-width: 95vw;
     max-height: 95vh;
+    height: 100%;
     object-fit: contain;
     border-radius: 0;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);

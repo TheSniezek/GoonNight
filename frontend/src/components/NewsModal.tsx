@@ -15,6 +15,9 @@ interface NewsModalProps {
   onToggleTag: (tag: string) => void;
   onSearchTag: (tag: string) => void;
   defaultVolume: number;
+  loopVideos: boolean;
+  autoPlayOnMaximize: boolean;
+  videoResolution: 'best' | 'worse';
   // Nowe propsy dla favorites
   toggleFavoritePost: (postId: number, currentIsFavorited: boolean) => Promise<void>;
   pendingFavorites: Set<number>;
@@ -41,6 +44,9 @@ const NewsModal = ({
   onToggleTag,
   onSearchTag,
   defaultVolume,
+  loopVideos,
+  // autoPlayOnMaximize,
+  videoResolution,
   toggleFavoritePost,
   pendingFavorites,
   isLoggedIn,
@@ -173,6 +179,26 @@ const NewsModal = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // 🔥 Blokowanie scrollu w maximized mode
+  useEffect(() => {
+    if (maximizedPost) {
+      const scrollY = window.scrollY;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [maximizedPost]);
 
   // Resizing sidebar (disabled on mobile)
   useEffect(() => {
@@ -1244,9 +1270,14 @@ const NewsModal = ({
                   />
                 ) : ['webm', 'mp4'].includes(currentMaximizedPost.file.ext as string) ? (
                   <video
-                    src={currentMaximizedPost.file.url || currentMaximizedPost.file.sample_url}
+                    src={
+                      videoResolution === 'best'
+                        ? currentMaximizedPost.file.url
+                        : currentMaximizedPost.sample.url
+                    }
                     controls
                     autoPlay
+                    loop={loopVideos}
                     className="news-maximized-item"
                     ref={(el) => {
                       if (el) {
