@@ -62,9 +62,12 @@ export const mapE621Post = (post: E621Post): Post => {
     score: post.score,
     fav_count: post.fav_count,
     sources: post.sources || [],
-    uploader_id: post.uploader_id, // FIX: Dodano
-    approver_id: post.approver_id, // FIX: Dodano
-    flags: post.flags, // FIX: Dodano
+    uploader_id: post.uploader_id,
+    approver_id: post.approver_id,
+    flags: post.flags,
+    parent_id: post.relationships?.parent_id ?? null,
+    children: post.relationships?.children ?? [],
+    pool_ids: post.pools ?? [],
   };
 };
 
@@ -150,4 +153,33 @@ export const fetchPopularPosts = async (
     },
   });
   return data.posts.map(mapE621Post);
+};
+
+// Pobierz nazwy użytkowników po ID (uploader/approver)
+export const fetchUserNames = async (ids: number[]): Promise<Record<number, string>> => {
+  const filtered = ids.filter(Boolean);
+  if (!filtered.length) return {};
+  const { data } = await axios.get<{ users: Record<string, string> }>(
+    `${BASE_URL}/api/e621/users`,
+    { params: { ids: filtered.join(',') } },
+  );
+  // Konwertuj klucze z string na number
+  const result: Record<number, string> = {};
+  for (const [k, v] of Object.entries(data.users || {})) {
+    result[Number(k)] = v;
+  }
+  return result;
+};
+
+// Pobierz meta posta (pools, relationships) - wywoływane lazy gdy otwieramy info popup
+export const fetchPostMeta = async (
+  postId: number,
+): Promise<{
+  parent_id: number | null;
+  children: number[];
+  has_children: boolean;
+  pools: { id: number; name: string | null }[];
+}> => {
+  const { data } = await axios.get(`${BASE_URL}/api/e621/post-meta/${postId}`);
+  return data;
 };

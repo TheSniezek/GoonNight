@@ -5,7 +5,13 @@ import MobileBottomNav from './components/MobileBottomNav';
 import PageButtonsTop from './components/PageButtons/PageButtonsTop';
 import PageButtonsBottom from './components/PageButtons/PageButtonsBottom';
 import type { Order, Post, PostTag, PopularScale } from './api/types';
-import { fetchPostsForMultipleTags, mapE621Post, fetchPopularPosts } from './api/posts';
+import {
+  fetchPostsForMultipleTags,
+  mapE621Post,
+  fetchPopularPosts,
+  fetchUserNames,
+  fetchPostMeta,
+} from './api/posts';
 import { useSettings } from './logic/useSettings';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
@@ -182,6 +188,24 @@ function App() {
   const [newsPosts, setNewsPosts] = useState<Post[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Info popup - user names & post meta
+  const [infoUserNames, setInfoUserNames] = useState<Record<number, string>>({});
+  const [loadingUserIds, setLoadingUserIds] = useState<Set<number>>(new Set());
+  const [infoPostMeta, setInfoPostMeta] = useState<
+    Record<
+      number,
+      {
+        parent_id: number | null;
+        children: number[];
+        pools: { id: number; name: string | null }[];
+      }
+    >
+  >({});
+
+  // Maximized fade buttons
+  const [buttonsVisible, setButtonsVisible] = useState(true);
+  const fadeTimerRef = useRef<number | null>(null);
+
   const scrollBeforeMaximize = useRef<number>(0);
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const newsCache = useRef<Record<string, Post[]>>({});
@@ -251,6 +275,73 @@ function App() {
   useEffect(() => {
     localStorage.setItem('newsPostColumns', String(newsPostColumns));
   }, [newsPostColumns]);
+
+  // Fade przycisków w maximized mode - ukryj po 1s bez ruchu myszy
+  useEffect(() => {
+    if (maximizedPostId === null) {
+      setButtonsVisible(true);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+      return;
+    }
+
+    const resetTimer = () => {
+      setButtonsVisible(true);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+      fadeTimerRef.current = window.setTimeout(() => setButtonsVisible(false), 1000);
+    };
+
+    resetTimer(); // Pokaż od razu po zmaksymalizowaniu
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+
+    return () => {
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    };
+  }, [maximizedPostId]);
+
+  // Lazy-load user names i post meta przy otwieraniu info popup
+  useEffect(() => {
+    if (showInfoFor === null) return;
+    const post = visiblePosts.find((p) => p.id === showInfoFor);
+    if (!post) return;
+
+    // Pobierz nazwy userów
+    const idsToFetch = [post.uploader_id, post.approver_id ?? 0].filter(
+      (id) => id && !infoUserNames[id] && !loadingUserIds.has(id),
+    );
+    if (idsToFetch.length > 0) {
+      // Oznacz jako loading
+      setLoadingUserIds((prev) => new Set([...prev, ...idsToFetch]));
+
+      fetchUserNames(idsToFetch)
+        .then((names) => {
+          setInfoUserNames((prev) => ({ ...prev, ...names }));
+          // Usuń z loading
+          setLoadingUserIds((prev) => {
+            const next = new Set(prev);
+            idsToFetch.forEach((id) => next.delete(id));
+            return next;
+          });
+        })
+        .catch(() => {
+          // Przy błędzie też usuń z loading
+          setLoadingUserIds((prev) => {
+            const next = new Set(prev);
+            idsToFetch.forEach((id) => next.delete(id));
+            return next;
+          });
+        });
+    }
+
+    // Pobierz post meta (pools, children) jeśli nie mamy
+    if (!infoPostMeta[post.id]) {
+      fetchPostMeta(post.id).then((meta) =>
+        setInfoPostMeta((prev) => ({ ...prev, [post.id]: meta })),
+      );
+    }
+  }, [showInfoFor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const prevId = prevMaximizedPostId.current;
@@ -1118,7 +1209,18 @@ function App() {
             <div
               key={post.id}
               id={`post-${post.id}`}
-              className={`post-wrapper ${isMaximized ? 'maximized' : ''} ${isMaximized ? `buttons-${maximizedButtonsPosition}` : `buttons-${postButtonsPosition}`}   ${isMobile && !isMaximized ? 'mobile-no-buttons' : ''}`.trim()}
+              className={[
+                'post-wrapper',
+                isMaximized ? 'maximized' : '',
+                isMaximized
+                  ? `buttons-${maximizedButtonsPosition}`
+                  : `buttons-${postButtonsPosition}`,
+                isMobile && !isMaximized ? 'mobile-no-buttons' : '',
+                showTagsFor === post.id || showInfoFor === post.id ? 'popup-active' : '',
+                isMaximized && !buttonsVisible ? 'buttons-faded' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
               <button
                 className={`maximize-btn ${isMaximized ? 'maximized-btn' : ''}`}
@@ -1497,14 +1599,18 @@ function App() {
                   <div className="info-row">
                     <span className="info-label">Uploader:</span>
                     <span className="info-value">
-                      <a
-                        href={`https://e621.net/users/${post.uploader_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="info-link"
-                      >
-                        User #{post.uploader_id}
-                      </a>
+                      {loadingUserIds.has(post.uploader_id) ? (
+                        <span className="info-loading-text">Loading…</span>
+                      ) : (
+                        <a
+                          href={`https://e621.net/users/${post.uploader_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="info-link"
+                        >
+                          {infoUserNames[post.uploader_id] ?? `User #${post.uploader_id}`}
+                        </a>
+                      )}
                     </span>
                   </div>
 
@@ -1512,14 +1618,18 @@ function App() {
                     <div className="info-row">
                       <span className="info-label">Approver:</span>
                       <span className="info-value">
-                        <a
-                          href={`https://e621.net/users/${post.approver_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="info-link"
-                        >
-                          User #{post.approver_id}
-                        </a>
+                        {loadingUserIds.has(post.approver_id) ? (
+                          <span className="info-loading-text">Loading…</span>
+                        ) : (
+                          <a
+                            href={`https://e621.net/users/${post.approver_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="info-link"
+                          >
+                            {infoUserNames[post.approver_id] ?? `User #${post.approver_id}`}
+                          </a>
+                        )}
                       </span>
                     </div>
                   )}
@@ -1530,6 +1640,89 @@ function App() {
                       {post.flags.deleted ? 'Deleted' : post.flags.pending ? 'Pending' : 'Approved'}
                     </span>
                   </div>
+
+                  {/* Parent post */}
+                  {(() => {
+                    const parentId = post.parent_id ?? infoPostMeta[post.id]?.parent_id ?? null;
+                    if (!parentId) return null;
+                    return (
+                      <div className="info-row">
+                        <span className="info-label">Parent:</span>
+                        <span className="info-value">
+                          <a
+                            href={`https://e621.net/posts/${parentId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="info-link"
+                          >
+                            #{parentId}
+                          </a>
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Children posts */}
+                  {(() => {
+                    const childList: number[] =
+                      (post.children ?? []).length > 0
+                        ? (post.children ?? [])
+                        : (infoPostMeta[post.id]?.children ?? []);
+                    if (childList.length === 0) return null;
+                    return (
+                      <div className="info-row">
+                        <span className="info-label">Children:</span>
+                        <span className="info-value info-children">
+                          {childList.slice(0, 5).map((childId) => (
+                            <a
+                              key={childId}
+                              href={`https://e621.net/posts/${childId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="info-link"
+                            >
+                              #{childId}
+                            </a>
+                          ))}
+                          {childList.length > 5 && (
+                            <span className="info-more">+{childList.length - 5} more</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Pools */}
+                  {(() => {
+                    const pools = infoPostMeta[post.id]?.pools ?? [];
+                    if (pools.length === 0) return null;
+                    return (
+                      <div className="info-row">
+                        <span className="info-label">Pools:</span>
+                        <span className="info-value info-pools">
+                          {pools.map((pool) => (
+                            <a
+                              key={pool.id}
+                              href={`https://e621.net/pools/${pool.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="info-link info-pool-link"
+                            >
+                              {pool.name ? pool.name.replace(/_/g, ' ') : `Pool #${pool.id}`}
+                            </a>
+                          ))}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Loading indicator dla meta */}
+                  {showInfoFor === post.id && !infoPostMeta[post.id] && (
+                    <div className="info-row info-loading">
+                      <span className="info-label">Pools/Relations:</span>
+                      <span className="info-value info-loading-text">Loading…</span>
+                    </div>
+                  )}
 
                   <div className="info-row">
                     <span className="info-label">Posted:</span>

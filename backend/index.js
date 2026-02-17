@@ -675,6 +675,102 @@ app.get('/api/e621/popular', async (req, res) => {
   }
 });
 
+// ==================== USER LOOKUP ====================
+// Pobierz nazwy użytkowników po ID (uploader/approver)
+app.get('/api/e621/users', async (req, res) => {
+  try {
+    const ids = String(req.query.ids ?? '').trim();
+    if (!ids) return res.json({ users: {} });
+
+    const idList = ids.split(',').map(Number).filter(Boolean).slice(0, 10); // max 10 na raz
+    const cacheKey = `users:${idList.sort().join(',')}`;
+    const cached = cache.get(cacheKey, 3600000); // 1h cache
+    if (cached) return res.json({ ...cached, fromCache: true });
+
+    const results = {};
+    for (const id of idList) {
+      try {
+        const r = await e621Limiter.execute(() =>
+          retryWithBackoff(() =>
+            axios.get(`https://e621.net/users/${id}.json`, {
+              headers: { 'User-Agent': USER_AGENT },
+              timeout: 8000,
+            }),
+          ),
+        );
+        results[id] = r.data.name || `User #${id}`;
+      } catch {
+        results[id] = `User #${id}`;
+      }
+    }
+
+    const payload = { users: results };
+    cache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    console.error('❌ [Users]', err.message);
+    res.status(500).json({ users: {} });
+  }
+});
+
+// ==================== POST META (pools, relationships) ====================
+app.get('/api/e621/post-meta/:postId', async (req, res) => {
+  try {
+    const postId = Number(req.params.postId);
+    if (!postId) return res.status(400).json({ error: 'Invalid post ID' });
+
+    const cacheKey = `post-meta:${postId}`;
+    const cached = cache.get(cacheKey, 300000); // 5min cache
+    if (cached) return res.json({ ...cached, fromCache: true });
+
+    // Pobierz pełne dane posta (relationships + pool_ids)
+    const postRes = await e621Limiter.execute(() =>
+      retryWithBackoff(() =>
+        axios.get(`https://e621.net/posts/${postId}.json`, {
+          headers: { 'User-Agent': USER_AGENT },
+          timeout: 10000,
+        }),
+      ),
+    );
+
+    const post = postRes.data.post;
+    const relationships = post?.relationships || {};
+    const poolIds = post?.pools || [];
+
+    // Pobierz nazwy pooli jeśli są
+    let pools = [];
+    if (poolIds.length > 0) {
+      try {
+        const poolsRes = await e621Limiter.execute(() =>
+          retryWithBackoff(() =>
+            axios.get('https://e621.net/pools.json', {
+              params: { search: { id: poolIds.join(',') } },
+              headers: { 'User-Agent': USER_AGENT },
+              timeout: 10000,
+            }),
+          ),
+        );
+        pools = (poolsRes.data || []).map((p) => ({ id: p.id, name: p.name }));
+      } catch {
+        pools = poolIds.map((id) => ({ id, name: null }));
+      }
+    }
+
+    const payload = {
+      parent_id: relationships.parent_id || null,
+      children: relationships.children || [],
+      has_children: relationships.has_children || false,
+      pools,
+    };
+
+    cache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    console.error('❌ [PostMeta]', err.message);
+    res.status(500).json({ parent_id: null, children: [], has_children: false, pools: [] });
+  }
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });

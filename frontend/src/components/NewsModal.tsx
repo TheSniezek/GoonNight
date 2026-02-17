@@ -45,7 +45,7 @@ const NewsModal = ({
   onSearchTag,
   defaultVolume,
   loopVideos,
-  // autoPlayOnMaximize,
+  autoPlayOnMaximize,
   videoResolution,
   toggleFavoritePost,
   pendingFavorites,
@@ -374,6 +374,19 @@ const NewsModal = ({
     }
   }, [defaultVolume]);
 
+  // Autoplay w maximized - wzorowany na App.tsx (nie hardcoded na video tagu)
+  useEffect(() => {
+    if (!maximizedPost) return;
+    if (!autoPlayOnMaximize) return;
+
+    // Krótkie opóźnienie żeby video zdążył się zamontować
+    const timer = window.setTimeout(() => {
+      maximizedVideoRef.current?.play().catch(() => {});
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [maximizedPost, autoPlayOnMaximize]);
+
   // Blocking scrolling for normal window
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -541,7 +554,13 @@ const NewsModal = ({
                       <div
                         key={post.id}
                         id={`news-post-${post.id}`}
-                        className={`news-post-wrapper ${isMaximized ? 'maximized' : ''}`}
+                        className={[
+                          'news-post-wrapper',
+                          isMaximized ? 'maximized' : '',
+                          showTagsFor === post.id || showInfoFor === post.id ? 'popup-active' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                       >
                         {!isMobile && (
                           <button
@@ -1276,7 +1295,6 @@ const NewsModal = ({
                         : currentMaximizedPost.sample.url
                     }
                     controls
-                    autoPlay
                     loop={loopVideos}
                     className="news-maximized-item"
                     ref={(el) => {

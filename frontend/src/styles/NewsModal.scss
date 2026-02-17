@@ -511,6 +511,14 @@
               opacity: 1;
             }
 
+            // FIX: Gdy popup otwarty - pokaż WSZYSTKIE przyciski
+            &.popup-active .news-tags-btn,
+            &.popup-active .news-fav-btn,
+            &.popup-active .news-info-btn,
+            &.popup-active .news-maximize-btn {
+              opacity: 1;
+            }
+
             .news-tags-popup {
               position: absolute;
               top: 47px;

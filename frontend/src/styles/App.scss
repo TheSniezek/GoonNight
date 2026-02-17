@@ -756,6 +756,35 @@ button {
             text-decoration: underline;
           }
         }
+
+        // Multi-link values (children, pools)
+        .info-children,
+        .info-pools {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 3px;
+        }
+
+        .info-pool-link {
+          font-size: 0.85em;
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          display: block;
+        }
+
+        .info-more {
+          font-size: 0.8em;
+          color: #888;
+        }
+
+        .info-loading-text {
+          color: #888;
+          font-style: italic;
+          font-size: 0.9em;
+        }
       }
     }
 
@@ -820,6 +849,31 @@ button {
 
     &:hover .fav-post-btn {
       opacity: 1;
+    }
+
+    // FIX: Gdy popup otwarty - pokaż WSZYSTKIE przyciski dla tego posta
+    &.popup-active .tags-btn,
+    &.popup-active .info-btn,
+    &.popup-active .maximize-btn,
+    &.popup-active .fav-post-btn {
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+
+    // FIX: Fade przycisków w maximized mode po 1s
+    &.buttons-faded .maximize-btn,
+    &.buttons-faded .tags-btn,
+    &.buttons-faded .info-btn,
+    &.buttons-faded .fav-post-btn {
+      opacity: 0.3 !important;
+      transition: opacity 1s ease;
+    }
+    // Ale jeśli popup jest aktywny to nie faduj
+    &.buttons-faded.popup-active .tags-btn,
+    &.buttons-faded.popup-active .info-btn,
+    &.buttons-faded.popup-active .maximize-btn,
+    &.buttons-faded.popup-active .fav-post-btn {
+      opacity: 1 !important;
     }
   }
 }

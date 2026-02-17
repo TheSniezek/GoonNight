@@ -97,10 +97,9 @@ export type E621Post = {
   };
   fav_count: number;
   sources: string[];
-  uploader_id: number; // FIX: Dodano
-  approver_id?: number | null; // FIX: Dodano
+  uploader_id: number;
+  approver_id?: number | null;
   flags: {
-    // FIX: Dodano
     pending: boolean;
     flagged: boolean;
     note_locked: boolean;
@@ -108,6 +107,12 @@ export type E621Post = {
     rating_locked: boolean;
     deleted: boolean;
   };
+  relationships?: {
+    parent_id?: number | null;
+    children?: number[];
+    has_children?: boolean;
+  };
+  pools?: number[];
 };
 
 export type PostTag = {
@@ -121,9 +126,9 @@ export type Post = {
 
   file: {
     url?: string;
-    sample_url?: string; // tutaj będzie np. 480p video
+    sample_url?: string;
     ext?: 'jpg' | 'png' | 'gif' | 'webm' | 'mp4';
-    size?: number; // in bytes
+    size?: number;
     width?: number;
     height?: number;
   };
@@ -137,7 +142,7 @@ export type Post = {
 
   sample: {
     has: boolean;
-    url?: string; // tutaj możemy wrzucać video z alternates.samples
+    url?: string;
     alt?: string;
     width: number;
     height: number;
@@ -153,10 +158,9 @@ export type Post = {
   };
   fav_count: number;
   sources: string[];
-  uploader_id: number; // FIX: Dodano
-  approver_id?: number | null; // FIX: Dodano
+  uploader_id: number;
+  approver_id?: number | null;
   flags: {
-    // FIX: Dodano
     pending: boolean;
     flagged: boolean;
     note_locked: boolean;
@@ -164,4 +168,8 @@ export type Post = {
     rating_locked: boolean;
     deleted: boolean;
   };
+  // Relacje - do info popup
+  parent_id?: number | null;
+  children?: number[];
+  pool_ids?: number[];
 };
