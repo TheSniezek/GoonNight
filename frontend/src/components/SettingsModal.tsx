@@ -44,6 +44,10 @@ interface SettingsModalProps {
   setPostButtonsPosition: (v: 'top' | 'bottom') => void;
   maximizedButtonsPosition: 'top' | 'bottom';
   setMaximizedButtonsPosition: (v: 'top' | 'bottom') => void;
+  showArtistLabels: boolean;
+  setShowArtistLabels: (v: boolean) => void;
+  applyBlacklistInNews: boolean;
+  setApplyBlacklistInNews: (v: boolean) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -94,6 +98,10 @@ export default function SettingsModal({
   setPostButtonsPosition,
   maximizedButtonsPosition,
   setMaximizedButtonsPosition,
+  showArtistLabels,
+  setShowArtistLabels,
+  applyBlacklistInNews,
+  setApplyBlacklistInNews,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -358,6 +366,16 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={infiniteScroll}
                   onChange={(e) => setInfiniteScroll(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show artist labels on posts</span>
+                <input
+                  type="checkbox"
+                  checked={showArtistLabels}
+                  onChange={(e) => setShowArtistLabels(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>
@@ -634,6 +652,26 @@ export default function SettingsModal({
                   />
                   <span className="input-slider-number">{newsPostColumns}</span>
                 </div>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show artist labels</span>
+                <input
+                  type="checkbox"
+                  checked={showArtistLabels}
+                  onChange={(e) => setShowArtistLabels(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Apply blacklist in notifications</span>
+                <input
+                  type="checkbox"
+                  checked={applyBlacklistInNews}
+                  onChange={(e) => setApplyBlacklistInNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
               </label>
             </div>
           </div>

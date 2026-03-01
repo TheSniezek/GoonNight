@@ -384,6 +384,49 @@
               margin-bottom: 0;
             }
 
+            // Artist label
+            .news-artist-label {
+              position: absolute;
+              bottom: 16px;
+              left: 6px;
+              z-index: 9;
+              background: rgba(0, 0, 0, 0.7);
+              color: orange;
+              font-size: 1rem;
+              padding: 2px 6px;
+              border-radius: 4px;
+              pointer-events: none;
+              max-width: calc(100% - 12px);
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            // Permanent favorite indicator
+            .news-fav-indicator {
+              position: absolute;
+              top: 6px;
+              left: 6px;
+              z-index: 9;
+              color: rgba(255, 255, 255, 0.5);
+              pointer-events: none;
+              transition: opacity 0.2s ease;
+              background: #ff5ca880;
+              border-radius: 4px;
+              padding: 3px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 36px;
+              height: 36px;
+            }
+
+            // Hide fav indicator when buttons appear on hover
+            &:hover .news-fav-indicator,
+            &.popup-active .news-fav-indicator {
+              opacity: 0;
+            }
+
             // Maximize button (like in App.tsx)
             .news-maximize-btn {
               position: absolute;

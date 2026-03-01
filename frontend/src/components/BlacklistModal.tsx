@@ -39,7 +39,17 @@ export default function BlacklistModal({
     setIsEditMode(true);
   };
 
-  const handleCloseEdit = () => {
+  const handleCloseEdit = async () => {
+    const lines = textareaValue
+      .split('\n')
+      .map((tags, index) => ({
+        id: `bl-${Date.now()}-${index}`,
+        tags: tags.trim(),
+        enabled: true,
+      }))
+      .filter((line) => line.tags.length > 0 && !line.tags.startsWith('#'));
+
+    await onSave(lines);
     setIsEditMode(false);
   };
 
@@ -63,10 +73,10 @@ export default function BlacklistModal({
   };
 
   return createPortal(
-    <div className="blacklist-overlay" onClick={onClose}>
+    <div className="blacklist-overlay" onClick={isEditMode ? handleSaveAndClose : onClose}>
       <div className="blacklist-modal" onClick={(e) => e.stopPropagation()}>
         <div className="blacklist-top-bar">
-          <button className="blacklist-close" onClick={onClose}>
+          <button className="blacklist-close" onClick={isEditMode ? handleSaveAndClose : onClose}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="30"

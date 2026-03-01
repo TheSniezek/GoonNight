@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, PostTag } from '../api/types';
 import { fetchPostsForMultipleTags } from '../api/posts'; // 🔹 import fetch
+import { filterPostsByBlacklist } from '../logic/blacklistFilter';
+import type { BlacklistLine } from '../logic/useBlacklist';
 import '../styles/NewsModal.scss';
 
 interface NewsModalProps {
@@ -29,6 +31,10 @@ interface NewsModalProps {
   // 🔥 DODANE - auth do fetchowania z is_favorited
   username: string;
   apiKey: string;
+  // Nowe opcje z ustawień
+  showArtistLabels: boolean;
+  applyBlacklist: boolean;
+  blacklistLines: BlacklistLine[];
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -55,6 +61,9 @@ const NewsModal = ({
   searchTag,
   username,
   apiKey,
+  showArtistLabels,
+  applyBlacklist,
+  blacklistLines,
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -80,6 +89,7 @@ const NewsModal = ({
   const widthRef = useRef(width);
   const rafRef = useRef<number | null>(null);
   const maximizedVideoRef = useRef<HTMLVideoElement | null>(null);
+  const listVideoRefs = useRef<Record<number, HTMLVideoElement>>({});
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
   const infoPopupRef = useRef<HTMLDivElement | null>(null);
 
@@ -169,7 +179,14 @@ const NewsModal = ({
     }
   };
 
-  // -------------------- USE EFFECTS --------------------
+  // 🔥 Zatrzymaj video przed zamknięciem maximized mode
+  const closeMaximized = () => {
+    if (maximizedVideoRef.current) {
+      maximizedVideoRef.current.pause();
+      maximizedVideoRef.current.src = '';
+    }
+    setMaximizedPost(null);
+  };
   // Mobile detection
   useEffect(() => {
     const handleResize = () => {
@@ -189,6 +206,11 @@ const NewsModal = ({
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
+
+      // Pauzuj wszystkie video w liście gdy wchodzi maximized mode
+      Object.values(listVideoRefs.current).forEach((v) => {
+        if (!v.paused) v.pause();
+      });
 
       return () => {
         document.body.style.overflow = '';
@@ -248,7 +270,7 @@ const NewsModal = ({
       e.stopImmediatePropagation();
 
       if (maximizedPost) {
-        setMaximizedPost(null);
+        closeMaximized();
         return;
       }
 
@@ -399,7 +421,10 @@ const NewsModal = ({
   }, []);
 
   // -------------------- RENDER --------------------
-  const postsToRender = posts;
+  const postsToRender =
+    applyBlacklist && blacklistLines.some((l) => l.enabled)
+      ? filterPostsByBlacklist(posts, blacklistLines)
+      : posts;
   const postsByDay = groupPostsByDay(postsToRender);
   const sortedDates = Object.keys(postsByDay).sort((a, b) => (a < b ? 1 : -1));
 
@@ -655,8 +680,8 @@ const NewsModal = ({
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
+                              width="24"
+                              height="24"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -883,6 +908,39 @@ const NewsModal = ({
                         )}
 
                         {/* Media content */}
+                        {/* Artist label */}
+                        {showArtistLabels &&
+                          (() => {
+                            const artistTag = post.tags.find((t: PostTag) => t.type === 'artist');
+                            return artistTag ? (
+                              <div className="news-artist-label">{artistTag.name}</div>
+                            ) : null;
+                          })()}
+
+                        {/* Permanent favorite indicator */}
+                        {post.is_favorited && (
+                          <div className="news-fav-indicator">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path
+                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
+             4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
+             14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
+             6.86-8.55 11.54L12 21.35z"
+                              />
+                            </svg>
+                          </div>
+                        )}
+
                         {isGif ? (
                           <div className="news-video-thumb" onClick={() => setMaximizedPost(post)}>
                             <img
@@ -951,14 +1009,14 @@ const NewsModal = ({
             posts.find((p) => p.id === maximizedPost.id) || maximizedPost;
 
           return createPortal(
-            <div className="news-maximized-overlay" onClick={() => setMaximizedPost(null)}>
+            <div className="news-maximized-overlay" onClick={() => closeMaximized()}>
               <div className="news-maximized-wrapper">
                 {/* Close/Minimize button */}
                 <button
                   className="news-maximize-btn news-maximized-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setMaximizedPost(null);
+                    closeMaximized();
                   }}
                 >
                   <svg

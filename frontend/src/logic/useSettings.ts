@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 4; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 5; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid';
@@ -30,6 +30,8 @@ export interface StoredSettings {
   disableArrowKeys: boolean; // ✅ NOWE: wyłącz działanie strzałek
   postButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków dla zwykłych postów
   maximizedButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków w maximized mode
+  showArtistLabels: boolean; // ✅ NOWE: pokaż label artysty na postach
+  applyBlacklistInNews: boolean; // ✅ NOWE: aplikuj blacklistę w news modal
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -59,6 +61,8 @@ const getDefaults = (): StoredSettings => ({
   disableArrowKeys: false, // ✅ DOMYŚLNIE: strzałki działają
   postButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
   maximizedButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
+  showArtistLabels: false, // ✅ DOMYŚLNIE: ukryte
+  applyBlacklistInNews: false, // ✅ DOMYŚLNIE: nie aplikuj blacklisty
   sexSearch: {
     female: false,
     male: false,
@@ -119,6 +123,16 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       ...stored,
       postButtonsPosition: 'top',
       maximizedButtonsPosition: 'top',
+      version: SETTINGS_VERSION,
+    };
+  }
+  // ✅ Migracja z wersji 4 do 5 - dodaj showArtistLabels i applyBlacklistInNews
+  if (stored.version === 4) {
+    return {
+      ...defaults,
+      ...stored,
+      showArtistLabels: false,
+      applyBlacklistInNews: false,
       version: SETTINGS_VERSION,
     };
   }
@@ -245,6 +259,10 @@ export function useSettings() {
     maximizedButtonsPosition: settings.maximizedButtonsPosition, // ✅ NOWE
     setMaximizedButtonsPosition: (v: ButtonPosition) =>
       updateSetting('maximizedButtonsPosition', v), // ✅ NOWE
+    showArtistLabels: settings.showArtistLabels,
+    setShowArtistLabels: (v: boolean) => updateSetting('showArtistLabels', v),
+    applyBlacklistInNews: settings.applyBlacklistInNews,
+    setApplyBlacklistInNews: (v: boolean) => updateSetting('applyBlacklistInNews', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,
