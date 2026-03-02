@@ -146,17 +146,6 @@
         }
       }
 
-      .news-fetching-indicator {
-        display: flex;
-        align-items: center;
-        color: #ff5ca8;
-        opacity: 0.85;
-
-        svg.spinning {
-          animation: spin 1s linear infinite;
-        }
-      }
-
       .observed-tags-btn {
         display: flex;
         justify-content: center;
