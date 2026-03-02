@@ -37,6 +37,7 @@ interface NewsModalProps {
   blacklistLines: BlacklistLine[];
   showFavIndicators?: boolean;
   favIndicatorOpacity?: number;
+  isFetching?: boolean;
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -68,6 +69,7 @@ const NewsModal = ({
   blacklistLines,
   showFavIndicators = true,
   favIndicatorOpacity = 100,
+  isFetching = false,
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -112,6 +114,14 @@ const NewsModal = ({
       const auth = username && apiKey ? { username, apiKey } : undefined;
       const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
       setNewsPosts(allPosts);
+      // Persist fresh posts to localStorage
+      try {
+        localStorage.setItem('newsCachedPosts_v2', JSON.stringify(allPosts));
+      } catch (err) {
+        console.error('Failed to reload news posts', err);
+      }
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem('newsLastVisitDate', today);
       localStorage.setItem('newsLastReload', Date.now().toString());
       setReloadCountdown(3600);
     } catch (err) {
@@ -598,6 +608,7 @@ const NewsModal = ({
                               e.stopPropagation();
                               setMaximizedPost(post);
                             }}
+                            disabled={isFetching}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -626,6 +637,7 @@ const NewsModal = ({
                               e.stopPropagation();
                               setShowTagsFor((prev) => (prev === post.id ? null : post.id));
                             }}
+                            disabled={isFetching}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -653,6 +665,7 @@ const NewsModal = ({
                               e.stopPropagation();
                               setShowInfoFor((prev) => (prev === post.id ? null : post.id));
                             }}
+                            disabled={isFetching}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -680,7 +693,7 @@ const NewsModal = ({
                               await toggleFavoritePost(post.id, post.is_favorited || false);
                             }}
                             title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                            disabled={!isLoggedIn || pendingFavorites.has(post.id)}
+                            disabled={!isLoggedIn || pendingFavorites.has(post.id) || isFetching}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -952,7 +965,10 @@ const NewsModal = ({
                         )}
 
                         {isGif ? (
-                          <div className="news-video-thumb" onClick={() => setMaximizedPost(post)}>
+                          <div
+                            className="news-video-thumb"
+                            onClick={() => !isFetching && setMaximizedPost(post)}
+                          >
                             <img
                               src={post.preview.url || post.sample.url}
                               alt=""
@@ -972,7 +988,10 @@ const NewsModal = ({
                             </div>
                           </div>
                         ) : isVideo ? (
-                          <div className="news-video-thumb" onClick={() => setMaximizedPost(post)}>
+                          <div
+                            className="news-video-thumb"
+                            onClick={() => !isFetching && setMaximizedPost(post)}
+                          >
                             <img
                               src={post.preview.url || post.sample.url}
                               alt=""
@@ -999,7 +1018,7 @@ const NewsModal = ({
                             className="news-post-item"
                             src={post.preview.url || post.sample.url || post.file.url}
                             alt=""
-                            onClick={() => setMaximizedPost(post)}
+                            onClick={() => !isFetching && setMaximizedPost(post)}
                             loading="lazy"
                           />
                         )}

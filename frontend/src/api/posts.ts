@@ -86,9 +86,13 @@ export const fetchPostsForMultipleTags = async (
   observedTags: string[],
   baseQuery: string, // np. "date:week"
   auth?: { username: string; apiKey: string },
+  afterDate?: string, // np. "2024-01-15" - fetch only posts >= this date
 ): Promise<Post[]> => {
   const results: Post[] = [];
   const seen = new Set<number>();
+
+  // Build date constraint
+  const dateConstraint = afterDate ? `date:>=${afterDate}` : baseQuery;
 
   // Dzielimy tagi na paczki po 30 sztuk
   const chunkSize = 30;
@@ -102,7 +106,7 @@ export const fetchPostsForMultipleTags = async (
     chunks.map(async (chunk) => {
       // Tworzymy query: "~tag1 ~tag2 ... ~tag30 date:week"
       const tagsString = chunk.map((t) => `~${t}`).join(' ');
-      const query = `${tagsString} ${baseQuery}`.trim();
+      const query = `${tagsString} ${dateConstraint}`.trim();
 
       try {
         const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, {

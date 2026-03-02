@@ -220,6 +220,109 @@ function App() {
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const newsCache = useRef<Record<string, Post[]>>({});
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
+  const [newsIsFetching, setNewsIsFetching] = useState(false);
+
+  // Persist news posts across refreshes via localStorage
+  const NEWS_POSTS_STORAGE_KEY = 'newsCachedPosts_v2';
+  const NEWS_LAST_VISIT_KEY = 'newsLastVisitDate';
+  const NEWS_CACHE_USER_KEY = 'newsCacheUser';
+
+  const getStoredNewsPosts = (): Post[] => {
+    try {
+      const raw = localStorage.getItem(NEWS_POSTS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const storeNewsPosts = (posts: Post[]) => {
+    try {
+      localStorage.setItem(NEWS_POSTS_STORAGE_KEY, JSON.stringify(posts));
+    } catch (e) {
+      console.warn('[News] Failed to persist posts to localStorage', e);
+    }
+  };
+
+  // Get today as YYYY-MM-DD
+  const getTodayDate = (): string => new Date().toISOString().split('T')[0];
+
+  // Open news modal with smart incremental fetch
+  const openNewsModal = async () => {
+    if (observedTags.length === 0) return alert('No tags observed yet!');
+
+    const auth = e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
+    const cachedUser = localStorage.getItem(NEWS_CACHE_USER_KEY) || '';
+    const userChanged = cachedUser !== e621User;
+    const todayDate = getTodayDate();
+    const lastVisitDate = localStorage.getItem(NEWS_LAST_VISIT_KEY) || '';
+
+    // If user changed, clear everything
+    if (userChanged) {
+      console.log('🔄 [News] User changed, clearing cache');
+      newsCache.current = {};
+      localStorage.removeItem(NEWS_POSTS_STORAGE_KEY);
+      localStorage.setItem(NEWS_CACHE_USER_KEY, e621User);
+    }
+
+    // Load previously stored posts
+    const storedPosts = userChanged ? [] : getStoredNewsPosts();
+
+    // Show modal immediately with whatever we have
+    if (storedPosts.length > 0) {
+      setNewsPosts(storedPosts);
+    }
+    setShowNewsPopup(true);
+
+    // Save today as last visit date
+    localStorage.setItem(NEWS_LAST_VISIT_KEY, todayDate);
+
+    // Determine what date range to fetch
+    // If we have stored posts and a last visit date, only fetch from last visit date onward
+    // Otherwise fetch full week
+    const shouldFetchIncremental = storedPosts.length > 0 && lastVisitDate && !userChanged;
+
+    if (shouldFetchIncremental) {
+      console.log(`📅 [News] Incremental fetch from ${lastVisitDate}`);
+    } else {
+      console.log('📅 [News] Full fetch (date:week)');
+    }
+
+    try {
+      setNewsIsFetching(true);
+      let freshPosts: Post[];
+
+      if (shouldFetchIncremental) {
+        freshPosts = await fetchPostsForMultipleTags(
+          observedTags,
+          'date:week',
+          auth,
+          lastVisitDate,
+        );
+
+        if (freshPosts.length > 0) {
+          // Merge: new posts + old stored posts (deduplicated)
+          const existingIds = new Set(freshPosts.map((p) => p.id));
+          const merged = [...freshPosts, ...storedPosts.filter((p) => !existingIds.has(p.id))].sort(
+            (a, b) => (a.id < b.id ? 1 : -1),
+          );
+          setNewsPosts(merged);
+          storeNewsPosts(merged);
+        }
+        // If no new posts, keep what we have (storedPosts already set)
+      } else {
+        freshPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
+        setNewsPosts(freshPosts);
+        storeNewsPosts(freshPosts);
+      }
+
+      localStorage.setItem('newsLastReload', Date.now().toString());
+    } catch (err) {
+      console.error('Failed to fetch news posts', err);
+    } finally {
+      setNewsIsFetching(false);
+    }
+  };
   const savedOrderRef = useRef<Order | null>(null);
 
   // 🌟 Popular mode state
@@ -1117,61 +1220,7 @@ function App() {
               <path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z" />
             </svg>
           </button>
-          <button
-            className="news-btn"
-            onClick={async () => {
-              if (observedTags.length === 0) return alert('No tags observed yet!');
-
-              const key = observedTags.sort().join(',');
-              const lastReload = Number(localStorage.getItem('newsLastReload')) || 0;
-              const timeSinceReload = Date.now() - lastReload;
-              const ONE_HOUR = 3600 * 1000;
-
-              // 🔥 SPRAWDŹ CZY CACHE JEST AKTUALNY (młodszy niż 1h) I czy user się nie zmienił
-              const cachedForUser = localStorage.getItem('newsCacheUser') || '';
-              const userChanged = cachedForUser !== e621User;
-
-              if (newsCache.current[key] && timeSinceReload < ONE_HOUR && !userChanged) {
-                console.log('📦 [News] Using cached posts');
-                setNewsPosts(newsCache.current[key]);
-                setShowNewsPopup(true);
-                return;
-              }
-
-              // 🔥 Jeśli user się zmienił, wyczyść cache
-              if (userChanged) {
-                console.log('🔄 [News] User changed, clearing cache');
-                newsCache.current = {};
-                localStorage.setItem('newsCacheUser', e621User);
-              }
-
-              setShowNewsPopup(true);
-
-              try {
-                // 🔥 DODANE - przekaż auth do fetchPostsForMultipleTags
-                const auth =
-                  e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
-                const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
-
-                // ⚡ Limit cache size - max 5 entries
-                const cacheKeys = Object.keys(newsCache.current);
-                if (cacheKeys.length >= 5) {
-                  // Usuń najstarszy entry
-                  delete newsCache.current[cacheKeys[0]];
-                }
-
-                newsCache.current[key] = allPosts;
-                setNewsPosts(allPosts);
-                localStorage.setItem('newsLastReload', Date.now().toString());
-
-                if (allPosts.length === 0) {
-                  console.log('DEBUG: No posts returned for these queries');
-                }
-              } catch (err) {
-                console.error('Failed to fetch news posts', err);
-              }
-            }}
-          >
+          <button className="news-btn" onClick={openNewsModal}>
             <svg
               width="36"
               height="36"
@@ -2036,6 +2085,7 @@ function App() {
             layout={newsLayout}
             onClose={() => setShowNewsPopup(false)}
             loading={loading}
+            isFetching={newsIsFetching}
             onToggleTag={toggleTag}
             onSearchTag={handleSearch}
             defaultVolume={defaultVolume}
@@ -2149,58 +2199,7 @@ function App() {
                 className="sidebar-item"
                 onClick={async () => {
                   setShowMobileSidebar(false);
-
-                  if (observedTags.length === 0) return alert('No tags observed yet!');
-
-                  const key = observedTags.sort().join(',');
-                  const lastReload = Number(localStorage.getItem('newsLastReload')) || 0;
-                  const timeSinceReload = Date.now() - lastReload;
-                  const ONE_HOUR = 3600 * 1000;
-
-                  const cachedForUser = localStorage.getItem('newsCacheUser') || '';
-                  const userChanged = cachedForUser !== e621User;
-
-                  if (newsCache.current[key] && timeSinceReload < ONE_HOUR && !userChanged) {
-                    console.log('📦 [News] Using cached posts');
-                    setNewsPosts(newsCache.current[key]);
-                    setShowNewsPopup(true);
-                    return;
-                  }
-
-                  if (userChanged) {
-                    console.log('🔄 [News] User changed, clearing cache');
-                    newsCache.current = {};
-                    localStorage.setItem('newsCacheUser', e621User);
-                  }
-
-                  setShowNewsPopup(true);
-
-                  try {
-                    const auth =
-                      e621User && e621ApiKey
-                        ? { username: e621User, apiKey: e621ApiKey }
-                        : undefined;
-                    const allPosts = await fetchPostsForMultipleTags(
-                      observedTags,
-                      'date:week',
-                      auth,
-                    );
-
-                    const cacheKeys = Object.keys(newsCache.current);
-                    if (cacheKeys.length >= 5) {
-                      delete newsCache.current[cacheKeys[0]];
-                    }
-
-                    newsCache.current[key] = allPosts;
-                    setNewsPosts(allPosts);
-                    localStorage.setItem('newsLastReload', Date.now().toString());
-
-                    if (allPosts.length === 0) {
-                      console.log('DEBUG: No posts returned for these queries');
-                    }
-                  } catch (err) {
-                    console.error('Failed to fetch news posts', err);
-                  }
+                  await openNewsModal();
                 }}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
