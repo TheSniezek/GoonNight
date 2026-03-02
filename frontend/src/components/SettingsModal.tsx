@@ -48,6 +48,12 @@ interface SettingsModalProps {
   setShowArtistLabels: (v: boolean) => void;
   applyBlacklistInNews: boolean;
   setApplyBlacklistInNews: (v: boolean) => void;
+  showFavIndicators: boolean;
+  setShowFavIndicators: (v: boolean) => void;
+  showFavIndicatorsNews: boolean;
+  setShowFavIndicatorsNews: (v: boolean) => void;
+  favIndicatorOpacity: number;
+  setFavIndicatorOpacity: (v: number) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -102,6 +108,12 @@ export default function SettingsModal({
   setShowArtistLabels,
   applyBlacklistInNews,
   setApplyBlacklistInNews,
+  showFavIndicators,
+  setShowFavIndicators,
+  showFavIndicatorsNews,
+  setShowFavIndicatorsNews,
+  favIndicatorOpacity,
+  setFavIndicatorOpacity,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -143,6 +155,9 @@ export default function SettingsModal({
         loopVideos,
         videoResolution,
         sexSearch,
+        showFavIndicators,
+        showFavIndicatorsNews,
+        favIndicatorOpacity,
       },
       observedTags: [...observedTags].sort((a, b) => a.localeCompare(b)),
     };
@@ -183,6 +198,12 @@ export default function SettingsModal({
         if (data.settings.loopVideos !== undefined) setLoopVideos(data.settings.loopVideos);
         if (data.settings.videoResolution) setVideoResolution(data.settings.videoResolution);
         if (data.settings.sexSearch) setSexSearch(data.settings.sexSearch);
+        if (data.settings.showFavIndicators !== undefined)
+          setShowFavIndicators(data.settings.showFavIndicators);
+        if (data.settings.showFavIndicatorsNews !== undefined)
+          setShowFavIndicatorsNews(data.settings.showFavIndicatorsNews);
+        if (data.settings.favIndicatorOpacity !== undefined)
+          setFavIndicatorOpacity(data.settings.favIndicatorOpacity);
       }
 
       if (data.observedTags) {
@@ -457,6 +478,49 @@ export default function SettingsModal({
                   onChange={(e) => setHideFavorites(e.target.checked)}
                 />
                 <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show favorite indicator on posts</span>
+                <input
+                  type="checkbox"
+                  checked={showFavIndicators}
+                  onChange={(e) => setShowFavIndicators(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show favorite indicator in News Modal</span>
+                <input
+                  type="checkbox"
+                  checked={showFavIndicatorsNews}
+                  onChange={(e) => setShowFavIndicatorsNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Favorite indicator opacity</span>
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={10}
+                    max={100}
+                    step={10}
+                    value={favIndicatorOpacity}
+                    style={
+                      {
+                        '--value': `${((favIndicatorOpacity - 10) / 90) * 100}%`,
+                      } as React.CSSProperties
+                    }
+                    onChange={(e) => {
+                      const val = Math.round(Number(e.target.value) / 10) * 10;
+                      setFavIndicatorOpacity(Math.max(10, Math.min(100, val)));
+                    }}
+                  />
+                  <span className="input-slider-number">{favIndicatorOpacity}%</span>
+                </div>
               </label>
             </div>
           </div>
@@ -809,6 +873,9 @@ export default function SettingsModal({
                         loopVideos,
                         videoResolution,
                         sexSearch,
+                        showFavIndicators,
+                        showFavIndicatorsNews,
+                        favIndicatorOpacity,
                       },
                       observedTags,
                     )

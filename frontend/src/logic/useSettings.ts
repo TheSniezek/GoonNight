@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 5; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 6; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid';
@@ -32,6 +32,9 @@ export interface StoredSettings {
   maximizedButtonsPosition: ButtonPosition; // ✅ NOWE: pozycja przycisków w maximized mode
   showArtistLabels: boolean; // ✅ NOWE: pokaż label artysty na postach
   applyBlacklistInNews: boolean; // ✅ NOWE: aplikuj blacklistę w news modal
+  showFavIndicators: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych na zwykłych postach
+  showFavIndicatorsNews: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych w NewsModal
+  favIndicatorOpacity: number; // ✅ NOWE: krycie wskaźnika ulubionych (10-100)
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -63,6 +66,9 @@ const getDefaults = (): StoredSettings => ({
   maximizedButtonsPosition: 'top', // ✅ DOMYŚLNIE: góra (jak obecnie)
   showArtistLabels: false, // ✅ DOMYŚLNIE: ukryte
   applyBlacklistInNews: false, // ✅ DOMYŚLNIE: nie aplikuj blacklisty
+  showFavIndicators: true, // ✅ DOMYŚLNIE: widoczne
+  showFavIndicatorsNews: true, // ✅ DOMYŚLNIE: widoczne
+  favIndicatorOpacity: 100, // ✅ DOMYŚLNIE: pełna widoczność
   sexSearch: {
     female: false,
     male: false,
@@ -78,6 +84,7 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   postColumns: (v): v is number => typeof v === 'number' && v >= 1 && v <= 10,
   newsPostColumns: (v): v is number => typeof v === 'number' && v >= 1 && v <= 10,
   postsPerPage: (v): v is number => typeof v === 'number' && v >= 10 && v <= 320,
+  favIndicatorOpacity: (v): v is number => typeof v === 'number' && v >= 10 && v <= 100,
   layout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   newsLayout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
   videoResolution: (v): v is VideoResolution => ['best', 'worse'].includes(v as string),
@@ -133,6 +140,17 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       ...stored,
       showArtistLabels: false,
       applyBlacklistInNews: false,
+      version: SETTINGS_VERSION,
+    };
+  }
+  // ✅ Migracja z wersji 5 do 6 - dodaj fav indicator settings
+  if (stored.version === 5) {
+    return {
+      ...defaults,
+      ...stored,
+      showFavIndicators: true,
+      showFavIndicatorsNews: true,
+      favIndicatorOpacity: 100,
       version: SETTINGS_VERSION,
     };
   }
@@ -263,6 +281,12 @@ export function useSettings() {
     setShowArtistLabels: (v: boolean) => updateSetting('showArtistLabels', v),
     applyBlacklistInNews: settings.applyBlacklistInNews,
     setApplyBlacklistInNews: (v: boolean) => updateSetting('applyBlacklistInNews', v),
+    showFavIndicators: settings.showFavIndicators,
+    setShowFavIndicators: (v: boolean) => updateSetting('showFavIndicators', v),
+    showFavIndicatorsNews: settings.showFavIndicatorsNews,
+    setShowFavIndicatorsNews: (v: boolean) => updateSetting('showFavIndicatorsNews', v),
+    favIndicatorOpacity: settings.favIndicatorOpacity,
+    setFavIndicatorOpacity: (v: number) => updateSetting('favIndicatorOpacity', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

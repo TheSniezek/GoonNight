@@ -298,10 +298,10 @@ button {
       top: 6px;
       left: 6px;
       z-index: 9;
-      color: rgba(255, 255, 255, 0.5);
+      color: #ffffff;
       pointer-events: none;
       transition: opacity 0.2s ease;
-      background: #ff5ca880;
+      background: #ff5ca8;
       border-radius: 4px;
       padding: 3px;
       display: flex;
@@ -360,43 +360,35 @@ button {
 
     &.buttons-top {
       .maximize-btn {
-        top: 10px;
         right: 10px;
       }
 
       .tags-btn {
-        top: 10px;
         right: 60px;
       }
 
       .info-btn {
-        top: 10px;
         right: 110px;
       }
 
       .fav-post-btn {
-        top: 10px;
         right: 160px;
       }
 
       &.maximized {
         .maximize-btn {
-          top: 20px;
           right: 20px;
         }
 
         .tags-btn {
-          top: 20px;
           right: 80px;
         }
 
         .info-btn {
-          top: 20px;
           right: 140px;
         }
 
         .fav-post-btn {
-          top: 20px;
           right: 200px;
         }
       }

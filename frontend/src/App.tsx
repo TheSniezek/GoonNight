@@ -74,6 +74,12 @@ function App() {
     setShowArtistLabels,
     applyBlacklistInNews,
     setApplyBlacklistInNews,
+    showFavIndicators,
+    setShowFavIndicators,
+    showFavIndicatorsNews,
+    setShowFavIndicatorsNews,
+    favIndicatorOpacity,
+    setFavIndicatorOpacity,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -1746,8 +1752,13 @@ function App() {
                 })()}
 
               {/* Permanent favorite indicator */}
-              {post.is_favorited && !isMaximized && (
-                <div className="post-fav-indicator">
+              {post.is_favorited && !isMaximized && showFavIndicators && (
+                <div
+                  className="post-fav-indicator"
+                  style={{
+                    opacity: favIndicatorOpacity === 100 ? undefined : favIndicatorOpacity / 100,
+                  }}
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -1993,6 +2004,12 @@ function App() {
             setShowArtistLabels={setShowArtistLabels}
             applyBlacklistInNews={applyBlacklistInNews}
             setApplyBlacklistInNews={setApplyBlacklistInNews}
+            showFavIndicators={showFavIndicators}
+            setShowFavIndicators={setShowFavIndicators}
+            showFavIndicatorsNews={showFavIndicatorsNews}
+            setShowFavIndicatorsNews={setShowFavIndicatorsNews}
+            favIndicatorOpacity={favIndicatorOpacity}
+            setFavIndicatorOpacity={setFavIndicatorOpacity}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
@@ -2036,6 +2053,8 @@ function App() {
             showArtistLabels={showArtistLabels}
             applyBlacklist={applyBlacklistInNews}
             blacklistLines={blacklistLines}
+            showFavIndicators={showFavIndicatorsNews}
+            favIndicatorOpacity={favIndicatorOpacity}
           />
         )}
 

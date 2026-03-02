@@ -35,6 +35,8 @@ interface NewsModalProps {
   showArtistLabels: boolean;
   applyBlacklist: boolean;
   blacklistLines: BlacklistLine[];
+  showFavIndicators?: boolean;
+  favIndicatorOpacity?: number;
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -64,6 +66,8 @@ const NewsModal = ({
   showArtistLabels,
   applyBlacklist,
   blacklistLines,
+  showFavIndicators = true,
+  favIndicatorOpacity = 100,
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -918,8 +922,14 @@ const NewsModal = ({
                           })()}
 
                         {/* Permanent favorite indicator */}
-                        {post.is_favorited && (
-                          <div className="news-fav-indicator">
+                        {post.is_favorited && showFavIndicators && (
+                          <div
+                            className="news-fav-indicator"
+                            style={{
+                              opacity:
+                                favIndicatorOpacity === 100 ? undefined : favIndicatorOpacity / 100,
+                            }}
+                          >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               width="24"
