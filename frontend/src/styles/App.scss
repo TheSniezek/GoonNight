@@ -240,6 +240,7 @@ button {
   &.grid {
     .post-wrapper {
       aspect-ratio: 1 / 1;
+      overflow: hidden;
 
       // When stats bar exists, shrink only the media part
       &.has-stats {
@@ -281,6 +282,7 @@ button {
 
   &.fit-grid {
     .post-wrapper {
+      overflow: hidden;
       aspect-ratio: 1 / 1;
 
       &.has-stats {
@@ -325,6 +327,7 @@ button {
 
   &.accurate-grid {
     .post-wrapper {
+      overflow: hidden;
       height: fit-content;
 
       .post-item {
@@ -1257,7 +1260,6 @@ button {
   }
 }
 
-// Klasy pomocnicze dla responsywności
 .mobile-only {
   display: none;
   @media (max-width: 768px) {
