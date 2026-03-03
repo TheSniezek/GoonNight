@@ -61,6 +61,7 @@ export const mapE621Post = (post: E621Post): Post => {
     rating: post.rating,
     score: post.score,
     fav_count: post.fav_count,
+    comment_count: post.comment_count ?? 0,
     sources: post.sources || [],
     uploader_id: post.uploader_id,
     approver_id: post.approver_id,

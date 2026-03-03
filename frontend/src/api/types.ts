@@ -96,6 +96,7 @@ export type E621Post = {
     total: number;
   };
   fav_count: number;
+  comment_count: number;
   sources: string[];
   uploader_id: number;
   approver_id?: number | null;
@@ -157,6 +158,7 @@ export type Post = {
     total: number;
   };
   fav_count: number;
+  comment_count: number;
   sources: string[];
   uploader_id: number;
   approver_id?: number | null;

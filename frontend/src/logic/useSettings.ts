@@ -2,10 +2,10 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 6; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 7; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
-export type Layout = 'masonry' | 'grid' | 'accurate-grid';
+export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
 export type VideoResolution = 'best' | 'worse';
 export type ButtonPosition = 'top' | 'bottom'; // ✅ NOWY TYP
 
@@ -35,6 +35,8 @@ export interface StoredSettings {
   showFavIndicators: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych na zwykłych postach
   showFavIndicatorsNews: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych w NewsModal
   favIndicatorOpacity: number; // ✅ NOWE: krycie wskaźnika ulubionych (10-100)
+  showStatsBar: boolean; // ✅ NOWE: pokaż pasek statystyk na zwykłych postach
+  showStatsBarNews: boolean; // ✅ NOWE: pokaż pasek statystyk w NewsModal
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -69,6 +71,8 @@ const getDefaults = (): StoredSettings => ({
   showFavIndicators: true, // ✅ DOMYŚLNIE: widoczne
   showFavIndicatorsNews: true, // ✅ DOMYŚLNIE: widoczne
   favIndicatorOpacity: 100, // ✅ DOMYŚLNIE: pełna widoczność
+  showStatsBar: false, // ✅ DOMYŚLNIE: ukryte
+  showStatsBarNews: false, // ✅ DOMYŚLNIE: ukryte
   sexSearch: {
     female: false,
     male: false,
@@ -85,8 +89,10 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   newsPostColumns: (v): v is number => typeof v === 'number' && v >= 1 && v <= 10,
   postsPerPage: (v): v is number => typeof v === 'number' && v >= 10 && v <= 320,
   favIndicatorOpacity: (v): v is number => typeof v === 'number' && v >= 10 && v <= 100,
-  layout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
-  newsLayout: (v): v is Layout => ['masonry', 'grid', 'accurate-grid'].includes(v as string),
+  layout: (v): v is Layout =>
+    ['masonry', 'grid', 'accurate-grid', 'fit-grid'].includes(v as string),
+  newsLayout: (v): v is Layout =>
+    ['masonry', 'grid', 'accurate-grid', 'fit-grid'].includes(v as string),
   videoResolution: (v): v is VideoResolution => ['best', 'worse'].includes(v as string),
   postButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   maximizedButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
@@ -151,6 +157,16 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       showFavIndicators: true,
       showFavIndicatorsNews: true,
       favIndicatorOpacity: 100,
+      version: SETTINGS_VERSION,
+    };
+  }
+  // ✅ Migracja z wersji 6 do 7 - dodaj stats bar settings
+  if (stored.version === 6) {
+    return {
+      ...defaults,
+      ...stored,
+      showStatsBar: false,
+      showStatsBarNews: false,
       version: SETTINGS_VERSION,
     };
   }
@@ -287,6 +303,10 @@ export function useSettings() {
     setShowFavIndicatorsNews: (v: boolean) => updateSetting('showFavIndicatorsNews', v),
     favIndicatorOpacity: settings.favIndicatorOpacity,
     setFavIndicatorOpacity: (v: number) => updateSetting('favIndicatorOpacity', v),
+    showStatsBar: settings.showStatsBar,
+    setShowStatsBar: (v: boolean) => updateSetting('showStatsBar', v),
+    showStatsBarNews: settings.showStatsBarNews,
+    setShowStatsBarNews: (v: boolean) => updateSetting('showStatsBarNews', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

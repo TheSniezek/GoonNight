@@ -14,12 +14,12 @@ interface SettingsModalProps {
   setAutoPauseOnMinimize: (v: boolean) => void;
   pauseVideoOutOfFocus: boolean;
   setPauseVideoOutOfFocus: (v: boolean) => void;
-  layout: 'masonry' | 'grid' | 'accurate-grid';
-  setLayout: (l: 'masonry' | 'grid' | 'accurate-grid') => void;
+  layout: 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
+  setLayout: (l: 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid') => void;
   postColumns: number;
   setPostColumns: (n: number) => void;
-  newsLayout: 'masonry' | 'grid' | 'accurate-grid';
-  setNewsLayout: (l: 'masonry' | 'grid' | 'accurate-grid') => void;
+  newsLayout: 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
+  setNewsLayout: (l: 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid') => void;
   newsPostColumns: number;
   setNewsPostColumns: (n: number) => void;
   fixedHeader: boolean;
@@ -54,6 +54,10 @@ interface SettingsModalProps {
   setShowFavIndicatorsNews: (v: boolean) => void;
   favIndicatorOpacity: number;
   setFavIndicatorOpacity: (v: number) => void;
+  showStatsBar: boolean;
+  setShowStatsBar: (v: boolean) => void;
+  showStatsBarNews: boolean;
+  setShowStatsBarNews: (v: boolean) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -114,6 +118,10 @@ export default function SettingsModal({
   setShowFavIndicatorsNews,
   favIndicatorOpacity,
   setFavIndicatorOpacity,
+  showStatsBar,
+  setShowStatsBar,
+  showStatsBarNews,
+  setShowStatsBarNews,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -317,6 +325,12 @@ export default function SettingsModal({
                     Grid
                   </button>
                   <button
+                    className={`middle-settings-btn button ${layout === 'fit-grid' ? 'active' : ''}`}
+                    onClick={() => setLayout('fit-grid')}
+                  >
+                    Fit Grid
+                  </button>
+                  <button
                     className={`left-settings-btn button ${layout === 'accurate-grid' ? 'active' : ''}`}
                     onClick={() => setLayout('accurate-grid')}
                   >
@@ -387,6 +401,25 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={infiniteScroll}
                   onChange={(e) => setInfiniteScroll(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Show stats bar on posts</span>
+                <input
+                  type="checkbox"
+                  checked={showStatsBar}
+                  onChange={(e) => setShowStatsBar(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show stats bar in News Modal</span>
+                <input
+                  type="checkbox"
+                  checked={showStatsBarNews}
+                  onChange={(e) => setShowStatsBarNews(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>
@@ -686,6 +719,14 @@ export default function SettingsModal({
                     Grid
                   </button>
                   <button
+                    className={`middle-settings-btn button ${
+                      newsLayout === 'fit-grid' ? 'active' : ''
+                    }`}
+                    onClick={() => setNewsLayout('fit-grid')}
+                  >
+                    Fit Grid
+                  </button>
+                  <button
                     className={`left-settings-btn button ${
                       newsLayout === 'accurate-grid' ? 'active' : ''
                     }`}
@@ -876,6 +917,8 @@ export default function SettingsModal({
                         showFavIndicators,
                         showFavIndicatorsNews,
                         favIndicatorOpacity,
+                        showStatsBar,
+                        showStatsBarNews,
                       },
                       observedTags,
                     )
