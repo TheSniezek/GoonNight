@@ -193,10 +193,12 @@ export const fetchPostComments = async (
   postId: number,
   auth?: { username: string; apiKey: string },
 ): Promise<PostComment[]> => {
-  const { data } = await axios.get<{ comments: PostComment[] }>(
-    `${BASE_URL}/api/e621/comments/${postId}`,
-    { params: { username: auth?.username, apiKey: auth?.apiKey } },
-  );
+  const endpoint = IS_PROD ? `${BASE_URL}/api/comments` : `${BASE_URL}/api/e621/comments/${postId}`;
+  const { data } = await axios.get<{ comments: PostComment[] }>(IS_PROD ? endpoint : endpoint, {
+    params: IS_PROD
+      ? { postId, username: auth?.username, apiKey: auth?.apiKey }
+      : { username: auth?.username, apiKey: auth?.apiKey },
+  });
   return data.comments || [];
 };
 
