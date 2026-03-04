@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 8; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 9; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
@@ -39,6 +39,8 @@ export interface StoredSettings {
   showStatsBarNews: boolean; // ✅ NOWE: pokaż pasek statystyk w NewsModal
   hideScrollbar: boolean; // ✅ NOWE: ukryj scrollbar dla głównych postów
   hideScrollbarNews: boolean; // ✅ NOWE: ukryj scrollbar w NewsModal
+  hidePopupScrollbar: boolean; // ✅ NOWE: ukryj scrollbar w popupach (tags/info/comments)
+  commentSort: 'score' | 'newest'; // ✅ NOWE: sortowanie komentarzy
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -77,6 +79,8 @@ const getDefaults = (): StoredSettings => ({
   showStatsBarNews: false, // ✅ DOMYŚLNIE: ukryte
   hideScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny
   hideScrollbarNews: false, // ✅ DOMYŚLNIE: scrollbar widoczny
+  hidePopupScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny w popupach
+  commentSort: 'score' as const, // ✅ DOMYŚLNIE: według score
   sexSearch: {
     female: false,
     male: false,
@@ -100,6 +104,7 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   videoResolution: (v): v is VideoResolution => ['best', 'worse'].includes(v as string),
   postButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   maximizedButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
+  commentSort: (v): v is 'score' | 'newest' => ['score', 'newest'].includes(v as string), // ✅ NOWY
   sexSearch: (v): v is StoredSettings['sexSearch'] => {
     if (typeof v !== 'object' || v === null) return false;
     const obj = v as Record<string, unknown>;
@@ -181,6 +186,16 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       ...stored,
       hideScrollbar: false,
       hideScrollbarNews: false,
+      version: SETTINGS_VERSION,
+    };
+  }
+  // ✅ Migracja z wersji 8 do 9 - dodaj comment settings i popup scrollbar
+  if (stored.version === 8) {
+    return {
+      ...defaults,
+      ...stored,
+      hidePopupScrollbar: false,
+      commentSort: 'score' as const,
       version: SETTINGS_VERSION,
     };
   }
@@ -325,6 +340,10 @@ export function useSettings() {
     setHideScrollbar: (v: boolean) => updateSetting('hideScrollbar', v),
     hideScrollbarNews: settings.hideScrollbarNews,
     setHideScrollbarNews: (v: boolean) => updateSetting('hideScrollbarNews', v),
+    hidePopupScrollbar: settings.hidePopupScrollbar,
+    setHidePopupScrollbar: (v: boolean) => updateSetting('hidePopupScrollbar', v),
+    commentSort: settings.commentSort,
+    setCommentSort: (v: 'score' | 'newest') => updateSetting('commentSort', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

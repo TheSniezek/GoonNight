@@ -11,7 +11,9 @@ import {
   fetchPopularPosts,
   fetchUserNames,
   fetchPostMeta,
+  fetchPostComments,
 } from './api/posts';
+import type { PostComment } from './api/posts';
 import { useSettings } from './logic/useSettings';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
@@ -88,6 +90,10 @@ function App() {
     setHideScrollbar,
     hideScrollbarNews,
     setHideScrollbarNews,
+    hidePopupScrollbar,
+    setHidePopupScrollbar,
+    commentSort,
+    setCommentSort,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -209,8 +215,16 @@ function App() {
 
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
+  const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null);
+  const [postComments, setPostComments] = useState<Record<number, PostComment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set());
+  const closeComments = () => {
+    setPostComments({});
+    setShowCommentsFor(null);
+  };
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
   const infoPopupRef = useRef<HTMLDivElement | null>(null);
+  const commentsPopupRef = useRef<HTMLDivElement | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const prevMaximizedPostId = useRef<number | null>(null);
   const [showNewsPopup, setShowNewsPopup] = useState(false);
@@ -394,11 +408,21 @@ function App() {
           setShowInfoFor(null);
         }
       }
+      if (showCommentsFor !== null) {
+        const popup = commentsPopupRef.current;
+        const button = document
+          .getElementById(`post-${showCommentsFor}`)
+          ?.querySelector('.comm-btn');
+
+        if (popup && !popup.contains(target) && button && !button.contains(target)) {
+          closeComments();
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTagsFor, showInfoFor, maximizedPostId]);
+  }, [showTagsFor, showInfoFor, showCommentsFor, maximizedPostId]);
 
   useEffect(() => {
     console.log('Current E621 login:', e621User, e621ApiKey);
@@ -432,6 +456,32 @@ function App() {
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     };
   }, [maximizedPostId]);
+
+  // Lazy-load komentarzy przy otwieraniu comment popup
+  useEffect(() => {
+    if (showCommentsFor === null) return;
+    if (postComments[showCommentsFor] !== undefined) return; // już załadowane
+    if (loadingComments.has(showCommentsFor)) return;
+
+    const postId = showCommentsFor;
+    setLoadingComments((prev) => new Set([...prev, postId]));
+
+    const auth = e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
+    fetchPostComments(postId, auth)
+      .then((comments) => {
+        setPostComments((prev) => ({ ...prev, [postId]: comments }));
+      })
+      .catch(() => {
+        setPostComments((prev) => ({ ...prev, [postId]: [] }));
+      })
+      .finally(() => {
+        setLoadingComments((prev) => {
+          const next = new Set(prev);
+          next.delete(postId);
+          return next;
+        });
+      });
+  }, [showCommentsFor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lazy-load user names i post meta przy otwieraniu info popup
   useEffect(() => {
@@ -1155,6 +1205,114 @@ function App() {
     return () => observer.disconnect();
   }, [infiniteScroll, loading, hasNextApiPage, nextUiPage, postsPerPage, e621User, e621ApiKey]);
 
+  // ── Comment rendering helpers ──────────────────────────────────────────────
+
+  // Render plain text with [[tag]] links
+  const renderTextWithLinks = (text: string, keyPrefix: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = [];
+    const tagRegex = /\[\[([^\]]+)\]\]/g;
+    let last = 0;
+    let m;
+    let i = 0;
+    while ((m = tagRegex.exec(text)) !== null) {
+      if (m.index > last)
+        nodes.push(<span key={`${keyPrefix}-t${i++}`}>{text.slice(last, m.index)}</span>);
+      const rawTag = m[1]; // e.g. "cum_from_ass" or "display text|tag_name"
+      const parts = rawTag.split('|');
+      const tagName = (parts[1] || parts[0]).trim();
+      const display = parts[0].replace(/_/g, ' ');
+      nodes.push(
+        <a
+          key={`${keyPrefix}-tag${i++}`}
+          href={`https://e621.net/wiki_pages/${tagName}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="comm-tag-link"
+        >
+          {display}
+        </a>,
+      );
+      last = m.index + m[0].length;
+    }
+    if (last < text.length)
+      nodes.push(<span key={`${keyPrefix}-t${i++}`}>{text.slice(last)}</span>);
+    return nodes;
+  };
+
+  // Parse a comment body into React nodes (handles [quote] and [[tag]])
+  const parseCommentBody = (raw: string, postId: number): React.ReactNode[] => {
+    const parts: React.ReactNode[] = [];
+    const quoteRegex = /\[quote\]([\s\S]*?)\[\/quote\]/gi;
+    let last = 0;
+    let match;
+    let key = 0;
+
+    while ((match = quoteRegex.exec(raw)) !== null) {
+      if (match.index > last) {
+        const before = raw
+          .slice(last, match.index)
+          .replace(/\r\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n') // max double newline
+          .replace(/^\n+/, '') // no leading newlines
+          .trimEnd();
+        if (before) {
+          parts.push(
+            <span key={key++} className="comm-text">
+              {renderTextWithLinks(before, `bef-${key}`)}
+            </span>,
+          );
+        }
+      }
+
+      const inner = match[1];
+
+      // Attribution inside quote: "nick":/users/ID said:\n
+      const attrMatch = inner.match(/^"([^"]+)":\/users\/(\d+)\s+said:\s*[\r\n]+([\s\S]*)$/i);
+      const quotedUserId = attrMatch ? Number(attrMatch[2]) : null;
+      const quoteBodyRaw = attrMatch ? attrMatch[3].trim() : inner.trim();
+
+      // Use real creator_name from matched comment for proper casing
+      const allComments = postComments[postId] || [];
+      const quotedComment = quotedUserId
+        ? (allComments.find((c) => c.creator_id === quotedUserId) ?? null)
+        : null;
+
+      const displayNick = quotedComment
+        ? quotedComment.creator_name.replace(/_/g, ' ')
+        : (attrMatch?.[1]?.replace(/_/g, ' ') ?? null);
+
+      parts.push(
+        <blockquote key={key++} className="comm-quote">
+          {displayNick && <span className="comm-quote-author">{displayNick} said:</span>}
+          <span className="comm-quote-body">{renderTextWithLinks(quoteBodyRaw, `qb-${key}`)}</span>
+        </blockquote>,
+      );
+
+      last = match.index + match[0].length;
+    }
+
+    // Remaining text
+    if (last < raw.length) {
+      const rest = raw
+        .slice(last)
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/^\n+/, '')
+        .trimEnd();
+      if (rest) {
+        parts.push(
+          <span key={key++} className="comm-text">
+            {renderTextWithLinks(rest, `rest-${key}`)}
+          </span>,
+        );
+      }
+    }
+
+    return parts;
+  };
+
+  // ── End comment helpers ────────────────────────────────────────────────────
+
   return (
     <div
       className={`app-container ${fixedHeader ? 'fixed' : ''} ${isPopularMode && fixedHeader ? 'popular-fixed' : ''} ${isMobile && !infiniteScroll ? 'mobile-page-buttons-padding' : ''}`}
@@ -1294,7 +1452,9 @@ function App() {
                   ? `buttons-${maximizedButtonsPosition}`
                   : `buttons-${postButtonsPosition}`,
                 isMobile && !isMaximized ? 'mobile-no-buttons' : '',
-                showTagsFor === post.id || showInfoFor === post.id ? 'popup-active' : '',
+                showTagsFor === post.id || showInfoFor === post.id || showCommentsFor === post.id
+                  ? 'popup-active'
+                  : '',
                 isMaximized && !buttonsVisible ? 'buttons-faded' : '',
                 showStatsBar && !isMaximized ? 'has-stats' : '',
               ]
@@ -1428,6 +1588,30 @@ function App() {
                 )}
               </button>
               <button
+                className={`comm-btn ${isMaximized ? 'comm-btn-max' : ''} ${
+                  showCommentsFor === post.id ? 'active' : ''
+                }`}
+                onClick={() =>
+                  showCommentsFor === post.id ? closeComments() : setShowCommentsFor(post.id)
+                }
+                title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={isMaximized ? 30 : 20}
+                  height={isMaximized ? 30 : 20}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" />
+                </svg>
+              </button>
+              <button
                 className={`fav-post-btn ${post.is_favorited ? 'is-favorite' : ''} ${
                   isMaximized ? 'fav-post-btn-max' : ''
                 }`}
@@ -1486,7 +1670,7 @@ function App() {
 
               {showTagsFor === post.id && (
                 <div
-                  className={`tags-popup ${isMaximized ? 'tags-popup-max' : ''}`}
+                  className={`tags-popup ${isMaximized ? 'tags-popup-max' : ''}${hidePopupScrollbar ? ' scrollbar-hidden' : ''}`}
                   ref={tagsPopupRef}
                   onWheel={(e) => {
                     const target = e.currentTarget;
@@ -1602,7 +1786,7 @@ function App() {
 
               {showInfoFor === post.id && (
                 <div
-                  className={`info-popup ${isMaximized ? 'info-popup-max' : ''}`}
+                  className={`info-popup ${isMaximized ? 'info-popup-max' : ''}${hidePopupScrollbar ? ' scrollbar-hidden' : ''}`}
                   ref={infoPopupRef}
                   onWheel={(e) => {
                     const target = e.currentTarget;
@@ -1807,6 +1991,66 @@ function App() {
                     <span className="info-label">Posted:</span>
                     <span className="info-value">{formatTimeAgo(post.created_at)}</span>
                   </div>
+                </div>
+              )}
+
+              {/* Comments popup */}
+              {showCommentsFor === post.id && (
+                <div
+                  className={`comm-popup${isMaximized ? ' comm-popup-max' : ''}${hidePopupScrollbar ? ' scrollbar-hidden' : ''}`}
+                  ref={commentsPopupRef}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onWheel={(e) => {
+                    const target = e.currentTarget;
+                    const atTop = target.scrollTop === 0;
+                    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+                    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {loadingComments.has(post.id) ? (
+                    <div className="comm-loading">Loading comments…</div>
+                  ) : !postComments[post.id] || postComments[post.id].length === 0 ? (
+                    <div className="comm-empty">No one is here yet…</div>
+                  ) : (
+                    [...(postComments[post.id] || [])]
+                      .sort((a, b) =>
+                        commentSort === 'score'
+                          ? b.score - a.score
+                          : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                      )
+                      .map((comment) => {
+                        const bodyParts = parseCommentBody(comment.body, post.id);
+                        return (
+                          <div
+                            key={comment.id}
+                            id={`comm-${post.id}-${comment.id}`}
+                            className="comm-item"
+                          >
+                            <div className="comm-item-header">
+                              <a
+                                href={`https://e621.net/users/${comment.creator_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="comm-author"
+                              >
+                                {comment.creator_name.replace(/_/g, ' ')}
+                              </a>
+                              <span
+                                className={`comm-score ${comment.score > 0 ? 'pos' : comment.score < 0 ? 'neg' : ''}`}
+                              >
+                                {comment.score > 0 ? '+' : ''}
+                                {comment.score}
+                              </span>
+                            </div>
+                            <div className="comm-body">
+                              {bodyParts.length > 0 ? bodyParts : comment.body}
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
               )}
 
@@ -2134,6 +2378,10 @@ function App() {
             setHideScrollbar={setHideScrollbar}
             hideScrollbarNews={hideScrollbarNews}
             setHideScrollbarNews={setHideScrollbarNews}
+            hidePopupScrollbar={hidePopupScrollbar}
+            setHidePopupScrollbar={setHidePopupScrollbar}
+            commentSort={commentSort}
+            setCommentSort={setCommentSort}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}

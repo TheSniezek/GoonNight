@@ -771,6 +771,59 @@ app.get('/api/e621/post-meta/:postId', async (req, res) => {
   }
 });
 
+// ==================== COMMENTS ====================
+app.get('/api/e621/comments/:postId', async (req, res) => {
+  try {
+    const postId = Number(req.params.postId);
+    if (!postId) return res.status(400).json({ error: 'Invalid post ID' });
+
+    const { username, apiKey } = req.query;
+    const cacheKey = `comments:${postId}`;
+
+    const cached = cache.get(cacheKey, 300000); // cache 5min
+    if (cached) return res.json(cached);
+
+    const auth =
+      username && apiKey
+        ? { username: String(username), apiKey: String(apiKey) }
+        : E621_USER && E621_API_KEY
+          ? { username: E621_USER, apiKey: E621_API_KEY }
+          : null;
+
+    const authParams = auth ? { login: auth.username, api_key: auth.apiKey } : {};
+
+    const response = await e621Limiter.execute(() =>
+      axios.get('https://e621.net/comments.json', {
+        params: {
+          'search[post_id]': postId,
+          limit: 100,
+          ...authParams,
+        },
+        headers: { 'User-Agent': USER_AGENT },
+        timeout: 10000,
+      }),
+    );
+
+    const comments = (response.data || []).map((c) => ({
+      id: c.id,
+      post_id: c.post_id,
+      creator_id: c.creator_id,
+      creator_name: c.creator_name,
+      body: c.body,
+      score: c.score,
+      created_at: c.created_at,
+      is_hidden: c.is_hidden || false,
+    }));
+
+    const payload = { comments };
+    cache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    console.error('❌ [Comments]', err.message);
+    res.status(500).json({ comments: [] });
+  }
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });

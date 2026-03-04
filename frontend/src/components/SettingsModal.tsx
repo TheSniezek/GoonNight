@@ -62,6 +62,10 @@ interface SettingsModalProps {
   setHideScrollbar: (v: boolean) => void;
   hideScrollbarNews: boolean;
   setHideScrollbarNews: (v: boolean) => void;
+  hidePopupScrollbar: boolean;
+  setHidePopupScrollbar: (v: boolean) => void;
+  commentSort: 'score' | 'newest';
+  setCommentSort: (v: 'score' | 'newest') => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -130,6 +134,10 @@ export default function SettingsModal({
   setHideScrollbar,
   hideScrollbarNews,
   setHideScrollbarNews,
+  hidePopupScrollbar,
+  setHidePopupScrollbar,
+  commentSort,
+  setCommentSort,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -453,6 +461,16 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
+                <span className="settings-names">Hide popup scrollbar</span>
+                <input
+                  type="checkbox"
+                  checked={hidePopupScrollbar}
+                  onChange={(e) => setHidePopupScrollbar(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
                 <span className="settings-names">Show artist labels on posts</span>
                 <input
                   type="checkbox"
@@ -502,6 +520,29 @@ export default function SettingsModal({
                   </label>
                 </>
               )}
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Comments</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Comment sort</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${commentSort === 'score' ? 'active' : ''}`}
+                    onClick={() => setCommentSort('score')}
+                  >
+                    Score
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${commentSort === 'newest' ? 'active' : ''}`}
+                    onClick={() => setCommentSort('newest')}
+                  >
+                    Newest
+                  </button>
+                </div>
+              </label>
             </div>
           </div>
 

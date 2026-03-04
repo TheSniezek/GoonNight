@@ -176,6 +176,30 @@ export const fetchUserNames = async (ids: number[]): Promise<Record<number, stri
   return result;
 };
 
+// Typ komentarza e621
+export type PostComment = {
+  id: number;
+  post_id: number;
+  creator_id: number;
+  creator_name: string;
+  body: string;
+  score: number;
+  created_at: string;
+  is_hidden: boolean;
+};
+
+// Pobierz komentarze posta
+export const fetchPostComments = async (
+  postId: number,
+  auth?: { username: string; apiKey: string },
+): Promise<PostComment[]> => {
+  const { data } = await axios.get<{ comments: PostComment[] }>(
+    `${BASE_URL}/api/e621/comments/${postId}`,
+    { params: { username: auth?.username, apiKey: auth?.apiKey } },
+  );
+  return data.comments || [];
+};
+
 // Pobierz meta posta (pools, relationships) - wywoływane lazy gdy otwieramy info popup
 export const fetchPostMeta = async (
   postId: number,
