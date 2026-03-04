@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 7; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 8; // ✅ Zwiększam wersję - nowe pola
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
@@ -37,6 +37,8 @@ export interface StoredSettings {
   favIndicatorOpacity: number; // ✅ NOWE: krycie wskaźnika ulubionych (10-100)
   showStatsBar: boolean; // ✅ NOWE: pokaż pasek statystyk na zwykłych postach
   showStatsBarNews: boolean; // ✅ NOWE: pokaż pasek statystyk w NewsModal
+  hideScrollbar: boolean; // ✅ NOWE: ukryj scrollbar dla głównych postów
+  hideScrollbarNews: boolean; // ✅ NOWE: ukryj scrollbar w NewsModal
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -73,6 +75,8 @@ const getDefaults = (): StoredSettings => ({
   favIndicatorOpacity: 100, // ✅ DOMYŚLNIE: pełna widoczność
   showStatsBar: false, // ✅ DOMYŚLNIE: ukryte
   showStatsBarNews: false, // ✅ DOMYŚLNIE: ukryte
+  hideScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny
+  hideScrollbarNews: false, // ✅ DOMYŚLNIE: scrollbar widoczny
   sexSearch: {
     female: false,
     male: false,
@@ -167,6 +171,16 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       ...stored,
       showStatsBar: false,
       showStatsBarNews: false,
+      version: SETTINGS_VERSION,
+    };
+  }
+  // ✅ Migracja z wersji 7 do 8 - dodaj scrollbar settings
+  if (stored.version === 7) {
+    return {
+      ...defaults,
+      ...stored,
+      hideScrollbar: false,
+      hideScrollbarNews: false,
       version: SETTINGS_VERSION,
     };
   }
@@ -307,6 +321,10 @@ export function useSettings() {
     setShowStatsBar: (v: boolean) => updateSetting('showStatsBar', v),
     showStatsBarNews: settings.showStatsBarNews,
     setShowStatsBarNews: (v: boolean) => updateSetting('showStatsBarNews', v),
+    hideScrollbar: settings.hideScrollbar,
+    setHideScrollbar: (v: boolean) => updateSetting('hideScrollbar', v),
+    hideScrollbarNews: settings.hideScrollbarNews,
+    setHideScrollbarNews: (v: boolean) => updateSetting('hideScrollbarNews', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

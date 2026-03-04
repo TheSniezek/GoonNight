@@ -58,6 +58,10 @@ interface SettingsModalProps {
   setShowStatsBar: (v: boolean) => void;
   showStatsBarNews: boolean;
   setShowStatsBarNews: (v: boolean) => void;
+  hideScrollbar: boolean;
+  setHideScrollbar: (v: boolean) => void;
+  hideScrollbarNews: boolean;
+  setHideScrollbarNews: (v: boolean) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -122,6 +126,10 @@ export default function SettingsModal({
   setShowStatsBar,
   showStatsBarNews,
   setShowStatsBarNews,
+  hideScrollbar,
+  setHideScrollbar,
+  hideScrollbarNews,
+  setHideScrollbarNews,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -420,6 +428,26 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={showStatsBarNews}
                   onChange={(e) => setShowStatsBarNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Hide scrollbar on posts</span>
+                <input
+                  type="checkbox"
+                  checked={hideScrollbar}
+                  onChange={(e) => setHideScrollbar(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Hide scrollbar in News Modal</span>
+                <input
+                  type="checkbox"
+                  checked={hideScrollbarNews}
+                  onChange={(e) => setHideScrollbarNews(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>

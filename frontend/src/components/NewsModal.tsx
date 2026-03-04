@@ -39,6 +39,7 @@ interface NewsModalProps {
   favIndicatorOpacity?: number;
   isFetching?: boolean;
   showStatsBar?: boolean;
+  hideScrollbar?: boolean;
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -72,6 +73,7 @@ const NewsModal = ({
   favIndicatorOpacity = 100,
   isFetching = false,
   showStatsBar = false,
+  hideScrollbar = false,
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -569,7 +571,7 @@ const NewsModal = ({
           </div>
         )}
 
-        <div className="news-content">
+        <div className={`news-content${hideScrollbar ? ' scrollbar-hidden' : ''}`}>
           {loading ? (
             <p>Loading posts...</p>
           ) : postsToRender.length === 0 ? (

@@ -295,6 +295,31 @@
       flex: 1;
       padding-right: 20px;
 
+      // Custom scrollbar
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #1b1b24;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #35354b;
+        &:hover {
+          background-color: #ff5ca8;
+        }
+      }
+
+      // Hide scrollbar class
+      &.scrollbar-hidden {
+        scrollbar-width: none;
+        padding-right: 0;
+        &::-webkit-scrollbar {
+          display: none;
+        }
+      }
+
       .news-day-group {
         .date-display-line {
           position: relative;

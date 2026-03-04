@@ -84,6 +84,10 @@ function App() {
     setShowStatsBar,
     showStatsBarNews,
     setShowStatsBarNews,
+    hideScrollbar,
+    setHideScrollbar,
+    hideScrollbarNews,
+    setHideScrollbarNews,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -171,6 +175,17 @@ function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // 🔥 Scrollbar visibility for main page
+  useEffect(() => {
+    const html = document.documentElement;
+    if (hideScrollbar) {
+      html.classList.add('hide-scrollbar');
+    } else {
+      html.classList.remove('hide-scrollbar');
+    }
+    return () => html.classList.remove('hide-scrollbar');
+  }, [hideScrollbar]);
 
   // 🔥 Blokowanie scrollu w maximized mode
   useEffect(() => {
@@ -1254,7 +1269,7 @@ function App() {
       </div>
 
       <div
-        className={`posts-grid ${layout}`}
+        className={`posts-grid ${layout} ${hideScrollbar ? 'scrollbar-hidden' : ''}`}
         style={{ '--columns': postColumns } as React.CSSProperties}
       >
         {visiblePosts.map((post: Post, index: number) => {
@@ -1929,7 +1944,6 @@ function App() {
                     src={post.file.url || post.sample?.url}
                     loading="lazy"
                     onClick={() => toggleMaximize(post.id)}
-                    onDoubleClick={() => toggleMaximize(post.id)}
                   />
                 )
               ) : (
@@ -1943,8 +1957,8 @@ function App() {
                       ? post.file.url || post.sample?.url
                       : post.preview?.url || post.sample?.url || post.file.url
                   }
-                  onClick={isMobile ? () => toggleMaximize(post.id) : undefined}
-                  onDoubleClick={!isMobile ? () => toggleMaximize(post.id) : undefined}
+                  onClick={!isMaximized ? () => toggleMaximize(post.id) : undefined}
+                  onDoubleClick={undefined}
                 />
               )}
               {/* Stats bar - below media */}
@@ -2116,6 +2130,10 @@ function App() {
             setShowStatsBar={setShowStatsBar}
             showStatsBarNews={showStatsBarNews}
             setShowStatsBarNews={setShowStatsBarNews}
+            hideScrollbar={hideScrollbar}
+            setHideScrollbar={setHideScrollbar}
+            hideScrollbarNews={hideScrollbarNews}
+            setHideScrollbarNews={setHideScrollbarNews}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
@@ -2163,6 +2181,7 @@ function App() {
             showFavIndicators={showFavIndicatorsNews}
             favIndicatorOpacity={favIndicatorOpacity}
             showStatsBar={showStatsBarNews}
+            hideScrollbar={hideScrollbarNews}
           />
         )}
 
