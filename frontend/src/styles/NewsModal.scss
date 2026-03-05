@@ -579,7 +579,8 @@
               .news-post-item,
               .news-video-thumb,
               .news-video-thumb img,
-              .news-video-thumb video {
+              .news-video-thumb video,
+              .news-video-thumb .news-video-overlay {
                 border-radius: 4px 4px 0 0 !important;
               }
             }
@@ -873,7 +874,6 @@
           .news-video-thumb {
             position: relative;
             cursor: pointer;
-            margin-bottom: 10px;
 
             video {
               width: 100%;
