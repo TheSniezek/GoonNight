@@ -1507,6 +1507,7 @@ function App() {
                 className={`tags-btn ${isMaximized ? 'tags-btn-max' : ''} ${
                   showTagsFor === post.id ? 'active' : ''
                 }`}
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setShowTagsFor((prev) => (prev === post.id ? null : post.id))}
               >
                 {isMaximized ? (
@@ -1551,6 +1552,7 @@ function App() {
                 className={`info-btn ${isMaximized ? 'info-btn-max' : ''} ${
                   showInfoFor === post.id ? 'active' : ''
                 }`}
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setShowInfoFor(showInfoFor === post.id ? null : post.id)}
               >
                 {isMaximized ? (
@@ -1591,6 +1593,7 @@ function App() {
                 className={`comm-btn ${isMaximized ? 'comm-btn-max' : ''} ${
                   showCommentsFor === post.id ? 'active' : ''
                 }`}
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={() =>
                   showCommentsFor === post.id ? closeComments() : setShowCommentsFor(post.id)
                 }
@@ -2054,16 +2057,6 @@ function App() {
                 </div>
               )}
 
-              {/* Artist label */}
-              {showArtistLabels &&
-                !isMaximized &&
-                (() => {
-                  const artistTag = post.tags.find((t: PostTag) => t.type === 'artist');
-                  return artistTag ? (
-                    <div className="post-artist-label">{artistTag.name}</div>
-                  ) : null;
-                })()}
-
               {/* Permanent favorite indicator */}
               {post.is_favorited && !isMaximized && showFavIndicators && (
                 <div
@@ -2205,6 +2198,18 @@ function App() {
                   onDoubleClick={undefined}
                 />
               )}
+              {/* Artist label - bar between media and stats bar */}
+              {showArtistLabels &&
+                !isMaximized &&
+                (() => {
+                  const artistTag = post.tags.find((t: PostTag) => t.type === 'artist');
+                  return artistTag ? (
+                    <div className={`post-artist-label${showStatsBar ? ' artist-has-stats' : ''}`}>
+                      {artistTag.name}
+                    </div>
+                  ) : null;
+                })()}
+
               {/* Stats bar - below media */}
               {showStatsBar && !isMaximized && (
                 <div className="post-stats-bar">

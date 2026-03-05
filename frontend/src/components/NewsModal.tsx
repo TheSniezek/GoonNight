@@ -929,16 +929,6 @@ const NewsModal = ({
                           </div>
                         )}
 
-                        {/* Media content */}
-                        {/* Artist label */}
-                        {showArtistLabels &&
-                          (() => {
-                            const artistTag = post.tags.find((t: PostTag) => t.type === 'artist');
-                            return artistTag ? (
-                              <div className="news-artist-label">{artistTag.name}</div>
-                            ) : null;
-                          })()}
-
                         {/* Permanent favorite indicator */}
                         {post.is_favorited && showFavIndicators && (
                           <div
@@ -1027,6 +1017,18 @@ const NewsModal = ({
                             loading="lazy"
                           />
                         )}
+                        {/* Artist label - bar between media and stats bar */}
+                        {showArtistLabels &&
+                          (() => {
+                            const artistTag = post.tags.find((t: PostTag) => t.type === 'artist');
+                            return artistTag ? (
+                              <div
+                                className={`news-artist-label${showStatsBar ? ' artist-has-stats' : ''}`}
+                              >
+                                {artistTag.name}
+                              </div>
+                            ) : null;
+                          })()}
                         {/* Stats bar - below media */}
                         {showStatsBar && (
                           <div className="news-stats-bar">

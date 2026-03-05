@@ -356,11 +356,12 @@
               aspect-ratio: 1 / 1;
               overflow: hidden;
 
-              &.has-stats {
+              &.has-stats,
+              &:has(.news-artist-label) {
                 aspect-ratio: unset;
               }
 
-              &:not(.has-stats) {
+              &:not(.has-stats):not(:has(.news-artist-label)) {
                 overflow: hidden;
               }
 
@@ -376,7 +377,8 @@
                 height: 100%;
               }
 
-              &.has-stats {
+              &.has-stats,
+              &:has(.news-artist-label) {
                 .news-post-item {
                   aspect-ratio: 1 / 1;
                   height: auto;
@@ -397,11 +399,12 @@
               aspect-ratio: 1 / 1;
               overflow: hidden;
 
-              &.has-stats {
+              &.has-stats,
+              &:has(.news-artist-label) {
                 aspect-ratio: unset;
               }
 
-              &:not(.has-stats) {
+              &:not(.has-stats):not(:has(.news-artist-label)) {
                 overflow: hidden;
               }
 
@@ -425,7 +428,8 @@
                 }
               }
 
-              &.has-stats {
+              &.has-stats,
+              &:has(.news-artist-label) {
                 .news-post-item {
                   aspect-ratio: 1 / 1;
                   height: auto;
@@ -478,22 +482,25 @@
             height: fit-content;
             content-visibility: auto; // 🔥 Performance optimization
 
-            // Artist label
+            // Artist label - bar between media and stats bar
             .news-artist-label {
-              position: absolute;
-              bottom: 16px;
-              left: 6px;
-              z-index: 9;
-              background: rgba(0, 0, 0, 0.7);
-              color: orange;
-              font-size: 1rem;
-              padding: 2px 6px;
-              border-radius: 4px;
-              pointer-events: none;
-              max-width: calc(100% - 12px);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 5px 6px;
+              background: rgb(28, 28, 38);
+              color: #ff298d;
+              font-size: 10px;
+              font-weight: 700;
               overflow: hidden;
               text-overflow: ellipsis;
               white-space: nowrap;
+              pointer-events: none;
+              border-radius: 0 0 6px 6px;
+
+              &.artist-has-stats {
+                border-radius: 0;
+              }
             }
 
             // Permanent favorite indicator
