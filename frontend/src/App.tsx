@@ -1238,7 +1238,7 @@ function App() {
             onCloseNewsModal={() => setShowNewsPopup(false)}
           />
 
-          {!infiniteScroll && (
+          {!infiniteScroll && !isPopularMode && (
             <PageButtonsTop
               page={uiPage}
               loading={loading}
@@ -2344,7 +2344,7 @@ function App() {
         )}
       </div>
 
-      {!infiniteScroll && !isMobile && (
+      {!infiniteScroll && !isMobile && !isPopularMode && (
         <PageButtonsBottom
           page={uiPage}
           loading={loading}

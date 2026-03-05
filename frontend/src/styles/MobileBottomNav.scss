@@ -134,6 +134,10 @@
   z-index: 995;
   border-bottom: 1px solid #35354b;
 
+  @media (min-width: 768px) {
+    display: none;
+  }
+
   .mobile-popular-controls {
     display: flex;
     flex-direction: column;
