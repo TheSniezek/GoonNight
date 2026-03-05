@@ -907,6 +907,19 @@ function App() {
     return filteredPosts.slice(start, end);
   }, [filteredPosts, start, end, infiniteScroll]);
 
+  // ❤️ Double-click toggle favorite
+  const handleDoubleClickFav = useCallback(
+    async (post: Post, isMaximized: boolean) => {
+      if (!isLoggedIn || pendingFavorites.has(post.id)) return;
+      const wasNotFavorite = !post.is_favorited;
+      await toggleFavoritePost(post.id, post.is_favorited || false);
+      if (wasNotFavorite && hideFavorites && isMaximized) {
+        goNextPost();
+      }
+    },
+    [isLoggedIn, pendingFavorites, toggleFavoritePost, hideFavorites],
+  );
+
   // 🔥 Funkcja do nawigacji w zmaksymalizowanym trybie
   const goNextPost = useCallback(() => {
     if (maximizedPostId === null) return;
@@ -1034,6 +1047,10 @@ function App() {
       const touch = (e as TouchEvent).changedTouches[0];
       if (!touch) return;
 
+      // 🚫 Ignoruj swipe w strefach 100px od góry i dołu ekranu
+      const screenH = window.innerHeight;
+      if (touchStartY < 100 || touchStartY > screenH - 100) return;
+
       const swipeDistanceX = touch.screenX - touchStartX;
       const swipeDistanceY = touch.screenY - touchStartY;
 
@@ -1102,6 +1119,10 @@ function App() {
     const handleTouchEnd = (e: Event) => {
       const touch = (e as TouchEvent).changedTouches[0];
       if (!touch) return;
+
+      // 🚫 Ignoruj swipe w strefach 100px od góry i dołu ekranu
+      const screenH = window.innerHeight;
+      if (touchStartY < 100 || touchStartY > screenH - 100) return;
 
       const swipeDistanceX = touch.screenX - touchStartX;
       const swipeDistanceY = touch.screenY - touchStartY;
@@ -2102,10 +2123,15 @@ function App() {
                       }
                     }}
                     loop={loopVideos}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                   />
                 ) : isMobile ? (
                   // Mobile - pokaż thumbnail z overlayem (jak w NewsModal)
-                  <div className="video-thumb" onClick={() => toggleMaximize(post.id)}>
+                  <div
+                    className="video-thumb"
+                    onClick={() => toggleMaximize(post.id)}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
+                  >
                     <img
                       src={post.preview.url || post.sample.url}
                       alt=""
@@ -2143,6 +2169,7 @@ function App() {
                       }
                     }}
                     loop={loopVideos}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                   />
                 )
               ) : isGif ? (
@@ -2152,10 +2179,15 @@ function App() {
                     className="post-item post-item-max"
                     src={post.file.url || post.sample?.url}
                     onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                   />
                 ) : isMobile || !gifsAutoplay ? (
                   // Mobile LUB gdy autoplay wyłączony - pokaż thumbnail z overlayem
-                  <div className="video-thumb" onClick={() => toggleMaximize(post.id)}>
+                  <div
+                    className="video-thumb"
+                    onClick={() => toggleMaximize(post.id)}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
+                  >
                     <img
                       src={post.preview?.url || post.sample?.url}
                       alt=""
@@ -2181,6 +2213,7 @@ function App() {
                     src={post.file.url || post.sample?.url}
                     loading="lazy"
                     onClick={() => toggleMaximize(post.id)}
+                    onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                   />
                 )
               ) : (
@@ -2195,7 +2228,7 @@ function App() {
                       : post.preview?.url || post.sample?.url || post.file.url
                   }
                   onClick={!isMaximized ? () => toggleMaximize(post.id) : undefined}
-                  onDoubleClick={undefined}
+                  onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                 />
               )}
               {/* Artist label - bar between media and stats bar */}
