@@ -15,7 +15,6 @@ import {
 } from './api/posts';
 import type { PostComment } from './api/posts';
 import { useSettings } from './logic/useSettings';
-import { useSwipeGesture } from './logic/useSwipeGesture';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
 import SettingsModal from './components/SettingsModal';
@@ -922,34 +921,21 @@ function App() {
   );
 
   // 🔥 Funkcja do nawigacji w zmaksymalizowanym trybie
-  // Natychmiast zatrzymuje i zwalnia bieżące video żeby swipe nie czekał na buforowanie
-  const abortCurrentVideo = useCallback(() => {
-    if (maximizedPostId === null) return;
-    const video = videoRefs.current[maximizedPostId];
-    if (video) {
-      video.pause();
-      video.src = '';
-      video.load();
-    }
-  }, [maximizedPostId]);
-
   const goNextPost = useCallback(() => {
     if (maximizedPostId === null) return;
     const index = visiblePosts.findIndex((p) => p.id === maximizedPostId);
     if (index >= 0 && index < visiblePosts.length - 1) {
-      abortCurrentVideo();
       toggleMaximize(visiblePosts[index + 1].id);
     }
-  }, [maximizedPostId, visiblePosts, toggleMaximize, abortCurrentVideo]);
+  }, [maximizedPostId, visiblePosts, toggleMaximize]);
 
   const goPrevPost = useCallback(() => {
     if (maximizedPostId === null) return;
     const index = visiblePosts.findIndex((p) => p.id === maximizedPostId);
     if (index > 0) {
-      abortCurrentVideo();
       toggleMaximize(visiblePosts[index - 1].id);
     }
-  }, [maximizedPostId, visiblePosts, toggleMaximize, abortCurrentVideo]);
+  }, [maximizedPostId, visiblePosts, toggleMaximize]);
 
   // 🔥 Obsługa nawigacji strzałkami w maximized mode
   useEffect(() => {
@@ -967,72 +953,227 @@ function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [maximizedPostId, visiblePosts, goNextPost, goPrevPost, toggleMaximize, disableArrowKeys]);
 
-  // 🔥 Swipe dla mobile w maximized mode — słuchamy na document żeby nie zależeć od DOM node
-  // (element .post-wrapper.maximized jest wymieniany przy każdym nowym poście)
-  useSwipeGesture({
-    target: isMobile && maximizedPostId !== null ? 'document' : null,
-    onSwipeLeft: goNextPost,
-    onSwipeRight: goPrevPost,
-    minDistance: 45,
-    minVelocity: 0.25,
-    edgeGuard: 90,
-    enabled: isMobile && maximizedPostId !== null,
-  });
+  // 🔥 Obsługa swipe dla mobile w maximized mode - BEST TYPESCRIPT
+  useEffect(() => {
+    if (!isMobile || maximizedPostId === null) return;
 
-  // 🔥 Swipe dla page buttons — stabilne callbacki by hook nie re-attachował listenerów
-  const swipePageRight = useCallback(() => {
-    if (uiPage > 1) prevUiPage();
-  }, [uiPage, prevUiPage]);
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+    const maxVerticalDistance = 100;
 
-  const swipePageLeft = useCallback(() => {
-    const canGoNext = hasNextApiPage || uiPage * postsPerPage < allPosts.length;
-    if (canGoNext) nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey });
-  }, [hasNextApiPage, uiPage, postsPerPage, allPosts.length, nextUiPage, e621User, e621ApiKey]);
+    // ✅ Type guard dla TouchEvent
+    const isTouchEvent = (e: Event): e is TouchEvent => {
+      return 'changedTouches' in e;
+    };
 
-  useSwipeGesture({
-    target: isMobile && !infiniteScroll && maximizedPostId === null ? '.posts-grid' : null,
-    onSwipeLeft: swipePageLeft,
-    onSwipeRight: swipePageRight,
-    minDistance: 80,
-    minVelocity: 0.25,
-    enabled: isMobile && !infiniteScroll && maximizedPostId === null,
-  });
+    const handleTouchStart = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
 
-  // 🔥 Swipe dla popular mode — stabilne callbacki
-  const swipePopularRight = useCallback(() => {
-    changePopularDate('prev');
-  }, [changePopularDate]);
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+      console.log('👆 Touch start', { x: touchStartX, y: touchStartY });
+    };
 
-  const swipePopularLeft = useCallback(() => {
-    const currentDate = new Date(popularDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const handleTouchEnd = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
 
-    let canGoNext = false;
-    if (popularScale === 'day') {
-      canGoNext = currentDate < today;
-    } else if (popularScale === 'week') {
-      const nextWeek = new Date(currentDate);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      canGoNext = nextWeek <= today;
-    } else if (popularScale === 'month') {
-      const nextMonth = new Date(currentDate);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      canGoNext = nextMonth <= today;
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+
+      const swipeDistanceX = touchEndX - touchStartX;
+      const swipeDistanceY = touchEndY - touchStartY;
+
+      console.log('👆 Touch end', {
+        x: touchEndX,
+        y: touchEndY,
+        distanceX: swipeDistanceX,
+        distanceY: swipeDistanceY,
+      });
+
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) {
+        console.log('⏭️ Too much vertical - ignoring');
+        return;
+      }
+
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) {
+        console.log('⏭️ Too short - ignoring');
+        return;
+      }
+
+      if (swipeDistanceX > 0) {
+        console.log('⬅️ RIGHT swipe → PREV');
+        goPrevPost();
+      } else {
+        console.log('➡️ LEFT swipe → NEXT');
+        goNextPost();
+      }
+    };
+
+    const maximizedElement = document.querySelector('.post-wrapper.maximized') as HTMLElement;
+
+    if (maximizedElement) {
+      console.log('✅ Swipe listeners attached');
+
+      maximizedElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      maximizedElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        maximizedElement.removeEventListener('touchstart', handleTouchStart);
+        maximizedElement.removeEventListener('touchend', handleTouchEnd);
+      };
     }
+  }, [isMobile, maximizedPostId, goNextPost, goPrevPost]);
 
-    if (canGoNext) changePopularDate('next');
-  }, [popularDate, popularScale, changePopularDate]);
+  // 🔥 Swipe dla page buttons mode (przełączanie stron)
+  useEffect(() => {
+    if (!isMobile || infiniteScroll) return; // Tylko mobile + page buttons
 
-  const popularSwipeEnabled = isMobile && isPopularMode && maximizedPostId === null;
-  useSwipeGesture({
-    target: popularSwipeEnabled ? '.posts-grid' : null,
-    onSwipeLeft: swipePopularLeft,
-    onSwipeRight: swipePopularRight,
-    minDistance: 80,
-    minVelocity: 0.25,
-    enabled: popularSwipeEnabled,
-  });
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 100; // większa odległość dla stron
+    const maxVerticalDistance = 100;
+
+    const handleTouchStart = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.screenX;
+      touchStartY = touch.screenY;
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+
+      // 🚫 Ignoruj swipe w strefach 100px od góry i dołu ekranu
+      const screenH = window.innerHeight;
+      if (touchStartY < 100 || touchStartY > screenH - 100) return;
+
+      const swipeDistanceX = touch.screenX - touchStartX;
+      const swipeDistanceY = touch.screenY - touchStartY;
+
+      // Ignoruj pionowy scroll
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) return;
+
+      // Sprawdź minimalną odległość
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) return;
+
+      // Swipe dla page buttons
+      if (swipeDistanceX > 0) {
+        // Swipe w prawo → poprzednia strona
+        if (uiPage > 1) {
+          prevUiPage();
+        }
+      } else {
+        // Swipe w lewo → następna strona
+        const canGoNext = hasNextApiPage || uiPage * postsPerPage < allPosts.length;
+        if (canGoNext) {
+          nextUiPage(postsPerPage, { username: e621User, apiKey: e621ApiKey });
+        }
+      }
+    };
+
+    const postsGrid = document.querySelector('.posts-grid') as HTMLElement;
+
+    if (postsGrid) {
+      postsGrid.addEventListener('touchstart', handleTouchStart, { passive: true });
+      postsGrid.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        postsGrid.removeEventListener('touchstart', handleTouchStart);
+        postsGrid.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [
+    isMobile,
+    infiniteScroll,
+    uiPage,
+    hasNextApiPage,
+    allPosts.length,
+    postsPerPage,
+    prevUiPage,
+    nextUiPage,
+    e621User,
+    e621ApiKey,
+  ]);
+
+  // 🔥 Swipe dla popular mode (przełączanie dat)
+  useEffect(() => {
+    // FIX: Jeśli post jest zmaksymalizowany, nie obsługuj swipe dla dat
+    if (!isMobile || !isPopularMode || maximizedPostId !== null) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 100;
+    const maxVerticalDistance = 100;
+
+    const handleTouchStart = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.screenX;
+      touchStartY = touch.screenY;
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      const touch = (e as TouchEvent).changedTouches[0];
+      if (!touch) return;
+
+      // 🚫 Ignoruj swipe w strefach 100px od góry i dołu ekranu
+      const screenH = window.innerHeight;
+      if (touchStartY < 100 || touchStartY > screenH - 100) return;
+
+      const swipeDistanceX = touch.screenX - touchStartX;
+      const swipeDistanceY = touch.screenY - touchStartY;
+
+      // Ignoruj pionowy scroll
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) return;
+
+      // Sprawdź minimalną odległość
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) return;
+
+      // Swipe dla popular mode
+      if (swipeDistanceX > 0) {
+        // Swipe w prawo → poprzednia data
+        changePopularDate('prev');
+      } else {
+        // Swipe w lewo → następna data (jeśli nie jesteśmy w przyszłości)
+        const currentDate = new Date(popularDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let canGoNext = false;
+        if (popularScale === 'day') {
+          canGoNext = currentDate < today;
+        } else if (popularScale === 'week') {
+          const nextWeek = new Date(currentDate);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          canGoNext = nextWeek <= today;
+        } else if (popularScale === 'month') {
+          const nextMonth = new Date(currentDate);
+          nextMonth.setMonth(nextMonth.getMonth() + 1);
+          canGoNext = nextMonth <= today;
+        }
+
+        if (canGoNext) {
+          changePopularDate('next');
+        }
+      }
+    };
+
+    const postsGrid = document.querySelector('.posts-grid') as HTMLElement;
+
+    if (postsGrid) {
+      postsGrid.addEventListener('touchstart', handleTouchStart, { passive: true });
+      postsGrid.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        postsGrid.removeEventListener('touchstart', handleTouchStart);
+        postsGrid.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isMobile, isPopularMode, popularDate, popularScale, changePopularDate, maximizedPostId]);
 
   useEffect(() => {
     if (!infiniteScroll && hideFavorites) {
@@ -1972,7 +2113,7 @@ function App() {
                     className="post-item post-item-max"
                     controls
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     src={videoUrl}
                     ref={(el) => {
                       if (el) {

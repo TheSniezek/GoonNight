@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, PostTag } from '../api/types';
 import { fetchPostsForMultipleTags } from '../api/posts'; // 🔹 import fetch
 import { filterPostsByBlacklist } from '../logic/blacklistFilter';
 import type { BlacklistLine } from '../logic/useBlacklist';
-import { useSwipeGesture } from '../logic/useSwipeGesture';
 import '../styles/NewsModal.scss';
 
 interface NewsModalProps {
@@ -182,33 +181,21 @@ const NewsModal = ({
   };
 
   // 🔥 Navigation functions for maximized post
-  const goToNextPost = useCallback(() => {
+  const goToNextPost = () => {
     if (!maximizedPost) return;
-    // Natychmiast zatrzymaj bieżące video żeby nie blokować swipe
-    if (maximizedVideoRef.current) {
-      maximizedVideoRef.current.pause();
-      maximizedVideoRef.current.src = '';
-      maximizedVideoRef.current.load();
-    }
     const currentIndex = posts.findIndex((p) => p.id === maximizedPost.id);
     if (currentIndex >= 0 && currentIndex < posts.length - 1) {
       setMaximizedPost(posts[currentIndex + 1]);
     }
-  }, [maximizedPost, posts]);
+  };
 
-  const goToPrevPost = useCallback(() => {
+  const goToPrevPost = () => {
     if (!maximizedPost) return;
-    // Natychmiast zatrzymaj bieżące video żeby nie blokować swipe
-    if (maximizedVideoRef.current) {
-      maximizedVideoRef.current.pause();
-      maximizedVideoRef.current.src = '';
-      maximizedVideoRef.current.load();
-    }
     const currentIndex = posts.findIndex((p) => p.id === maximizedPost.id);
     if (currentIndex > 0) {
       setMaximizedPost(posts[currentIndex - 1]);
     }
-  }, [maximizedPost, posts]);
+  };
 
   // 🔥 Zatrzymaj video przed zamknięciem maximized mode
   const closeMaximized = () => {
@@ -312,16 +299,64 @@ const NewsModal = ({
     return () => window.removeEventListener('keydown', handleEsc, true);
   }, [maximizedPost, onClose]);
 
-  // 🔥 Swipe dla zmaksymalizowanego posta — słuchamy na document
-  useSwipeGesture({
-    target: isMobile && maximizedPost ? 'document' : null,
-    onSwipeLeft: goToNextPost,
-    onSwipeRight: goToPrevPost,
-    minDistance: 45,
-    minVelocity: 0.25,
-    edgeGuard: 90,
-    enabled: isMobile && !!maximizedPost,
-  });
+  // 🔥 Swipe handling for maximized post (mobile)
+  useEffect(() => {
+    if (!isMobile || !maximizedPost) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+    const maxVerticalDistance = 100;
+
+    // ✅ Type guard dla TouchEvent
+    const isTouchEvent = (e: Event): e is TouchEvent => {
+      return 'changedTouches' in e;
+    };
+
+    const handleTouchStart = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
+
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      if (!isTouchEvent(e) || !e.changedTouches[0]) return;
+
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+
+      const swipeDistanceX = touchEndX - touchStartX;
+      const swipeDistanceY = touchEndY - touchStartY;
+
+      // Ignoruj pionowy scroll
+      if (Math.abs(swipeDistanceY) > maxVerticalDistance) return;
+
+      // Sprawdź minimalną odległość
+      if (Math.abs(swipeDistanceX) < minSwipeDistance) return;
+
+      // Swipe w prawo → poprzedni post
+      if (swipeDistanceX > 0) {
+        goToPrevPost();
+      } else {
+        // Swipe w lewo → następny post
+        goToNextPost();
+      }
+    };
+
+    const maximizedElement = document.querySelector('.news-maximized-overlay');
+    if (maximizedElement) {
+      maximizedElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      maximizedElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        maximizedElement.removeEventListener('touchstart', handleTouchStart);
+        maximizedElement.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isMobile, maximizedPost]);
 
   // Click outside handler for tags popup
   useEffect(() => {
@@ -1403,7 +1438,6 @@ const NewsModal = ({
                     }
                     controls
                     loop={loopVideos}
-                    preload="metadata"
                     className="news-maximized-item"
                     ref={(el) => {
                       if (el) {
