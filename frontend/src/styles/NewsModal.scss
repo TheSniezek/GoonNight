@@ -874,6 +874,8 @@
           .news-video-thumb {
             position: relative;
             cursor: pointer;
+            display: block;
+            line-height: 0;
 
             video {
               width: 100%;

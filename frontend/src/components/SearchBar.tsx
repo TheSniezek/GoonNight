@@ -19,6 +19,7 @@ type Props = {
   setPopularScale: (scale: PopularScale) => void;
   loading?: boolean;
   onCloseNewsModal?: () => void;
+  searchHistorySize?: 0 | 5 | 10;
 };
 
 export default function SearchBar({
@@ -36,6 +37,7 @@ export default function SearchBar({
   setPopularScale,
   loading = false,
   onCloseNewsModal,
+  searchHistorySize = 5,
 }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -170,13 +172,11 @@ export default function SearchBar({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    // Zapisz do search history (max 5)
-    if (input.trim()) {
+    // Zapisz do search history
+    if (input.trim() && searchHistorySize > 0) {
       const history: string[] = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-      // Usuń duplikat jeśli istnieje
       const filtered = history.filter((item) => item !== input.trim());
-      // Dodaj na początek
-      const newHistory = [input.trim(), ...filtered].slice(0, 5);
+      const newHistory = [input.trim(), ...filtered].slice(0, searchHistorySize);
       localStorage.setItem('searchHistory', JSON.stringify(newHistory));
     }
 
@@ -278,15 +278,22 @@ export default function SearchBar({
 
     // ⚡ Jeśli input pusty, pokaż search history
     if (!value.trim()) {
+      if (searchHistorySize === 0) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
       const history: string[] = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-      const historySuggestions: AutocompleteItem[] = history.map((search, index) => ({
-        id: `history-${index}`,
-        type: 'tag' as const,
-        name: search,
-        post_count: 0,
-        category: 0,
-        antecedent_name: null,
-      }));
+      const historySuggestions: AutocompleteItem[] = history
+        .slice(0, searchHistorySize)
+        .map((search, index) => ({
+          id: `history-${index}`,
+          type: 'tag' as const,
+          name: search,
+          post_count: 0,
+          category: 0,
+          antecedent_name: null,
+        }));
       setSuggestions(historySuggestions);
       setShowSuggestions(historySuggestions.length > 0);
       return;
@@ -766,16 +773,22 @@ export default function SearchBar({
             placeholder="Enter tags (e.g., wolf cum)"
             onFocus={() => {
               if (!input.trim()) {
-                // Pokaż history gdy input pusty
+                if (searchHistorySize === 0) {
+                  setSuggestions([]);
+                  setShowSuggestions(false);
+                  return;
+                }
                 const history: string[] = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-                const historySuggestions: AutocompleteItem[] = history.map((search, index) => ({
-                  id: `history-${index}`,
-                  type: 'tag' as const,
-                  name: search,
-                  post_count: 0,
-                  category: 0,
-                  antecedent_name: null,
-                }));
+                const historySuggestions: AutocompleteItem[] = history
+                  .slice(0, searchHistorySize)
+                  .map((search, index) => ({
+                    id: `history-${index}`,
+                    type: 'tag' as const,
+                    name: search,
+                    post_count: 0,
+                    category: 0,
+                    antecedent_name: null,
+                  }));
                 setSuggestions(historySuggestions);
                 setShowSuggestions(historySuggestions.length > 0);
               } else if (suggestions.length) {

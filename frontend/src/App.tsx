@@ -82,6 +82,10 @@ function App() {
     setShowFavIndicatorsNews,
     favIndicatorOpacity,
     setFavIndicatorOpacity,
+    favIndicatorSize,
+    setFavIndicatorSize,
+    favIndicatorSizeNews,
+    setFavIndicatorSizeNews,
     showStatsBar,
     setShowStatsBar,
     showStatsBarNews,
@@ -94,6 +98,8 @@ function App() {
     setHidePopupScrollbar,
     commentSort,
     setCommentSort,
+    searchHistorySize,
+    setSearchHistorySize,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -740,10 +746,23 @@ function App() {
       // FIX: Zamknij NewsModal
       setShowNewsPopup(false);
 
+      // FIX: Wyjdź z maximized mode przy kliknięciu tagu
+      if (maximizedPostId !== null) {
+        toggleMaximize(maximizedPostId);
+      }
+
+      // Zapisz do historii wyszukiwania jeśli włączona
+      if (searchHistorySize > 0 && tag.trim()) {
+        const history: string[] = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+        const filtered = history.filter((item) => item !== tag.trim());
+        const newHistory = [tag.trim(), ...filtered].slice(0, searchHistorySize);
+        localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+      }
+
       // FIX: Użyj obecnego order aby zachować filtry między wyszukiwaniami
       await handleSearch(tag, order);
     },
-    [handleSearch, order],
+    [handleSearch, order, maximizedPostId, toggleMaximize, searchHistorySize],
   );
 
   const addTag = useCallback(
@@ -1377,6 +1396,7 @@ function App() {
             setPopularScale={setPopularScale}
             loading={loading}
             onCloseNewsModal={() => setShowNewsPopup(false)}
+            searchHistorySize={searchHistorySize}
           />
 
           {!infiniteScroll && !isPopularMode && (
@@ -2084,12 +2104,16 @@ function App() {
                   className="post-fav-indicator"
                   style={{
                     opacity: favIndicatorOpacity === 100 ? undefined : favIndicatorOpacity / 100,
+                    ...(favIndicatorSize === 'small' ? { width: 24, height: 24, padding: 2 } : {}),
+                    ...(favIndicatorSize === 'big' ? { width: 54, height: 54, padding: 4.5 } : {}),
                   }}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
+                    width={favIndicatorSize === 'small' ? 16 : favIndicatorSize === 'big' ? 36 : 24}
+                    height={
+                      favIndicatorSize === 'small' ? 16 : favIndicatorSize === 'big' ? 36 : 24
+                    }
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -2408,6 +2432,10 @@ function App() {
             setShowFavIndicatorsNews={setShowFavIndicatorsNews}
             favIndicatorOpacity={favIndicatorOpacity}
             setFavIndicatorOpacity={setFavIndicatorOpacity}
+            favIndicatorSize={favIndicatorSize}
+            setFavIndicatorSize={setFavIndicatorSize}
+            favIndicatorSizeNews={favIndicatorSizeNews}
+            setFavIndicatorSizeNews={setFavIndicatorSizeNews}
             showStatsBar={showStatsBar}
             setShowStatsBar={setShowStatsBar}
             showStatsBarNews={showStatsBarNews}
@@ -2420,6 +2448,8 @@ function App() {
             setHidePopupScrollbar={setHidePopupScrollbar}
             commentSort={commentSort}
             setCommentSort={setCommentSort}
+            searchHistorySize={searchHistorySize}
+            setSearchHistorySize={setSearchHistorySize}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
@@ -2466,6 +2496,7 @@ function App() {
             blacklistLines={blacklistLines}
             showFavIndicators={showFavIndicatorsNews}
             favIndicatorOpacity={favIndicatorOpacity}
+            favIndicatorSizeNews={favIndicatorSizeNews}
             showStatsBar={showStatsBarNews}
             hideScrollbar={hideScrollbarNews}
           />

@@ -2,12 +2,13 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 9; // ✅ Zwiększam wersję - nowe pola
+const SETTINGS_VERSION = 11;
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
 export type VideoResolution = 'best' | 'worse';
 export type ButtonPosition = 'top' | 'bottom'; // ✅ NOWY TYP
+export type FavIndicatorSize = 'small' | 'normal' | 'big';
 
 export interface StoredSettings {
   version: number;
@@ -35,12 +36,15 @@ export interface StoredSettings {
   showFavIndicators: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych na zwykłych postach
   showFavIndicatorsNews: boolean; // ✅ NOWE: pokaż wskaźnik ulubionych w NewsModal
   favIndicatorOpacity: number; // ✅ NOWE: krycie wskaźnika ulubionych (10-100)
+  favIndicatorSize: FavIndicatorSize; // ✅ NOWE: rozmiar wskaźnika ulubionych
+  favIndicatorSizeNews: FavIndicatorSize; // ✅ NOWE: rozmiar wskaźnika ulubionych w NewsModal
   showStatsBar: boolean; // ✅ NOWE: pokaż pasek statystyk na zwykłych postach
   showStatsBarNews: boolean; // ✅ NOWE: pokaż pasek statystyk w NewsModal
   hideScrollbar: boolean; // ✅ NOWE: ukryj scrollbar dla głównych postów
   hideScrollbarNews: boolean; // ✅ NOWE: ukryj scrollbar w NewsModal
   hidePopupScrollbar: boolean; // ✅ NOWE: ukryj scrollbar w popupach (tags/info/comments)
   commentSort: 'score' | 'newest'; // ✅ NOWE: sortowanie komentarzy
+  searchHistorySize: 0 | 5 | 10; // ✅ NOWE: rozmiar historii wyszukiwania
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -75,12 +79,15 @@ const getDefaults = (): StoredSettings => ({
   showFavIndicators: true, // ✅ DOMYŚLNIE: widoczne
   showFavIndicatorsNews: true, // ✅ DOMYŚLNIE: widoczne
   favIndicatorOpacity: 100, // ✅ DOMYŚLNIE: pełna widoczność
+  favIndicatorSize: 'normal' as FavIndicatorSize,
+  favIndicatorSizeNews: 'normal' as FavIndicatorSize,
   showStatsBar: false, // ✅ DOMYŚLNIE: ukryte
   showStatsBarNews: false, // ✅ DOMYŚLNIE: ukryte
   hideScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny
   hideScrollbarNews: false, // ✅ DOMYŚLNIE: scrollbar widoczny
   hidePopupScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny w popupach
   commentSort: 'score' as const, // ✅ DOMYŚLNIE: według score
+  searchHistorySize: 5 as const,
   sexSearch: {
     female: false,
     male: false,
@@ -97,6 +104,9 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   newsPostColumns: (v): v is number => typeof v === 'number' && v >= 1 && v <= 10,
   postsPerPage: (v): v is number => typeof v === 'number' && v >= 10 && v <= 320,
   favIndicatorOpacity: (v): v is number => typeof v === 'number' && v >= 10 && v <= 100,
+  favIndicatorSize: (v): v is FavIndicatorSize => ['small', 'normal', 'big'].includes(v as string),
+  favIndicatorSizeNews: (v): v is FavIndicatorSize =>
+    ['small', 'normal', 'big'].includes(v as string),
   layout: (v): v is Layout =>
     ['masonry', 'grid', 'accurate-grid', 'fit-grid'].includes(v as string),
   newsLayout: (v): v is Layout =>
@@ -105,6 +115,7 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   postButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   maximizedButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   commentSort: (v): v is 'score' | 'newest' => ['score', 'newest'].includes(v as string), // ✅ NOWY
+  searchHistorySize: (v): v is 0 | 5 | 10 => [0, 5, 10].includes(v as number),
   sexSearch: (v): v is StoredSettings['sexSearch'] => {
     if (typeof v !== 'object' || v === null) return false;
     const obj = v as Record<string, unknown>;
@@ -196,6 +207,23 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
       ...stored,
       hidePopupScrollbar: false,
       commentSort: 'score' as const,
+      version: SETTINGS_VERSION,
+    };
+  }
+  if (stored.version === 9) {
+    return {
+      ...defaults,
+      ...stored,
+      favIndicatorSize: 'normal' as FavIndicatorSize,
+      favIndicatorSizeNews: 'normal' as FavIndicatorSize,
+      version: SETTINGS_VERSION,
+    };
+  }
+  if (stored.version === 10) {
+    return {
+      ...defaults,
+      ...stored,
+      searchHistorySize: 5 as const,
       version: SETTINGS_VERSION,
     };
   }
@@ -332,6 +360,10 @@ export function useSettings() {
     setShowFavIndicatorsNews: (v: boolean) => updateSetting('showFavIndicatorsNews', v),
     favIndicatorOpacity: settings.favIndicatorOpacity,
     setFavIndicatorOpacity: (v: number) => updateSetting('favIndicatorOpacity', v),
+    favIndicatorSize: settings.favIndicatorSize,
+    setFavIndicatorSize: (v: FavIndicatorSize) => updateSetting('favIndicatorSize', v),
+    favIndicatorSizeNews: settings.favIndicatorSizeNews,
+    setFavIndicatorSizeNews: (v: FavIndicatorSize) => updateSetting('favIndicatorSizeNews', v),
     showStatsBar: settings.showStatsBar,
     setShowStatsBar: (v: boolean) => updateSetting('showStatsBar', v),
     showStatsBarNews: settings.showStatsBarNews,
@@ -344,6 +376,8 @@ export function useSettings() {
     setHidePopupScrollbar: (v: boolean) => updateSetting('hidePopupScrollbar', v),
     commentSort: settings.commentSort,
     setCommentSort: (v: 'score' | 'newest') => updateSetting('commentSort', v),
+    searchHistorySize: settings.searchHistorySize,
+    setSearchHistorySize: (v: 0 | 5 | 10) => updateSetting('searchHistorySize', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

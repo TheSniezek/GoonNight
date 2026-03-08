@@ -54,6 +54,10 @@ interface SettingsModalProps {
   setShowFavIndicatorsNews: (v: boolean) => void;
   favIndicatorOpacity: number;
   setFavIndicatorOpacity: (v: number) => void;
+  favIndicatorSize: 'small' | 'normal' | 'big';
+  setFavIndicatorSize: (v: 'small' | 'normal' | 'big') => void;
+  favIndicatorSizeNews: 'small' | 'normal' | 'big';
+  setFavIndicatorSizeNews: (v: 'small' | 'normal' | 'big') => void;
   showStatsBar: boolean;
   setShowStatsBar: (v: boolean) => void;
   showStatsBarNews: boolean;
@@ -66,6 +70,8 @@ interface SettingsModalProps {
   setHidePopupScrollbar: (v: boolean) => void;
   commentSort: 'score' | 'newest';
   setCommentSort: (v: 'score' | 'newest') => void;
+  searchHistorySize: 0 | 5 | 10;
+  setSearchHistorySize: (v: 0 | 5 | 10) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -126,6 +132,10 @@ export default function SettingsModal({
   setShowFavIndicatorsNews,
   favIndicatorOpacity,
   setFavIndicatorOpacity,
+  favIndicatorSize,
+  setFavIndicatorSize,
+  favIndicatorSizeNews,
+  setFavIndicatorSizeNews,
   showStatsBar,
   setShowStatsBar,
   showStatsBarNews,
@@ -138,6 +148,8 @@ export default function SettingsModal({
   setHidePopupScrollbar,
   commentSort,
   setCommentSort,
+  searchHistorySize,
+  setSearchHistorySize,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -350,7 +362,7 @@ export default function SettingsModal({
                     className={`left-settings-btn button ${layout === 'accurate-grid' ? 'active' : ''}`}
                     onClick={() => setLayout('accurate-grid')}
                   >
-                    Accurate Grid
+                    Acc Grid
                   </button>
                 </div>
               </label>
@@ -420,25 +432,6 @@ export default function SettingsModal({
                 />
                 <span className="checkmark"></span>
               </label>
-              <label className="settings-row">
-                <span className="settings-names">Show stats bar on posts</span>
-                <input
-                  type="checkbox"
-                  checked={showStatsBar}
-                  onChange={(e) => setShowStatsBar(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Show stats bar in News Modal</span>
-                <input
-                  type="checkbox"
-                  checked={showStatsBarNews}
-                  onChange={(e) => setShowStatsBarNews(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
 
               <label className="settings-row">
                 <span className="settings-names">Hide scrollbar on posts</span>
@@ -451,221 +444,11 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Hide scrollbar in News Modal</span>
-                <input
-                  type="checkbox"
-                  checked={hideScrollbarNews}
-                  onChange={(e) => setHideScrollbarNews(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
                 <span className="settings-names">Hide popup scrollbar</span>
                 <input
                   type="checkbox"
                   checked={hidePopupScrollbar}
                   onChange={(e) => setHidePopupScrollbar(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Show artist labels on posts</span>
-                <input
-                  type="checkbox"
-                  checked={showArtistLabels}
-                  onChange={(e) => setShowArtistLabels(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Post buttons position</span>
-                <div className="layout-toggle">
-                  <button
-                    className={`right-settings-btn button ${postButtonsPosition === 'top' ? 'active' : ''}`}
-                    onClick={() => setPostButtonsPosition('top')}
-                  >
-                    Top
-                  </button>
-                  <button
-                    className={`left-settings-btn button ${postButtonsPosition === 'bottom' ? 'active' : ''}`}
-                    onClick={() => setPostButtonsPosition('bottom')}
-                  >
-                    Bottom
-                  </button>
-                </div>
-              </label>
-
-              {!isMobile && (
-                <>
-                  <label className="settings-row">
-                    <span className="settings-names">Hide nav arrows</span>
-                    <input
-                      type="checkbox"
-                      checked={hideNavArrows}
-                      onChange={(e) => setHideNavArrows(e.target.checked)}
-                    />
-                    <span className="checkmark"></span>
-                  </label>
-                  <label className="settings-row">
-                    <span className="settings-names">Disable nav arrows</span>
-                    <input
-                      type="checkbox"
-                      checked={disableArrowKeys}
-                      onChange={(e) => setDisableArrowKeys(e.target.checked)}
-                    />
-                    <span className="checkmark"></span>
-                  </label>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <span className="settings-section-tittle">Comments</span>
-            <div className="settings-section-content">
-              <label className="settings-row">
-                <span className="settings-names">Comment sort</span>
-                <div className="layout-toggle">
-                  <button
-                    className={`right-settings-btn button ${commentSort === 'score' ? 'active' : ''}`}
-                    onClick={() => setCommentSort('score')}
-                  >
-                    Score
-                  </button>
-                  <button
-                    className={`left-settings-btn button ${commentSort === 'newest' ? 'active' : ''}`}
-                    onClick={() => setCommentSort('newest')}
-                  >
-                    Newest
-                  </button>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <span className="settings-section-tittle">Maximized Mode</span>
-            <div className="settings-section-content">
-              <label className="settings-row">
-                <span className="settings-names">Buttons position</span>
-                <div className="layout-toggle">
-                  <button
-                    className={`right-settings-btn button ${maximizedButtonsPosition === 'top' ? 'active' : ''}`}
-                    onClick={() => setMaximizedButtonsPosition('top')}
-                  >
-                    Top
-                  </button>
-                  <button
-                    className={`left-settings-btn button ${maximizedButtonsPosition === 'bottom' ? 'active' : ''}`}
-                    onClick={() => setMaximizedButtonsPosition('bottom')}
-                  >
-                    Bottom
-                  </button>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <span className="settings-section-tittle">Favorites</span>
-            <div className="settings-section-content">
-              <label className="settings-row">
-                <span className="settings-names">Hide favorites from search</span>
-                <input
-                  type="checkbox"
-                  checked={hideFavorites}
-                  onChange={(e) => setHideFavorites(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Show favorite indicator on posts</span>
-                <input
-                  type="checkbox"
-                  checked={showFavIndicators}
-                  onChange={(e) => setShowFavIndicators(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Show favorite indicator in News Modal</span>
-                <input
-                  type="checkbox"
-                  checked={showFavIndicatorsNews}
-                  onChange={(e) => setShowFavIndicatorsNews(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Favorite indicator opacity</span>
-                <div className="input-slider">
-                  <input
-                    type="range"
-                    min={10}
-                    max={100}
-                    step={10}
-                    value={favIndicatorOpacity}
-                    style={
-                      {
-                        '--value': `${((favIndicatorOpacity - 10) / 90) * 100}%`,
-                      } as React.CSSProperties
-                    }
-                    onChange={(e) => {
-                      const val = Math.round(Number(e.target.value) / 10) * 10;
-                      setFavIndicatorOpacity(Math.max(10, Math.min(100, val)));
-                    }}
-                  />
-                  <span className="input-slider-number">{favIndicatorOpacity}%</span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <span className="settings-section-tittle">Sex search</span>
-            <div className="settings-section-content">
-              <label className="settings-row">
-                <span className="settings-names">Female</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.female}
-                  onChange={(e) => setSexSearch({ ...sexSearch, female: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Male</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.male}
-                  onChange={(e) => setSexSearch({ ...sexSearch, male: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Intersex</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.intersex}
-                  onChange={(e) => setSexSearch({ ...sexSearch, intersex: e.target.checked })}
-                />
-                <span className="checkmark"></span>
-              </label>
-
-              <label className="settings-row">
-                <span className="settings-names">Ambiguous</span>
-                <input
-                  type="checkbox"
-                  checked={sexSearch.ambiguous}
-                  onChange={(e) => setSexSearch({ ...sexSearch, ambiguous: e.target.checked })}
                 />
                 <span className="checkmark"></span>
               </label>
@@ -766,6 +549,264 @@ export default function SettingsModal({
           </div>
 
           <div className="settings-section">
+            <span className="settings-section-tittle">Additional Content</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Show stats bar</span>
+                <input
+                  type="checkbox"
+                  checked={showStatsBar}
+                  onChange={(e) => setShowStatsBar(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show artist labels</span>
+                <input
+                  type="checkbox"
+                  checked={showArtistLabels}
+                  onChange={(e) => setShowArtistLabels(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Post buttons position</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${postButtonsPosition === 'top' ? 'active' : ''}`}
+                    onClick={() => setPostButtonsPosition('top')}
+                  >
+                    Top
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${postButtonsPosition === 'bottom' ? 'active' : ''}`}
+                    onClick={() => setPostButtonsPosition('bottom')}
+                  >
+                    Bottom
+                  </button>
+                </div>
+              </label>
+
+              {!isMobile && (
+                <>
+                  <label className="settings-row">
+                    <span className="settings-names">Hide nav arrows</span>
+                    <input
+                      type="checkbox"
+                      checked={hideNavArrows}
+                      onChange={(e) => setHideNavArrows(e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                  </label>
+                  <label className="settings-row">
+                    <span className="settings-names">Disable nav arrows</span>
+                    <input
+                      type="checkbox"
+                      checked={disableArrowKeys}
+                      onChange={(e) => setDisableArrowKeys(e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                  </label>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Comments</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Comment sort</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${commentSort === 'score' ? 'active' : ''}`}
+                    onClick={() => setCommentSort('score')}
+                  >
+                    Score
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${commentSort === 'newest' ? 'active' : ''}`}
+                    onClick={() => setCommentSort('newest')}
+                  >
+                    Newest
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Search History</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">History size</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${searchHistorySize === 0 ? 'active' : ''}`}
+                    onClick={() => setSearchHistorySize(0)}
+                  >
+                    Off
+                  </button>
+                  <button
+                    className={`middle-settings-btn button ${searchHistorySize === 5 ? 'active' : ''}`}
+                    onClick={() => setSearchHistorySize(5)}
+                  >
+                    5
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${searchHistorySize === 10 ? 'active' : ''}`}
+                    onClick={() => setSearchHistorySize(10)}
+                  >
+                    10
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Maximized Mode</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Buttons position</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${maximizedButtonsPosition === 'top' ? 'active' : ''}`}
+                    onClick={() => setMaximizedButtonsPosition('top')}
+                  >
+                    Top
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${maximizedButtonsPosition === 'bottom' ? 'active' : ''}`}
+                    onClick={() => setMaximizedButtonsPosition('bottom')}
+                  >
+                    Bottom
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Favorites</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Hide favorites from search</span>
+                <input
+                  type="checkbox"
+                  checked={hideFavorites}
+                  onChange={(e) => setHideFavorites(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show favorite indicator</span>
+                <input
+                  type="checkbox"
+                  checked={showFavIndicators}
+                  onChange={(e) => setShowFavIndicators(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Favorite indicator opacity</span>
+                <div className="input-slider">
+                  <input
+                    type="range"
+                    min={10}
+                    max={100}
+                    step={10}
+                    value={favIndicatorOpacity}
+                    style={
+                      {
+                        '--value': `${((favIndicatorOpacity - 10) / 90) * 100}%`,
+                      } as React.CSSProperties
+                    }
+                    onChange={(e) => {
+                      const val = Math.round(Number(e.target.value) / 10) * 10;
+                      setFavIndicatorOpacity(Math.max(10, Math.min(100, val)));
+                    }}
+                  />
+                  <span className="input-slider-number">{favIndicatorOpacity}%</span>
+                </div>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Fav indicator size</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${favIndicatorSize === 'small' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSize('small')}
+                  >
+                    Small
+                  </button>
+                  <button
+                    className={`middle-settings-btn button ${favIndicatorSize === 'normal' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSize('normal')}
+                  >
+                    Normal
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${favIndicatorSize === 'big' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSize('big')}
+                  >
+                    Big
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Sex search</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Female</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.female}
+                  onChange={(e) => setSexSearch({ ...sexSearch, female: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Male</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.male}
+                  onChange={(e) => setSexSearch({ ...sexSearch, male: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Intersex</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.intersex}
+                  onChange={(e) => setSexSearch({ ...sexSearch, intersex: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Ambiguous</span>
+                <input
+                  type="checkbox"
+                  checked={sexSearch.ambiguous}
+                  onChange={(e) => setSexSearch({ ...sexSearch, ambiguous: e.target.checked })}
+                />
+                <span className="checkmark"></span>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
             <span className="settings-section-tittle">Notification Popup</span>
             <div className="settings-section-content">
               <label className="settings-row">
@@ -801,7 +842,7 @@ export default function SettingsModal({
                     }`}
                     onClick={() => setNewsLayout('accurate-grid')}
                   >
-                    Accurate Grid
+                    Acc Grid
                   </button>
                 </div>
               </label>
@@ -829,6 +870,50 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
+                <span className="settings-names">Fav indicator size</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${favIndicatorSizeNews === 'small' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSizeNews('small')}
+                  >
+                    Small
+                  </button>
+                  <button
+                    className={`middle-settings-btn button ${favIndicatorSizeNews === 'normal' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSizeNews('normal')}
+                  >
+                    Normal
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${favIndicatorSizeNews === 'big' ? 'active' : ''}`}
+                    onClick={() => setFavIndicatorSizeNews('big')}
+                  >
+                    Big
+                  </button>
+                </div>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show favorite indicator</span>
+                <input
+                  type="checkbox"
+                  checked={showFavIndicatorsNews}
+                  onChange={(e) => setShowFavIndicatorsNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Show stats bar</span>
+                <input
+                  type="checkbox"
+                  checked={showStatsBarNews}
+                  onChange={(e) => setShowStatsBarNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
                 <span className="settings-names">Show artist labels</span>
                 <input
                   type="checkbox"
@@ -839,11 +924,21 @@ export default function SettingsModal({
               </label>
 
               <label className="settings-row">
-                <span className="settings-names">Apply blacklist in notifications</span>
+                <span className="settings-names">Apply blacklist</span>
                 <input
                   type="checkbox"
                   checked={applyBlacklistInNews}
                   onChange={(e) => setApplyBlacklistInNews(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Hide scrollbar</span>
+                <input
+                  type="checkbox"
+                  checked={hideScrollbarNews}
+                  onChange={(e) => setHideScrollbarNews(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>

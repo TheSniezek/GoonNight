@@ -37,6 +37,7 @@ interface NewsModalProps {
   blacklistLines: BlacklistLine[];
   showFavIndicators?: boolean;
   favIndicatorOpacity?: number;
+  favIndicatorSizeNews?: 'small' | 'normal' | 'big';
   isFetching?: boolean;
   showStatsBar?: boolean;
   hideScrollbar?: boolean;
@@ -71,6 +72,7 @@ const NewsModal = ({
   blacklistLines,
   showFavIndicators = true,
   favIndicatorOpacity = 100,
+  favIndicatorSizeNews = 'normal',
   isFetching = false,
   showStatsBar = false,
   hideScrollbar = false,
@@ -936,12 +938,30 @@ const NewsModal = ({
                             style={{
                               opacity:
                                 favIndicatorOpacity === 100 ? undefined : favIndicatorOpacity / 100,
+                              ...(favIndicatorSizeNews === 'small'
+                                ? { width: 24, height: 24, padding: 2 }
+                                : {}),
+                              ...(favIndicatorSizeNews === 'big'
+                                ? { width: 54, height: 54, padding: 4.5 }
+                                : {}),
                             }}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
+                              width={
+                                favIndicatorSizeNews === 'small'
+                                  ? 16
+                                  : favIndicatorSizeNews === 'big'
+                                    ? 36
+                                    : 24
+                              }
+                              height={
+                                favIndicatorSizeNews === 'small'
+                                  ? 16
+                                  : favIndicatorSizeNews === 'big'
+                                    ? 36
+                                    : 24
+                              }
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"

@@ -537,8 +537,12 @@ button {
         right: 110px;
       }
 
-      .fav-post-btn {
+      .comm-btn {
         right: 160px;
+      }
+
+      .fav-post-btn {
+        right: 210px;
       }
 
       &.maximized {
@@ -554,8 +558,12 @@ button {
           right: 140px;
         }
 
-        .fav-post-btn {
+        .comm-btn {
           right: 200px;
+        }
+
+        .fav-post-btn {
+          right: 260px;
         }
       }
     }
@@ -579,10 +587,16 @@ button {
         right: 110px;
       }
 
-      .fav-post-btn {
+      .comm-btn {
         top: auto;
         bottom: 10px;
         right: 160px;
+      }
+
+      .fav-post-btn {
+        top: auto;
+        bottom: 10px;
+        right: 210px;
       }
 
       // Większe dla maximized
@@ -605,10 +619,16 @@ button {
           right: 140px;
         }
 
-        .fav-post-btn {
+        .comm-btn {
           top: auto;
           bottom: 20px;
           right: 200px;
+        }
+
+        .fav-post-btn {
+          top: auto;
+          bottom: 20px;
+          right: 260px;
         }
       }
     }
