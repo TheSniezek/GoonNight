@@ -24,17 +24,19 @@ export default async function handler(req, res) {
       return res.json([]);
     }
 
-    const cacheKey = `tags:${query}`;
+    const provider = String(req.query.provider || 'e621');
+    const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
+    const cacheKey = `tags:${host}:${query}`;
 
     // Cache na 5 minut dla tagów (nie zmieniają się często)
     if (cache.has(cacheKey)) {
-      const { provider = 'e621', data, timestamp } = cache.get(cacheKey);
+      const { data, timestamp } = cache.get(cacheKey);
       if (Date.now() - timestamp < 300000) {
         return res.json(data);
       }
     }
 
-    console.log('🏷️  Searching tags:', query);
+    console.log('🏷️  Searching tags:', query, 'host:', host);
 
     const response = await axios.get(`${host}/tags/autocomplete.json`, {
       params: { 'search[name_matches]': `${query}*`, limit: 10 },
