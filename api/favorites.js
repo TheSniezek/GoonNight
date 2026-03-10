@@ -16,7 +16,13 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { username, apiKey, postId } = req.method === 'GET' ? req.query : req.body;
+  const {
+    provider = 'e621',
+    username,
+    apiKey,
+    postId,
+  } = req.method === 'GET' ? req.query : req.body;
+  const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
 
   if (!username || !apiKey) {
     return res.status(400).json({ error: 'Missing credentials' });
@@ -26,25 +32,25 @@ export default async function handler(req, res) {
     // GET - Pobierz listę ulubionych
     if (req.method === 'GET') {
       const { page = 1, limit = 50 } = req.query;
-      
+
       console.log('💖 [Vercel] Fetching favorites for:', username, 'page:', page);
-      
-      const response = await axios.get('https://e621.net/favorites.json', {
+
+      const response = await axios.get(`${host}/favorites.json`, {
         params: { page: Number(page), limit: Number(limit) },
         headers: { 'User-Agent': USER_AGENT },
         auth: { username, password: apiKey },
         timeout: 15000,
       });
-      
+
       const posts = (response.data.posts || []).filter(
-        (post) => post.file?.ext !== 'swf' && !post.flags?.deleted
+        (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
       );
-      
+
       // ✅ FIX: Dodaj hasMore - jeśli dostaliśmy pełną stronę, prawdopodobnie są następne
       const hasMore = posts.length >= Number(limit);
-      
+
       console.log('✅ [Vercel] Fetched', posts.length, 'favorites, hasMore:', hasMore);
-      
+
       // ✅ FIX: Zwróć posts i hasMore (poprzednio było tylko { posts })
       return res.json({ posts, hasMore });
     }
@@ -54,11 +60,11 @@ export default async function handler(req, res) {
       if (!postId) {
         return res.status(400).json({ error: 'Missing postId' });
       }
-      
+
       console.log('💖 [Vercel] Adding favorite:', postId);
-      
+
       await axios.post(
-        `https://e621.net/favorites.json`,
+        `${host}/favorites.json`,
         new URLSearchParams({ post_id: postId }).toString(),
         {
           headers: {
@@ -67,9 +73,9 @@ export default async function handler(req, res) {
           },
           auth: { username, password: apiKey },
           timeout: 10000,
-        }
+        },
       );
-      
+
       console.log('✅ [Vercel] Added favorite:', postId);
       return res.json({ success: true });
     }
@@ -79,15 +85,15 @@ export default async function handler(req, res) {
       if (!postId) {
         return res.status(400).json({ error: 'Missing postId' });
       }
-      
+
       console.log('💔 [Vercel] Removing favorite:', postId);
-      
-      await axios.delete(`https://e621.net/favorites/${postId}.json`, {
+
+      await axios.delete(`${host}/favorites/${postId}.json`, {
         headers: { 'User-Agent': USER_AGENT },
         auth: { username, password: apiKey },
         timeout: 10000,
       });
-      
+
       console.log('✅ [Vercel] Removed favorite:', postId);
       return res.json({ success: true });
     }
@@ -95,8 +101,8 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error('❌ [Vercel] Favorites error:', err.message);
-    res.status(err.response?.status || 500).json({ 
-      error: err.response?.data?.message || err.message 
+    res.status(err.response?.status || 500).json({
+      error: err.response?.data?.message || err.message,
     });
   }
 }

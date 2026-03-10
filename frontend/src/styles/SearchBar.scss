@@ -71,6 +71,27 @@
       width: 100%;
       overflow-x: hidden;
 
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #ff5ca8;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #35354b;
+        border-radius: 3px;
+      }
+
+      &.scrollbar-hidden {
+        scrollbar-width: none;
+        &::-webkit-scrollbar {
+          display: none;
+        }
+      }
+
       li {
         cursor: pointer;
         min-height: 40px; // 🔥 DODAJ minimalną wysokość

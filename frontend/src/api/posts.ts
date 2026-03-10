@@ -76,9 +76,10 @@ export const fetchPosts = async (
   tags: string,
   page = 1,
   auth?: { username: string; apiKey: string },
+  provider = 'e621',
 ): Promise<Post[]> => {
   const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, {
-    params: { tags, page, username: auth?.username, apiKey: auth?.apiKey },
+    params: { tags, page, username: auth?.username, apiKey: auth?.apiKey, provider },
   });
   return data.posts.map(mapE621Post);
 };
@@ -88,6 +89,7 @@ export const fetchPostsForMultipleTags = async (
   baseQuery: string, // np. "date:week"
   auth?: { username: string; apiKey: string },
   afterDate?: string, // np. "2024-01-15" - fetch only posts >= this date
+  provider = 'e621',
 ): Promise<Post[]> => {
   const results: Post[] = [];
   const seen = new Set<number>();
@@ -117,6 +119,7 @@ export const fetchPostsForMultipleTags = async (
             limit: 320,
             username: auth?.username,
             apiKey: auth?.apiKey,
+            provider,
           },
         });
 
@@ -135,10 +138,10 @@ export const fetchPostsForMultipleTags = async (
   return results.sort((a, b) => (a.id < b.id ? 1 : -1)); // Sortujemy po ID (od najnowszych)
 };
 
-export const fetchTagSuggestions = async (query: string) => {
+export const fetchTagSuggestions = async (query: string, provider = 'e621') => {
   const endpoint = IS_PROD ? `${BASE_URL}/api/tags` : `${BASE_URL}/api/e621/tags`;
   const { data } = await axios.get<AutocompleteItem[]>(endpoint, {
-    params: { q: query },
+    params: { q: query, provider },
   });
   return data;
 };
@@ -147,6 +150,7 @@ export const fetchPopularPosts = async (
   date: string, // format: YYYY-MM-DD
   scale: PopularScale,
   auth?: { username: string; apiKey: string },
+  provider = 'e621',
 ): Promise<Post[]> => {
   const endpoint = IS_PROD ? `${BASE_URL}/api/popular` : `${BASE_URL}/api/e621/popular`;
   const { data } = await axios.get<{ posts: E621Post[] }>(endpoint, {
@@ -155,6 +159,7 @@ export const fetchPopularPosts = async (
       scale,
       username: auth?.username,
       apiKey: auth?.apiKey,
+      provider,
     },
   });
   return data.posts.map(mapE621Post);
@@ -192,12 +197,13 @@ export type PostComment = {
 export const fetchPostComments = async (
   postId: number,
   auth?: { username: string; apiKey: string },
+  provider = 'e621',
 ): Promise<PostComment[]> => {
   const endpoint = IS_PROD ? `${BASE_URL}/api/comments` : `${BASE_URL}/api/e621/comments/${postId}`;
   const { data } = await axios.get<{ comments: PostComment[] }>(IS_PROD ? endpoint : endpoint, {
     params: IS_PROD
-      ? { postId, username: auth?.username, apiKey: auth?.apiKey }
-      : { username: auth?.username, apiKey: auth?.apiKey },
+      ? { postId, username: auth?.username, apiKey: auth?.apiKey, provider }
+      : { username: auth?.username, apiKey: auth?.apiKey, provider },
   });
   return data.comments || [];
 };

@@ -18,7 +18,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { postId, username, apiKey } = req.query;
+    const { provider = 'e621', postId, username, apiKey } = req.query;
+    const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
 
     if (!postId) {
       return res.status(400).json({ error: 'Missing postId', comments: [] });
@@ -28,7 +29,8 @@ export default async function handler(req, res) {
 
     if (cache.has(cacheKey)) {
       const { data, timestamp } = cache.get(cacheKey);
-      if (Date.now() - timestamp < 300000) { // 5 min cache
+      if (Date.now() - timestamp < 300000) {
+        // 5 min cache
         return res.json(data);
       }
     }
@@ -37,7 +39,7 @@ export default async function handler(req, res) {
 
     console.log('💬 Fetching comments for post:', postId);
 
-    const response = await axios.get('https://e621.net/comments.json', {
+    const response = await axios.get(`${host}/comments.json`, {
       params: {
         'search[post_id]': postId,
         limit: 100,

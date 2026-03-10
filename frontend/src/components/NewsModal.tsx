@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, PostTag } from '../api/types';
-import { fetchPostsForMultipleTags } from '../api/posts'; // 🔹 import fetch
+import { fetchPostsForMultipleTags } from '../api/posts';
 import { filterPostsByBlacklist } from '../logic/blacklistFilter';
 import type { BlacklistLine } from '../logic/useBlacklist';
 import '../styles/NewsModal.scss';
@@ -41,6 +41,7 @@ interface NewsModalProps {
   isFetching?: boolean;
   showStatsBar?: boolean;
   hideScrollbar?: boolean;
+  provider?: string;
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -76,6 +77,7 @@ const NewsModal = ({
   isFetching = false,
   showStatsBar = false,
   hideScrollbar = false,
+  provider = 'e621',
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -118,7 +120,13 @@ const NewsModal = ({
       setIsReloading(true);
       // 🔥 DODANE - przekaż auth do fetchPostsForMultipleTags
       const auth = username && apiKey ? { username, apiKey } : undefined;
-      const allPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
+      const allPosts = await fetchPostsForMultipleTags(
+        observedTags,
+        'date:week',
+        auth,
+        undefined,
+        provider,
+      );
       setNewsPosts(allPosts);
       // Persist fresh posts to localStorage
       try {
@@ -884,7 +892,7 @@ const NewsModal = ({
                               <span className="info-label">ID:</span>
                               <span className="info-value">
                                 <a
-                                  href={`https://e621.net/posts/${post.id}`}
+                                  href={`https://${provider === 'e926' ? 'e926' : 'e621'}.net/posts/${post.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="info-link"
@@ -1391,7 +1399,7 @@ const NewsModal = ({
                       <span className="info-label">ID:</span>
                       <span className="info-value">
                         <a
-                          href={`https://e621.net/posts/${maximizedPost.id}`}
+                          href={`https://${provider === 'e926' ? 'e926' : 'e621'}.net/posts/${maximizedPost.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="info-link"

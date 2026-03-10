@@ -26,6 +26,13 @@ const E621_USER = process.env.E621_USER;
 const E621_API_KEY = process.env.E621_API_KEY;
 const USER_AGENT = 'GoonNight/2.0 (by maciek; contact: maciek@email.com)';
 
+const getHost = (req) => {
+  // Both e621 and e926 use the same API endpoint — e926 is just e621 with rating:safe filter
+  return 'https://e621.net';
+};
+
+const getProvider = (req) => req.query?.provider || req.body?.provider || 'e621';
+
 // ==================== MIDDLEWARE ====================
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(express.json());
@@ -196,7 +203,14 @@ async function retryWithBackoff(fn, maxRetries = 3) {
 // Get posts
 app.get('/api/e621', async (req, res) => {
   try {
-    const tags = String(req.query.tags ?? '').trim();
+    const host = getHost(req);
+    console.log('📥 [Posts] Query params:', JSON.stringify(req.query));
+    const provider = getProvider(req);
+    let tags = String(req.query.tags ?? '').trim();
+    // e926 = e621 with rating:safe enforced
+    if (provider === 'e926' && !tags.includes('rating:')) {
+      tags = tags ? `${tags} rating:s` : 'rating:s';
+    }
     const page = Number(req.query.page ?? 1);
     const limit = Math.min(Number(req.query.limit ?? 50), 320);
 
@@ -204,7 +218,7 @@ app.get('/api/e621', async (req, res) => {
     const username = req.query.username || E621_USER;
     const apiKey = req.query.apiKey || E621_API_KEY;
 
-    const cacheKey = `posts:${tags}:${page}:${limit}:${username || 'anon'}`;
+    const cacheKey = `posts:${host}:${tags}:${page}:${limit}:${username || 'anon'}`;
     const cached = cache.get(cacheKey, 60000);
 
     if (cached) {
@@ -217,7 +231,7 @@ app.get('/api/e621', async (req, res) => {
     const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
-          axios.get('https://e621.net/posts.json', {
+          axios.get(`${host}/posts.json`, {
             params: { tags, limit, page },
             headers: { 'User-Agent': USER_AGENT },
             auth,
@@ -231,7 +245,16 @@ app.get('/api/e621', async (req, res) => {
       (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
     );
 
-    console.log('🔍 [/api/e621] Auth:', auth ? 'YES' : 'NO', 'User:', username || 'anonymous');
+    console.log(
+      '🔍 [/api/e621] Host:',
+      host,
+      'Auth:',
+      auth ? 'YES' : 'NO',
+      'User:',
+      username || 'anonymous',
+      'Provider from req:',
+      req.query.provider,
+    );
     console.log('📦 [/api/e621] First post is_favorited:', posts[0]?.is_favorited);
 
     const payload = { posts, anonymous: !auth, hasMore: posts.length === limit };
@@ -250,13 +273,15 @@ app.get('/api/e621', async (req, res) => {
 // Get favorites
 app.get('/api/e621/favorites', async (req, res) => {
   try {
+    const host = getHost(req);
+    const provider = getProvider(req);
     const { username, apiKey, page = 1, limit = 50 } = req.query;
 
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', posts: [] });
     }
 
-    const cacheKey = `favorites:${username}:${page}:${limit}`;
+    const cacheKey = `favorites:${host}:${provider}:${username}:${page}:${limit}`;
     const cached = cache.get(cacheKey, 30000);
 
     if (cached) {
@@ -266,7 +291,7 @@ app.get('/api/e621/favorites', async (req, res) => {
     const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
-          axios.get('https://e621.net/favorites.json', {
+          axios.get(`${host}/favorites.json`, {
             params: { page, limit },
             headers: { 'User-Agent': USER_AGENT },
             auth: { username, password: apiKey },
@@ -276,8 +301,14 @@ app.get('/api/e621/favorites', async (req, res) => {
       2, // Higher priority for favorites
     );
 
+    let posts = response.data.posts ?? [];
+    // e926 mode: filter out non-safe posts
+    if (provider === 'e926') {
+      posts = posts.filter((p) => p.rating === 's');
+    }
+
     const payload = {
-      posts: response.data.posts ?? [],
+      posts,
       hasMore: (response.data.posts?.length ?? 0) === Number(limit),
     };
 
@@ -295,18 +326,20 @@ app.get('/api/e621/favorites', async (req, res) => {
 // Get ALL favorite IDs (OPTIMIZED: Sequential, not parallel!)
 app.get('/api/e621/favorites/ids', async (req, res) => {
   try {
+    const host = getHost(req);
     const { username, apiKey } = req.query;
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', ids: [] });
     }
 
-    const cacheKey = `favorite-ids:${username}`;
+    const cacheKey = `favorite-ids:${host}:${username}`;
     const cached = cache.get(cacheKey, 120000);
 
     if (cached) {
       return res.json({ ...cached, fromCache: true });
     }
 
+    const provider = getProvider(req);
     const ids = new Set();
     const LIMIT = 320;
     let currentPage = 1;
@@ -319,7 +352,7 @@ app.get('/api/e621/favorites/ids', async (req, res) => {
       const response = await e621Limiter.execute(
         () =>
           retryWithBackoff(() =>
-            axios.get('https://e621.net/favorites.json', {
+            axios.get(`${host}/favorites.json`, {
               params: { page: currentPage, limit: LIMIT },
               headers: { 'User-Agent': USER_AGENT },
               auth: { username, password: apiKey },
@@ -329,7 +362,11 @@ app.get('/api/e621/favorites/ids', async (req, res) => {
         3, // Highest priority
       );
 
-      const posts = response.data.posts ?? [];
+      let posts = response.data.posts ?? [];
+      // e926 mode: only safe posts
+      if (provider === 'e926') {
+        posts = posts.filter((p) => p.rating === 's');
+      }
       posts.forEach((p) => ids.add(p.id));
 
       console.log(
@@ -360,6 +397,7 @@ app.get('/api/e621/favorites/ids', async (req, res) => {
 // Add favorite
 app.post('/api/e621/favorites', async (req, res) => {
   try {
+    const host = getHost(req);
     const { postId, username, apiKey } = req.body;
 
     console.log('❤️ [Add Favorite] Request:', {
@@ -383,7 +421,7 @@ app.post('/api/e621/favorites', async (req, res) => {
       () =>
         retryWithBackoff(() =>
           axios.post(
-            'https://e621.net/favorites.json',
+            `${host}/favorites.json`,
             new URLSearchParams({ post_id: String(postId) }).toString(),
             {
               headers: {
@@ -420,6 +458,7 @@ app.post('/api/e621/favorites', async (req, res) => {
 // Remove favorite
 app.delete('/api/e621/favorites/:postId', async (req, res) => {
   try {
+    const host = getHost(req);
     const { postId } = req.params;
     const { username, apiKey } = req.body;
 
@@ -444,7 +483,7 @@ app.delete('/api/e621/favorites/:postId', async (req, res) => {
     const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
-          axios.delete(`https://e621.net/favorites/${postId}.json`, {
+          axios.delete(`${host}/favorites/${postId}.json`, {
             headers: { 'User-Agent': USER_AGENT },
             auth: { username, password: apiKey },
             timeout: 10000,
@@ -475,13 +514,14 @@ app.delete('/api/e621/favorites/:postId', async (req, res) => {
 // Tag autocomplete
 app.get('/api/e621/tags', async (req, res) => {
   try {
+    const host = getHost(req);
     const query = String(req.query.q ?? '').trim();
 
     if (query.length < 2) {
       return res.json([]);
     }
 
-    const cacheKey = `tags:${query}`;
+    const cacheKey = `tags:${host}:${query}`;
     const cached = cache.get(cacheKey, 300000);
 
     if (cached) {
@@ -490,7 +530,7 @@ app.get('/api/e621/tags', async (req, res) => {
 
     const response = await e621Limiter.execute(() =>
       retryWithBackoff(() =>
-        axios.get('https://e621.net/tags/autocomplete.json', {
+        axios.get(`${host}/tags/autocomplete.json`, {
           params: { 'search[name_matches]': `${query}*`, limit: 10 },
           headers: { 'User-Agent': USER_AGENT },
           timeout: 10000,
@@ -518,13 +558,16 @@ app.get('/api/e621/tags', async (req, res) => {
 // Get blacklist
 app.get('/api/e621/blacklist', async (req, res) => {
   try {
+    const host = getHost(req);
+    console.log('📥 [Blacklist] Query params:', JSON.stringify(req.query));
     const { username, apiKey } = req.query;
 
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', blacklist: '' });
     }
 
-    const cacheKey = `blacklist:${username}`;
+    console.log('🚫 [Blacklist] Host:', host, 'User:', username);
+    const cacheKey = `blacklist:${host}:${username}`;
     const cached = cache.get(cacheKey, 300000);
 
     if (cached) {
@@ -533,7 +576,7 @@ app.get('/api/e621/blacklist', async (req, res) => {
 
     const response = await e621Limiter.execute(() =>
       retryWithBackoff(() =>
-        axios.get(`https://e621.net/users/${username}.json`, {
+        axios.get(`${host}/users/${username}.json`, {
           headers: { 'User-Agent': USER_AGENT },
           auth: { username, password: apiKey },
           timeout: 10000,
@@ -556,6 +599,7 @@ app.get('/api/e621/blacklist', async (req, res) => {
 // Update blacklist
 app.put('/api/e621/blacklist', async (req, res) => {
   try {
+    const host = getHost(req);
     const { username, apiKey, blacklist } = req.body;
 
     if (!username || !apiKey || blacklist === undefined) {
@@ -565,7 +609,7 @@ app.put('/api/e621/blacklist', async (req, res) => {
     await e621Limiter.execute(() =>
       retryWithBackoff(() =>
         axios.patch(
-          `https://e621.net/users/${username}.json`,
+          `${host}/users/${username}.json`,
           new URLSearchParams({ 'user[blacklisted_tags]': blacklist }).toString(),
           {
             headers: {
@@ -602,6 +646,8 @@ app.get('/health', (req, res) => {
 // ==================== POPULAR ENDPOINT ====================
 app.get('/api/e621/popular', async (req, res) => {
   try {
+    const host = getHost(req);
+    const provider = getProvider(req);
     const date = String(req.query.date ?? '').trim();
     const scale = String(req.query.scale ?? 'day').trim();
 
@@ -638,10 +684,11 @@ app.get('/api/e621/popular', async (req, res) => {
     const response = await e621Limiter.execute(
       () =>
         retryWithBackoff(() =>
-          axios.get('https://e621.net/popular.json', {
+          axios.get(`${host}/popular.json`, {
             params: {
               date: formattedDate,
               scale: scale,
+              // Note: /popular.json does not support tags param — filtering done after fetch
             },
             headers: { 'User-Agent': USER_AGENT },
             auth,
@@ -651,11 +698,16 @@ app.get('/api/e621/popular', async (req, res) => {
       1, // Normal priority
     );
 
-    const posts = (response.data.posts || []).filter(
+    let posts = (response.data.posts || []).filter(
       (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
     );
 
-    console.log('⭐ [Popular] Fetched', posts.length, 'posts');
+    // e926 mode: /popular.json ignores tags param, filter server-side
+    if (provider === 'e926') {
+      posts = posts.filter((p) => p.rating === 's');
+    }
+
+    console.log('⭐ [Popular] Fetched', posts.length, 'posts, provider:', provider);
 
     const payload = { posts, anonymous: !auth };
 
@@ -679,6 +731,7 @@ app.get('/api/e621/popular', async (req, res) => {
 // Pobierz nazwy użytkowników po ID (uploader/approver)
 app.get('/api/e621/users', async (req, res) => {
   try {
+    const host = getHost(req);
     const ids = String(req.query.ids ?? '').trim();
     if (!ids) return res.json({ users: {} });
 
@@ -692,7 +745,7 @@ app.get('/api/e621/users', async (req, res) => {
       try {
         const r = await e621Limiter.execute(() =>
           retryWithBackoff(() =>
-            axios.get(`https://e621.net/users/${id}.json`, {
+            axios.get(`${host}/users/${id}.json`, {
               headers: { 'User-Agent': USER_AGENT },
               timeout: 8000,
             }),
@@ -716,6 +769,7 @@ app.get('/api/e621/users', async (req, res) => {
 // ==================== POST META (pools, relationships) ====================
 app.get('/api/e621/post-meta/:postId', async (req, res) => {
   try {
+    const host = getHost(req);
     const postId = Number(req.params.postId);
     if (!postId) return res.status(400).json({ error: 'Invalid post ID' });
 
@@ -726,7 +780,7 @@ app.get('/api/e621/post-meta/:postId', async (req, res) => {
     // Pobierz pełne dane posta (relationships + pool_ids)
     const postRes = await e621Limiter.execute(() =>
       retryWithBackoff(() =>
-        axios.get(`https://e621.net/posts/${postId}.json`, {
+        axios.get(`${host}/posts/${postId}.json`, {
           headers: { 'User-Agent': USER_AGENT },
           timeout: 10000,
         }),
@@ -743,7 +797,7 @@ app.get('/api/e621/post-meta/:postId', async (req, res) => {
       try {
         const poolsRes = await e621Limiter.execute(() =>
           retryWithBackoff(() =>
-            axios.get('https://e621.net/pools.json', {
+            axios.get(`${host}/pools.json`, {
               params: { search: { id: poolIds.join(',') } },
               headers: { 'User-Agent': USER_AGENT },
               timeout: 10000,
@@ -774,6 +828,7 @@ app.get('/api/e621/post-meta/:postId', async (req, res) => {
 // ==================== COMMENTS ====================
 app.get('/api/e621/comments/:postId', async (req, res) => {
   try {
+    const host = getHost(req);
     const postId = Number(req.params.postId);
     if (!postId) return res.status(400).json({ error: 'Invalid post ID' });
 
@@ -793,7 +848,7 @@ app.get('/api/e621/comments/:postId', async (req, res) => {
     const authParams = auth ? { login: auth.username, api_key: auth.apiKey } : {};
 
     const response = await e621Limiter.execute(() =>
-      axios.get('https://e621.net/comments.json', {
+      axios.get(`${host}/comments.json`, {
         params: {
           'search[post_id]': postId,
           limit: 100,

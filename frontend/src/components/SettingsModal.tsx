@@ -1,11 +1,13 @@
 import { createPortal } from 'react-dom';
 import { useObservedTags } from '../logic/useObservedTags';
-import type { StoredSettings } from '../logic/useSettings';
+import type { StoredSettings, Provider } from '../logic/useSettings';
 import '../styles/SettingsModal.scss';
 import { useEffect, useState } from 'react';
 
 interface SettingsModalProps {
   onClose: () => void;
+  provider: Provider;
+  setProvider: (v: Provider) => void;
   defaultVolume: number;
   setDefaultVolume: (v: number) => void;
   autoPlayOnMaximize: boolean;
@@ -72,6 +74,8 @@ interface SettingsModalProps {
   setCommentSort: (v: 'score' | 'newest') => void;
   searchHistorySize: 0 | 5 | 10;
   setSearchHistorySize: (v: 0 | 5 | 10) => void;
+  hideSearchHistoryScrollbar: boolean;
+  setHideSearchHistoryScrollbar: (v: boolean) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -150,9 +154,13 @@ export default function SettingsModal({
   setCommentSort,
   searchHistorySize,
   setSearchHistorySize,
+  hideSearchHistoryScrollbar,
+  setHideSearchHistoryScrollbar,
   isMobile,
   sexSearch,
   setSexSearch,
+  provider,
+  setProvider,
 }: SettingsModalProps) {
   const {
     observedTags,
@@ -337,6 +345,24 @@ export default function SettingsModal({
           <div className="settings-section">
             <span className="settings-section-tittle">General</span>
             <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Provider</span>
+                <div className="layout-toggle">
+                  <button
+                    className={`right-settings-btn button ${provider === 'e621' ? 'active' : ''}`}
+                    onClick={() => setProvider('e621')}
+                  >
+                    e621
+                  </button>
+                  <button
+                    className={`left-settings-btn button ${provider === 'e926' ? 'active' : ''}`}
+                    onClick={() => setProvider('e926')}
+                  >
+                    e926
+                  </button>
+                </div>
+              </label>
+
               <label className="settings-row">
                 <span className="settings-names">Layout</span>
                 <div className="layout-toggle">
@@ -662,6 +688,16 @@ export default function SettingsModal({
                     10
                   </button>
                 </div>
+              </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Hide scrollbar</span>
+                <input
+                  type="checkbox"
+                  checked={hideSearchHistoryScrollbar}
+                  onChange={(e) => setHideSearchHistoryScrollbar(e.target.checked)}
+                />
+                <span className="checkmark"></span>
               </label>
             </div>
           </div>

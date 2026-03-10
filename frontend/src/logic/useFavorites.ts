@@ -20,7 +20,7 @@ interface FavoriteOperation {
 interface QueueCallbacks {
   onSuccess: (postId: number, action: 'add' | 'remove') => void;
   onError: (postId: number, action: 'add' | 'remove', error: Error) => void;
-  credentials: () => { username: string; apiKey: string };
+  credentials: () => { username: string; apiKey: string; provider: string };
 }
 
 // ============================================================================
@@ -84,7 +84,7 @@ class FavoriteOperationQueue {
 
   private async executeOperation(op: FavoriteOperation): Promise<void> {
     const { postId, action, retries } = op;
-    const { username, apiKey } = this.callbacks.credentials();
+    const { username, apiKey, provider } = this.callbacks.credentials();
     const MAX_RETRIES = 3;
 
     console.log(
@@ -98,7 +98,7 @@ class FavoriteOperationQueue {
         const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId, username, apiKey }),
+          body: JSON.stringify({ postId, username, apiKey, provider }),
         });
 
         console.log(`📥 [Queue] Response status: ${response.status}`);
@@ -124,7 +124,7 @@ class FavoriteOperationQueue {
         const response = await fetch(`${API_BASE}${FAVORITES_ENDPOINT}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId, username, apiKey }),
+          body: JSON.stringify({ postId, username, apiKey, provider }),
         });
 
         console.log(`📥 [Queue] Response status: ${response.status}`);
@@ -183,10 +183,16 @@ class FavoriteOperationQueue {
 interface UseFavoritesParams {
   username: string;
   apiKey: string;
+  provider?: string;
   onPostUpdate: (postId: number, isFavorited: boolean) => void;
 }
 
-export function useFavorites({ username, apiKey, onPostUpdate }: UseFavoritesParams) {
+export function useFavorites({
+  username,
+  apiKey,
+  provider = 'e621',
+  onPostUpdate,
+}: UseFavoritesParams) {
   const [pendingFavorites, setPendingFavorites] = useState<Set<number>>(new Set());
 
   const isLoggedIn = Boolean(username && apiKey);
@@ -239,7 +245,7 @@ export function useFavorites({ username, apiKey, onPostUpdate }: UseFavoritesPar
       },
       credentials: () => {
         console.log('🔑 [useFavorites] Getting credentials:', { username, hasApiKey: !!apiKey });
-        return { username, apiKey };
+        return { username, apiKey, provider };
       },
     });
 

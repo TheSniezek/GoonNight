@@ -7,6 +7,7 @@ const BLACKLIST_ENDPOINT = IS_PROD ? '/api/blacklist' : '/api/e621/blacklist';
 interface UseBlacklistArgs {
   username: string;
   apiKey: string;
+  provider?: string;
 }
 
 export type BlacklistLine = {
@@ -15,7 +16,7 @@ export type BlacklistLine = {
   enabled: boolean;
 };
 
-export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
+export function useBlacklist({ username, apiKey, provider = 'e621' }: UseBlacklistArgs) {
   const [blacklistLines, setBlacklistLines] = useState<BlacklistLine[]>([]);
   const [loading, setLoading] = useState(false);
   const isLoggedIn = Boolean(username && apiKey);
@@ -44,9 +45,7 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
     setLoading(true);
     try {
       const res = await fetch(
-        `${BASE_URL}${BLACKLIST_ENDPOINT}?username=${encodeURIComponent(
-          username,
-        )}&apiKey=${encodeURIComponent(apiKey)}`,
+        `${BASE_URL}${BLACKLIST_ENDPOINT}?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&provider=${provider}`,
       );
       const data = await res.json();
 
@@ -58,7 +57,7 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
     } finally {
       setLoading(false);
     }
-  }, [username, apiKey, isLoggedIn]);
+  }, [username, apiKey, isLoggedIn, provider]);
 
   const updateBlacklist = useCallback(
     async (newLines: BlacklistLine[]) => {
@@ -72,7 +71,7 @@ export function useBlacklist({ username, apiKey }: UseBlacklistArgs) {
         const res = await fetch(`${BASE_URL}${BLACKLIST_ENDPOINT}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, apiKey, blacklist: blacklistString }),
+          body: JSON.stringify({ username, apiKey, blacklist: blacklistString, provider }),
         });
 
         if (res.ok) {

@@ -20,6 +20,8 @@ type Props = {
   loading?: boolean;
   onCloseNewsModal?: () => void;
   searchHistorySize?: 0 | 5 | 10;
+  hidePopupScrollbar?: boolean;
+  provider?: string;
 };
 
 export default function SearchBar({
@@ -38,6 +40,8 @@ export default function SearchBar({
   loading = false,
   onCloseNewsModal,
   searchHistorySize = 5,
+  hidePopupScrollbar = false,
+  provider = 'e621',
 }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -309,7 +313,7 @@ export default function SearchBar({
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = window.setTimeout(async () => {
-      const results: AutocompleteItem[] = await fetchTagSuggestions(lastWord);
+      const results: AutocompleteItem[] = await fetchTagSuggestions(lastWord, provider);
 
       // 🔥 Posortuj według post_count (malejąco)
       results.sort((a, b) => b.post_count - a.post_count);
@@ -815,7 +819,10 @@ export default function SearchBar({
             </svg>
           </button>
           {showSuggestions && suggestions.length > 0 && (
-            <ul className="autocomplete" ref={listRef}>
+            <ul
+              className={`autocomplete${hidePopupScrollbar ? ' scrollbar-hidden' : ''}`}
+              ref={listRef}
+            >
               {suggestions.map((item, i) => (
                 <li
                   key={item.id}

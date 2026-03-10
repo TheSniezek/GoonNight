@@ -2,16 +2,18 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 11;
+const SETTINGS_VERSION = 12;
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
 export type VideoResolution = 'best' | 'worse';
 export type ButtonPosition = 'top' | 'bottom'; // ✅ NOWY TYP
 export type FavIndicatorSize = 'small' | 'normal' | 'big';
+export type Provider = 'e621' | 'e926';
 
 export interface StoredSettings {
   version: number;
+  provider: Provider;
   defaultVolume: number;
   autoPlayOnMaximize: boolean;
   autoPauseOnMinimize: boolean;
@@ -44,7 +46,8 @@ export interface StoredSettings {
   hideScrollbarNews: boolean; // ✅ NOWE: ukryj scrollbar w NewsModal
   hidePopupScrollbar: boolean; // ✅ NOWE: ukryj scrollbar w popupach (tags/info/comments)
   commentSort: 'score' | 'newest'; // ✅ NOWE: sortowanie komentarzy
-  searchHistorySize: 0 | 5 | 10; // ✅ NOWE: rozmiar historii wyszukiwania
+  searchHistorySize: 0 | 5 | 10;
+  hideSearchHistoryScrollbar: boolean; // ✅ NOWE: rozmiar historii wyszukiwania
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -55,6 +58,7 @@ export interface StoredSettings {
 
 const getDefaults = (): StoredSettings => ({
   version: SETTINGS_VERSION,
+  provider: 'e926',
   defaultVolume: 1,
   autoPlayOnMaximize: true,
   autoPauseOnMinimize: true,
@@ -88,6 +92,7 @@ const getDefaults = (): StoredSettings => ({
   hidePopupScrollbar: false, // ✅ DOMYŚLNIE: scrollbar widoczny w popupach
   commentSort: 'score' as const, // ✅ DOMYŚLNIE: według score
   searchHistorySize: 5 as const,
+  hideSearchHistoryScrollbar: false,
   sexSearch: {
     female: false,
     male: false,
@@ -115,7 +120,9 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
   postButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   maximizedButtonsPosition: (v): v is ButtonPosition => ['top', 'bottom'].includes(v as string), // ✅ NOWY
   commentSort: (v): v is 'score' | 'newest' => ['score', 'newest'].includes(v as string), // ✅ NOWY
+  provider: (v): v is Provider => v === 'e621' || v === 'e926',
   searchHistorySize: (v): v is 0 | 5 | 10 => [0, 5, 10].includes(v as number),
+  hideSearchHistoryScrollbar: (v): v is boolean => typeof v === 'boolean',
   sexSearch: (v): v is StoredSettings['sexSearch'] => {
     if (typeof v !== 'object' || v === null) return false;
     const obj = v as Record<string, unknown>;
@@ -376,8 +383,12 @@ export function useSettings() {
     setHidePopupScrollbar: (v: boolean) => updateSetting('hidePopupScrollbar', v),
     commentSort: settings.commentSort,
     setCommentSort: (v: 'score' | 'newest') => updateSetting('commentSort', v),
+    provider: settings.provider,
+    setProvider: (v: Provider) => updateSetting('provider', v),
     searchHistorySize: settings.searchHistorySize,
     setSearchHistorySize: (v: 0 | 5 | 10) => updateSetting('searchHistorySize', v),
+    hideSearchHistoryScrollbar: settings.hideSearchHistoryScrollbar,
+    setHideSearchHistoryScrollbar: (v: boolean) => updateSetting('hideSearchHistoryScrollbar', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
     updateSetting,

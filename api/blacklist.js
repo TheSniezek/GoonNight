@@ -16,7 +16,13 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { username, apiKey, blacklist } = req.method === 'GET' ? req.query : req.body;
+  const {
+    provider = 'e621',
+    username,
+    apiKey,
+    blacklist,
+  } = req.method === 'GET' ? req.query : req.body;
+  const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
 
   if (!username || !apiKey) {
     return res.status(400).json({ error: 'Missing credentials', blacklist: '' });
@@ -26,16 +32,16 @@ export default async function handler(req, res) {
     // GET - Pobierz blacklistę
     if (req.method === 'GET') {
       console.log('🚫 Fetching blacklist for:', username);
-      
-      const response = await axios.get(`https://e621.net/users/${username}.json`, {
+
+      const response = await axios.get(`${host}/users/${username}.json`, {
         headers: { 'User-Agent': USER_AGENT },
         auth: { username, password: apiKey },
         timeout: 10000,
       });
-      
+
       const userBlacklist = response.data.blacklisted_tags || '';
       console.log('✅ Fetched blacklist');
-      
+
       return res.json({ blacklist: userBlacklist });
     }
 
@@ -46,9 +52,9 @@ export default async function handler(req, res) {
       }
 
       console.log('🚫 Updating blacklist for:', username);
-      
+
       await axios.patch(
-        `https://e621.net/users/${username}.json`,
+        `${host}/users/${username}.json`,
         new URLSearchParams({ 'user[blacklisted_tags]': blacklist }).toString(),
         {
           headers: {
@@ -57,9 +63,9 @@ export default async function handler(req, res) {
           },
           auth: { username, password: apiKey },
           timeout: 10000,
-        }
+        },
       );
-      
+
       console.log('✅ Updated blacklist');
       return res.json({ success: true });
     }

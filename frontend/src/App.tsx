@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './styles/App.scss';
 import SearchBar from './components/SearchBar';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -14,7 +14,7 @@ import {
   fetchPostComments,
 } from './api/posts';
 import type { PostComment } from './api/posts';
-import { useSettings } from './logic/useSettings';
+import { useSettings, type Provider } from './logic/useSettings';
 import { useObservedTags } from './logic/useObservedTags';
 import { usePosts } from './logic/usePosts';
 import SettingsModal from './components/SettingsModal';
@@ -24,6 +24,8 @@ import { useFavorites } from './logic/useFavorites';
 import { useBlacklist } from './logic/useBlacklist';
 import { filterPostsByBlacklist, filterPostsBySexSearch } from './logic/blacklistFilter';
 import BlacklistModal from './components/BlacklistModal';
+import { useAppRouter, loadRouteFromSession } from './logic/useAppRouter';
+import type { AppRoute } from './logic/useAppRouter';
 
 const IS_PROD = import.meta.env.PROD;
 const BASE_URL = IS_PROD ? '' : 'http://localhost:3001';
@@ -100,6 +102,10 @@ function App() {
     setCommentSort,
     searchHistorySize,
     setSearchHistorySize,
+    hideSearchHistoryScrollbar,
+    setHideSearchHistoryScrollbar,
+    provider,
+    setProvider,
     sexSearch,
     setSexSearch,
   } = useSettings();
@@ -117,7 +123,47 @@ function App() {
   } = useBlacklist({
     username: e621User,
     apiKey: e621ApiKey,
+    provider,
   });
+
+  // ─── ROUTER ───────────────────────────────────────────────────────────────
+  // Parse initial route from URL (do this before usePosts so we can pass initialTags)
+  // Read persisted route from sessionStorage (set on every navigation).
+  // Falls back to parsing the current URL (e.g. direct link / first ever visit).
+  const initialRoute = (() => {
+    const session = loadRouteFromSession();
+    if (session) return session;
+    // Fallback: parse URL
+    const path = window.location.pathname;
+    const search = new URLSearchParams(window.location.search);
+    const postMatch = path.match(/^\/posts\/(\d+)$/);
+    if (postMatch) {
+      return {
+        type: 'post' as const,
+        id: parseInt(postMatch[1], 10),
+        tags: search.get('tags') ?? '',
+        order: (search.get('order') as Order) ?? 'id_desc',
+      };
+    }
+    if (path === '/popular') {
+      return {
+        type: 'popular' as const,
+        scale: (search.get('scale') as PopularScale) ?? 'day',
+        date: search.get('date') ?? new Date().toISOString().split('T')[0],
+      };
+    }
+    if (path === '/favorites') {
+      return {
+        type: 'favorites' as const,
+        userId: search.get('user_id') ?? '',
+      };
+    }
+    return {
+      type: 'posts' as const,
+      tags: search.get('tags') ?? '',
+      order: (search.get('order') as Order) ?? 'id_desc',
+    };
+  })();
 
   const {
     allPosts,
@@ -127,6 +173,7 @@ function App() {
     loading,
     hasNextApiPage,
     maximizedPostId,
+    setMaximizedPostId,
     toggleMaximize,
     newSearch,
     nextUiPage,
@@ -141,18 +188,42 @@ function App() {
     setTags,
     setIsViewingRealFavorites, // ✅ DODAJ TO
     isViewingRealFavorites, // ⭐ DODANE
-  } = usePosts('', {
-    hideFavorites,
-    username: e621User,
-    postsPerPage,
-    infiniteScroll,
-    sexSearch, // 🔥 DODANE - przekazuj sexSearch do usePosts
-  });
+  } = usePosts(
+    initialRoute.type === 'posts' || initialRoute.type === 'post' ? initialRoute.tags : '',
+    {
+      hideFavorites,
+      username: e621User,
+      apiKey: e621ApiKey,
+      postsPerPage,
+      infiniteScroll,
+      sexSearch,
+      provider,
+      skipInitialSearch: initialRoute.type === 'favorites' || initialRoute.type === 'popular',
+      initialOrder:
+        initialRoute.type === 'posts' || initialRoute.type === 'post'
+          ? initialRoute.order
+          : 'id_desc',
+      onMaximize: (postId) => {
+        // Will be wired after router is set up — use ref to avoid circular dep
+        onMaximizeRef.current?.(postId);
+      },
+      onMinimize: () => {
+        onMinimizeRef.current?.();
+      },
+    },
+  );
+
+  const onMaximizeRef = useRef<((id: number) => void) | null>(null);
+  const onMinimizeRef = useRef<(() => void) | null>(null);
+  const loadRealFavoritesRef = useRef<(() => void) | null>(null);
+
+  // ─── END ROUTER SETUP (continued below after handleSearch/handlePopularSearch are defined) ──
 
   // ✅ NOWY hook useFavorites - tylko do toggle'owania
   const { isLoggedIn, toggleFavoritePost, pendingFavorites } = useFavorites({
     username: e621User,
     apiKey: e621ApiKey,
+    provider,
     onPostUpdate: (postId, isFavorited) => {
       // ✅ Aktualizuj is_favorited w allPosts
       setAllPosts((prev) =>
@@ -255,7 +326,6 @@ function App() {
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const fadeTimerRef = useRef<number | null>(null);
 
-  const scrollBeforeMaximize = useRef<number>(0);
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const newsCache = useRef<Record<string, Post[]>>({});
   const infiniteTriggerRef = useRef<HTMLDivElement | null>(null);
@@ -337,6 +407,7 @@ function App() {
           'date:week',
           auth,
           lastVisitDate,
+          provider,
         );
 
         if (freshPosts.length > 0) {
@@ -350,7 +421,13 @@ function App() {
         }
         // If no new posts, keep what we have (storedPosts already set)
       } else {
-        freshPosts = await fetchPostsForMultipleTags(observedTags, 'date:week', auth);
+        freshPosts = await fetchPostsForMultipleTags(
+          observedTags,
+          'date:week',
+          auth,
+          undefined,
+          provider,
+        );
         setNewsPosts(freshPosts);
         storeNewsPosts(freshPosts);
       }
@@ -365,29 +442,19 @@ function App() {
   const savedOrderRef = useRef<Order | null>(null);
 
   // 🌟 Popular mode state
-  const [isPopularMode, setIsPopularMode] = useState(false);
+  const [isPopularMode, setIsPopularMode] = useState(() => initialRoute.type === 'popular');
   const [popularDate, setPopularDate] = useState(() => {
+    if (initialRoute.type === 'popular') return initialRoute.date;
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [popularScale, setPopularScale] = useState<PopularScale>('day');
-  const [shouldRestorePopular, setShouldRestorePopular] = useState(false);
-
-  // 🔥 Parsuj popular mode z tags przy inicjalizacji (po odświeżeniu)
-  useEffect(() => {
-    const savedTags = localStorage.getItem('searchTags') || '';
-    const popularMatch = savedTags.match(/^popular:(day|week|month):(\d{4}-\d{2}-\d{2})$/);
-
-    if (popularMatch) {
-      const [, scale, date] = popularMatch;
-      setIsPopularMode(true);
-      setPopularScale(scale as PopularScale);
-      setPopularDate(date);
-      setShouldRestorePopular(true);
-
-      console.log('🔄 Preparing to restore popular mode:', scale, date);
-    }
-  }, []); // Tylko przy mount
+  const [popularScale, setPopularScale] = useState<PopularScale>(() => {
+    if (initialRoute.type === 'popular') return initialRoute.scale;
+    return 'day';
+  });
+  const [shouldRestorePopular, setShouldRestorePopular] = useState(
+    () => initialRoute.type === 'popular',
+  );
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
@@ -473,7 +540,7 @@ function App() {
     setLoadingComments((prev) => new Set([...prev, postId]));
 
     const auth = e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
-    fetchPostComments(postId, auth)
+    fetchPostComments(postId, auth, provider)
       .then((comments) => {
         setPostComments((prev) => ({ ...prev, [postId]: comments }));
       })
@@ -633,7 +700,8 @@ function App() {
           e621User && e621ApiKey ? { username: e621User, apiKey: e621ApiKey } : undefined;
         console.log('⭐ [handlePopularSearch] Auth:', auth ? 'YES' : 'NO');
 
-        const posts = await fetchPopularPosts(date, scale, auth);
+        console.log('⭐ [handlePopularSearch] Provider being sent:', provider);
+        const posts = await fetchPopularPosts(date, scale, auth, provider);
 
         console.log('⭐ [handlePopularSearch] Received posts:', posts.length);
         console.log('⭐ [handlePopularSearch] First post:', posts[0]);
@@ -669,6 +737,7 @@ function App() {
       setHasNextApiPage,
       setTags,
       setIsViewingRealFavorites,
+      provider,
     ],
   );
 
@@ -704,6 +773,100 @@ function App() {
       setShouldRestorePopular(false);
     }
   }, [shouldRestorePopular, isPopularMode, popularDate, popularScale, handlePopularSearch]);
+
+  // 🔄 Re-fetch when provider changes — called directly from SettingsModal
+  const pendingProviderRef = useRef<Provider | null>(null);
+  const handleProviderChange = useCallback(
+    (newProvider: Provider) => {
+      pendingProviderRef.current = newProvider;
+      setProvider(newProvider);
+    },
+    [setProvider],
+  );
+  useEffect(() => {
+    if (pendingProviderRef.current === null) return;
+    pendingProviderRef.current = null;
+    if (isViewingRealFavorites) {
+      loadRealFavoritesRef.current?.();
+    } else if (isPopularMode) {
+      handlePopularSearch(popularDate, popularScale);
+    } else {
+      handleSearch(tags, order);
+    }
+  }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── ROUTER WIRING ──────────────────────────────────────────────────────────
+  const scrollBeforePost = useRef<number>(0);
+  const pendingScrollRestore = useRef<number | null>(null);
+  const maximizedPostIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    maximizedPostIdRef.current = maximizedPostId;
+  });
+
+  // Restore scroll after closing maximized post
+  useLayoutEffect(() => {
+    if (maximizedPostId === null && pendingScrollRestore.current !== null) {
+      const y = pendingScrollRestore.current;
+      pendingScrollRestore.current = null;
+      window.scrollTo({ top: y });
+    }
+  }, [maximizedPostId]);
+
+  const { navigateToPosts, navigateToPopular, navigateToPost, navigateToFavorites } = useAppRouter({
+    onNavigate: useCallback(
+      (route: AppRoute) => {
+        if (route.type === 'posts') {
+          if (maximizedPostIdRef.current !== null) {
+            pendingScrollRestore.current = scrollBeforePost.current;
+            setMaximizedPostId(null);
+          } else {
+            setIsPopularMode(false);
+            window.scrollTo({ top: 0 });
+            handleSearch(route.tags, route.order);
+          }
+        } else if (route.type === 'popular') {
+          if (maximizedPostIdRef.current !== null) {
+            pendingScrollRestore.current = scrollBeforePost.current;
+            setMaximizedPostId(null);
+          } else {
+            window.scrollTo({ top: 0 });
+            setPopularScale(route.scale);
+            setPopularDate(route.date);
+            handlePopularSearch(route.date, route.scale);
+          }
+        } else if (route.type === 'favorites') {
+          if (maximizedPostIdRef.current !== null) {
+            pendingScrollRestore.current = scrollBeforePost.current;
+            setMaximizedPostId(null);
+          } else {
+            window.scrollTo({ top: 0 });
+            loadRealFavoritesRef.current?.();
+          }
+        } else if (route.type === 'post') {
+          const postId = route.id;
+          setMaximizedPostId(postId);
+          setTimeout(() => {
+            document.getElementById(`post-${postId}`)?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
+          }, 50);
+        }
+      },
+      [handleSearch, handlePopularSearch, setMaximizedPostId],
+    ),
+  });
+
+  // Wire up maximize/minimize URL callbacks
+  useEffect(() => {
+    onMaximizeRef.current = (postId: number) => {
+      scrollBeforePost.current = window.scrollY;
+      navigateToPost(postId, tags, order);
+    };
+    onMinimizeRef.current = () => {
+      window.history.back();
+    };
+  });
 
   // 🔥 Helper functions for info modal
   const formatFileSize = (bytes?: number): string => {
@@ -748,7 +911,8 @@ function App() {
 
       // FIX: Wyjdź z maximized mode przy kliknięciu tagu
       if (maximizedPostId !== null) {
-        toggleMaximize(maximizedPostId);
+        // Go back in history to close post URL first
+        window.history.back();
       }
 
       // Zapisz do historii wyszukiwania jeśli włączona
@@ -759,10 +923,29 @@ function App() {
         localStorage.setItem('searchHistory', JSON.stringify(newHistory));
       }
 
-      // FIX: Użyj obecnego order aby zachować filtry między wyszukiwaniami
+      // Push URL then search
+      navigateToPosts(tag, order);
       await handleSearch(tag, order);
     },
-    [handleSearch, order, maximizedPostId, toggleMaximize, searchHistorySize],
+    [handleSearch, order, maximizedPostId, searchHistorySize, navigateToPosts],
+  );
+
+  // SearchBar wrappers that also push URL history
+  const handleSearchWithUrl = useCallback(
+    async (searchTags: string, newOrder?: Order, clearTags?: boolean) => {
+      const effectiveOrder = newOrder || order;
+      navigateToPosts(searchTags, effectiveOrder);
+      await handleSearch(searchTags, newOrder, clearTags);
+    },
+    [handleSearch, order, navigateToPosts],
+  );
+
+  const handlePopularSearchWithUrl = useCallback(
+    async (date: string, scale: PopularScale) => {
+      navigateToPopular(scale, date);
+      await handlePopularSearch(date, scale);
+    },
+    [handlePopularSearch, navigateToPopular],
   );
 
   const addTag = useCallback(
@@ -793,7 +976,6 @@ function App() {
 
       if (maximizedPostId !== null) {
         toggleMaximize(maximizedPostId);
-        window.scrollTo({ top: scrollBeforeMaximize.current, behavior: 'smooth' });
       } else if (showNewsPopup) {
         setShowNewsPopup(false);
       } else if (showLoginModal) {
@@ -831,7 +1013,7 @@ function App() {
       setTags(`fav:${e621User}`);
 
       const response = await fetch(
-        `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50`,
+        `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50&provider=${provider}`,
         {},
       );
 
@@ -871,6 +1053,7 @@ function App() {
     setIsViewingRealFavorites,
     setTags,
     setHasNextApiPage,
+    provider,
   ]);
 
   // ✅ NOWA FUNKCJA - Przycisk Favorites → wpisuje fav:{username}
@@ -885,12 +1068,39 @@ function App() {
 
     setShowNewsPopup(false);
 
+    navigateToFavorites(e621User);
     loadRealFavorites();
+  }, [e621User, loadRealFavorites, navigateToFavorites]);
 
-    // ✅ Opcja 2 (lepsze - sortuje po dacie dodania do fav):
-    // Musisz dodać endpoint w backend który używa /favorites.json
-    // Ten endpoint domyślnie sortuje po "kiedy dodano do favorites"
-  }, [e621User, loadRealFavorites]);
+  // Wire loadRealFavoritesRef so onNavigate (popstate) can call it
+  useEffect(() => {
+    loadRealFavoritesRef.current = loadRealFavorites;
+  });
+
+  // Sync URL on search/popular changes (replace, not push — push is done by handlers)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (!isFirstRender.current) return;
+    isFirstRender.current = false;
+
+    if (initialRoute.type === 'favorites') {
+      loadRealFavorites();
+    } else if (initialRoute.type === 'post') {
+      // Direct link to a post — search then maximize
+      const { id, tags: initTags, order: initOrder } = initialRoute;
+      handleSearch(initTags, initOrder).then(() => {
+        setMaximizedPostId(id);
+        setTimeout(() => {
+          document
+            .getElementById(`post-${id}`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      });
+    }
+    // posts: usePosts auto-search handles it
+    // popular: shouldRestorePopular effect handles it
+  }, [loadRealFavorites]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ─── END ROUTER WIRING ──────────────────────────────────────────────────────
 
   // ✅ Sprawdź czy w searchu jest fav:{username}
   const isViewingFavorites = useMemo(() => {
@@ -918,17 +1128,16 @@ function App() {
   const end = start + postsPerPage;
 
   const visiblePosts = useMemo(() => {
-    // ✅ UPROSZCZONE - nie ma favoritesMode
     if (infiniteScroll) {
       return filteredPosts;
     }
-
     return filteredPosts.slice(start, end);
   }, [filteredPosts, start, end, infiniteScroll]);
 
   // ❤️ Double-click toggle favorite
   const handleDoubleClickFav = useCallback(
     async (post: Post, isMaximized: boolean) => {
+      if (!isMaximized) return;
       if (!isLoggedIn || pendingFavorites.has(post.id)) return;
       const wasNotFavorite = !post.is_favorited;
       await toggleFavoritePost(post.id, post.is_favorited || false);
@@ -936,6 +1145,7 @@ function App() {
         goNextPost();
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isLoggedIn, pendingFavorites, toggleFavoritePost, hideFavorites],
   );
 
@@ -1382,8 +1592,8 @@ function App() {
         </button>
         <div className="top-bar">
           <SearchBar
-            onSearch={handleSearch}
-            onPopularSearch={handlePopularSearch}
+            onSearch={handleSearchWithUrl}
+            onPopularSearch={handlePopularSearchWithUrl}
             initialTags={isPopularMode ? '' : tags}
             order={order}
             setOrder={setOrder}
@@ -1397,6 +1607,8 @@ function App() {
             loading={loading}
             onCloseNewsModal={() => setShowNewsPopup(false)}
             searchHistorySize={searchHistorySize}
+            hidePopupScrollbar={hideSearchHistoryScrollbar}
+            provider={provider}
           />
 
           {!infiniteScroll && !isPopularMode && (
@@ -1549,7 +1761,15 @@ function App() {
                   showTagsFor === post.id ? 'active' : ''
                 }`}
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => setShowTagsFor((prev) => (prev === post.id ? null : post.id))}
+                onClick={() => {
+                  if (showTagsFor === post.id) {
+                    setShowTagsFor(null);
+                  } else {
+                    setShowTagsFor(post.id);
+                    setShowInfoFor(null);
+                    setShowCommentsFor(null);
+                  }
+                }}
               >
                 {isMaximized ? (
                   <svg
@@ -1594,7 +1814,15 @@ function App() {
                   showInfoFor === post.id ? 'active' : ''
                 }`}
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => setShowInfoFor(showInfoFor === post.id ? null : post.id)}
+                onClick={() => {
+                  if (showInfoFor === post.id) {
+                    setShowInfoFor(null);
+                  } else {
+                    setShowInfoFor(post.id);
+                    setShowTagsFor(null);
+                    setShowCommentsFor(null);
+                  }
+                }}
               >
                 {isMaximized ? (
                   <svg
@@ -1635,9 +1863,15 @@ function App() {
                   showCommentsFor === post.id ? 'active' : ''
                 }`}
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() =>
-                  showCommentsFor === post.id ? closeComments() : setShowCommentsFor(post.id)
-                }
+                onClick={() => {
+                  if (showCommentsFor === post.id) {
+                    closeComments();
+                  } else {
+                    setShowCommentsFor(post.id);
+                    setShowTagsFor(null);
+                    setShowInfoFor(null);
+                  }
+                }}
                 title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
               >
                 <svg
@@ -2450,6 +2684,10 @@ function App() {
             setCommentSort={setCommentSort}
             searchHistorySize={searchHistorySize}
             setSearchHistorySize={setSearchHistorySize}
+            hideSearchHistoryScrollbar={hideSearchHistoryScrollbar}
+            setHideSearchHistoryScrollbar={setHideSearchHistoryScrollbar}
+            provider={provider}
+            setProvider={handleProviderChange}
             isMobile={isMobile}
             sexSearch={sexSearch}
             setSexSearch={setSexSearch}
@@ -2499,6 +2737,7 @@ function App() {
             favIndicatorSizeNews={favIndicatorSizeNews}
             showStatsBar={showStatsBarNews}
             hideScrollbar={hideScrollbarNews}
+            provider={provider}
           />
         )}
 
@@ -2530,8 +2769,8 @@ function App() {
       {infiniteScroll && <div ref={infiniteTriggerRef} style={{ height: 1 }} />}
 
       <MobileBottomNav
-        onSearch={handleSearch}
-        onPopularSearch={handlePopularSearch}
+        onSearch={handleSearchWithUrl}
+        onPopularSearch={handlePopularSearchWithUrl}
         initialTags={isPopularMode ? '' : tags}
         order={order}
         setOrder={setOrder}

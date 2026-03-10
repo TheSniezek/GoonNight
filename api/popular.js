@@ -17,7 +17,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { date, scale = 'day', username, apiKey } = req.query;
+    const { provider = 'e621', date, scale = 'day', username, apiKey } = req.query;
+    const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
 
     if (!date) {
       return res.status(400).json({ error: 'Date parameter is required' });
@@ -28,16 +29,16 @@ export default async function handler(req, res) {
     }
 
     const auth = username && apiKey ? { username, password: apiKey } : undefined;
-    
+
     // Format daty dla e621: YYYY-MM-DD HH:MM:SS +ZONE
     const formattedDate = `${date} 00:00:00 +0000`;
 
     console.log('⭐ Fetching popular:', { date: formattedDate, scale, auth: !!auth });
 
-    const response = await axios.get('https://e621.net/popular.json', {
-      params: { 
-        date: formattedDate, 
-        scale 
+    const response = await axios.get(`${host}/popular.json`, {
+      params: {
+        date: formattedDate,
+        scale,
       },
       headers: { 'User-Agent': USER_AGENT },
       auth,
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
     });
 
     const posts = (response.data.posts || []).filter(
-      (post) => post.file?.ext !== 'swf' && !post.flags?.deleted
+      (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
     );
 
     console.log('✅ Fetched', posts.length, 'popular posts');
@@ -53,9 +54,9 @@ export default async function handler(req, res) {
     res.json({ posts, anonymous: !auth });
   } catch (err) {
     console.error('❌ Popular error:', err.message);
-    res.status(err.response?.status || 500).json({ 
+    res.status(err.response?.status || 500).json({
       error: err.response?.data?.message || err.message || 'Failed to fetch popular posts',
-      posts: [] 
+      posts: [],
     });
   }
 }

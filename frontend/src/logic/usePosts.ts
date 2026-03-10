@@ -14,21 +14,25 @@ interface Auth {
 interface UsePostsOptions {
   hideFavorites?: boolean;
   username?: string;
+  apiKey?: string;
+  provider?: string;
   postsPerPage: number;
   infiniteScroll?: boolean;
+  skipInitialSearch?: boolean;
+  initialOrder?: Order;
   sexSearch?: {
     female: boolean;
     male: boolean;
     intersex: boolean;
     ambiguous: boolean;
   };
+  onMaximize?: (postId: number) => void;
+  onMinimize?: () => void;
 }
 
 export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [tags, setTags] = useState(() => {
-    return localStorage.getItem('searchTags') || initialTags;
-  });
+  const [tags, setTags] = useState(initialTags);
   const postsPerPage = options?.postsPerPage ?? 50;
   const [uiPage, setUiPage] = useState(1);
   const [apiPage, setApiPage] = useState(1);
@@ -40,10 +44,9 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
 
   const [maximizedPostId, setMaximizedPostId] = useState<number | null>(null);
   const [pendingNextPage, setPendingNextPage] = useState(false);
-  const [order, setOrder] = useState<Order>('id_desc');
+  const [order, setOrder] = useState<Order>(options?.initialOrder ?? 'id_desc');
 
   const observer = useRef<IntersectionObserver | null>(null);
-  const scrollBeforeMaximize = useRef(0);
 
   // 🔥 NOWA FUNKCJA - buduj tagi dla sex search
   const buildSexSearchTags = (sexSearch?: UsePostsOptions['sexSearch']): string => {
@@ -119,7 +122,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
         }
 
         const response = await fetch(
-          `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&page=${apiPage}&limit=50`,
+          `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(username)}&apiKey=${encodeURIComponent(apiKey)}&page=${apiPage}&limit=50&provider=${options?.provider ?? 'e621'}`,
         );
 
         if (!response.ok) {
@@ -138,7 +141,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
         console.log('🔍 [fetchNextApiPage] Fetching NORMAL page:', apiPage);
         const apiTags = buildApiTags(tags, order);
         console.log('🔍 [fetchNextApiPage] API Tags:', apiTags); // 🔥 DEBUG
-        newPosts = await fetchPosts(apiTags, apiPage, auth);
+        newPosts = await fetchPosts(apiTags, apiPage, auth, options?.provider ?? 'e621');
 
         if (newPosts.length < 50) {
           setHasNextApiPage(false);
@@ -160,11 +163,11 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const newSearch = async (
     newTags: string,
     auth?: Auth,
-    options?: { order?: Order; clearTags?: boolean },
+    searchOpts?: { order?: Order; clearTags?: boolean },
   ) => {
     // Jeśli clearTags = true, wyczyść tagi całkowicie
-    const cleanedTags = options?.clearTags ? '' : stripOrderFromTags(newTags);
-    const newOrder = options?.order ?? order;
+    const cleanedTags = searchOpts?.clearTags ? '' : stripOrderFromTags(newTags);
+    const newOrder = searchOpts?.order ?? order;
 
     setTags(cleanedTags);
     setOrder(newOrder);
@@ -182,7 +185,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
       const apiTags = buildApiTags(cleanedTags, newOrder);
       console.log('🔍 [newSearch] Fetching with tags:', apiTags); // 🔥 DEBUG
       console.log('🔍 [newSearch] Auth:', auth); // 🔥 DEBUG
-      const firstPage = await fetchPosts(apiTags, 1, auth);
+      const firstPage = await fetchPosts(apiTags, 1, auth, options?.provider ?? 'e621');
 
       console.log('📦 [newSearch] Got posts:', firstPage.length); // 🔥 DEBUG
       console.log('📦 [newSearch] First post is_favorited:', firstPage[0]?.is_favorited); // 🔥 DEBUG
@@ -218,16 +221,10 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
   const toggleMaximize = (postId: number) => {
     setMaximizedPostId((prev) => {
       if (prev === postId) {
-        window.scrollTo({ top: scrollBeforeMaximize.current });
+        options?.onMinimize?.();
         return null;
       }
-      scrollBeforeMaximize.current = window.scrollY;
-      setTimeout(() => {
-        document.getElementById(`post-${postId}`)?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 50);
+      options?.onMaximize?.(postId);
       return postId;
     });
   };
@@ -283,13 +280,30 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
     return () => window.removeEventListener('keydown', onKey);
   }, [maximizedPostId, allPosts]);
 
-  useEffect(() => {
-    newSearch(tags);
-  }, []);
+  const prevProviderRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    localStorage.setItem('searchTags', tags);
-  }, [tags]);
+    if (options?.skipInitialSearch) return;
+    const auth =
+      options?.username && options?.apiKey
+        ? { username: options.username, apiKey: options.apiKey }
+        : undefined;
+    newSearch(tags, auth);
+    prevProviderRef.current = options?.provider;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch when provider changes
+  useEffect(() => {
+    if (prevProviderRef.current === undefined) return; // skip on mount
+    if (prevProviderRef.current === options?.provider) return;
+    prevProviderRef.current = options?.provider;
+    if (options?.skipInitialSearch) return;
+    const auth =
+      options?.username && options?.apiKey
+        ? { username: options.username, apiKey: options.apiKey }
+        : undefined;
+    newSearch(tags, auth);
+  }, [options?.provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!pendingNextPage) return;
@@ -320,6 +334,7 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
 
     // ui
     maximizedPostId,
+    setMaximizedPostId,
     toggleMaximize,
     observeLazy,
     goPrevPost,

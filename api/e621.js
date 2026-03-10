@@ -20,8 +20,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { tags = '', page = 1, limit = 50, username, apiKey } = req.query;
-    const cacheKey = `posts:${tags}:${page}:${limit}:${username || 'anon'}`;
+    const { provider = 'e621', tags = '', page = 1, limit = 50, username, apiKey } = req.query;
+    const host = provider === 'e926' ? 'https://e926.net' : 'https://e621.net';
+    const cacheKey = `posts:${provider}:${tags}:${page}:${limit}:${username ? `user:${username}` : 'anon'}`;
 
     // Prosty cache - 60 sekund
     if (cache.has(cacheKey)) {
@@ -36,11 +37,11 @@ export default async function handler(req, res) {
 
     console.log('🔍 Fetching posts:', { tags, page, auth: !!auth });
 
-    const response = await axios.get('https://e621.net/posts.json', {
-      params: { 
-        tags, 
-        limit: Math.min(Number(limit), 320), 
-        page: Number(page) 
+    const response = await axios.get(`${host}/posts.json`, {
+      params: {
+        tags,
+        limit: Math.min(Number(limit), 320),
+        page: Number(page),
       },
       headers: { 'User-Agent': USER_AGENT },
       auth,
@@ -48,19 +49,19 @@ export default async function handler(req, res) {
     });
 
     const posts = (response.data.posts || []).filter(
-      (post) => post.file?.ext !== 'swf' && !post.flags?.deleted
+      (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
     );
 
     console.log('✅ Fetched', posts.length, 'posts');
 
-    const payload = { 
-      posts, 
-      anonymous: !auth, 
-      hasMore: posts.length === Number(limit) 
+    const payload = {
+      posts,
+      anonymous: !auth,
+      hasMore: posts.length === Number(limit),
     };
-    
+
     cache.set(cacheKey, { data: payload, timestamp: Date.now() });
-    
+
     // Cleanup old cache entries (simple memory management)
     if (cache.size > 100) {
       const oldestKey = cache.keys().next().value;

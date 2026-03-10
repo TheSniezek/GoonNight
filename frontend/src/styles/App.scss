@@ -472,8 +472,9 @@ button {
       }
     }
 
-    // When stats bar is shown, media loses bottom border-radius
-    &.has-stats {
+    // When stats bar or artist label shown, media loses bottom border-radius
+    &.has-stats,
+    &:has(.post-artist-label) {
       .post-item,
       .video-thumb,
       .video-thumb img,
@@ -599,6 +600,114 @@ button {
         right: 210px;
       }
 
+      // Lift buttons above stats bar only
+      &.has-stats:not(:has(.post-artist-label)) {
+        .maximize-btn {
+          bottom: 27px;
+        }
+        .tags-btn {
+          bottom: 27px;
+        }
+        .info-btn {
+          bottom: 27px;
+        }
+        .comm-btn {
+          bottom: 27px;
+        }
+        .fav-post-btn {
+          bottom: 27px;
+        }
+      }
+
+      // Lift buttons above artist label only
+      &:not(.has-stats):has(.post-artist-label) {
+        .maximize-btn {
+          bottom: 32px;
+        }
+        .tags-btn {
+          bottom: 32px;
+        }
+        .info-btn {
+          bottom: 32px;
+        }
+        .comm-btn {
+          bottom: 32px;
+        }
+        .fav-post-btn {
+          bottom: 32px;
+        }
+      }
+
+      // Lift buttons above both bars
+      &.has-stats:has(.post-artist-label) {
+        .maximize-btn {
+          bottom: 54px;
+        }
+        .tags-btn {
+          bottom: 54px;
+        }
+        .info-btn {
+          bottom: 54px;
+        }
+        .comm-btn {
+          bottom: 54px;
+        }
+        .fav-post-btn {
+          bottom: 54px;
+        }
+      }
+
+      // Popupy otwierają się od dołu gdy przyciski są na dole (non-maximized)
+      &:not(.maximized) {
+        .tags-popup,
+        .tags-popup.tags-popup-max,
+        .info-popup,
+        .info-popup.info-popup-max,
+        .comm-popup,
+        .comm-popup.comm-popup-max {
+          top: auto !important;
+          bottom: 5px;
+          height: auto;
+          max-height: calc(100% - 70px);
+        }
+      }
+
+      &:not(.maximized).has-stats:not(:has(.post-artist-label)) {
+        .tags-popup,
+        .tags-popup.tags-popup-max,
+        .info-popup,
+        .info-popup.info-popup-max,
+        .comm-popup,
+        .comm-popup.comm-popup-max {
+          bottom: 73px;
+          max-height: calc(100% - 83px);
+        }
+      }
+
+      &:not(.maximized):not(.has-stats):has(.post-artist-label) {
+        .tags-popup,
+        .tags-popup.tags-popup-max,
+        .info-popup,
+        .info-popup.info-popup-max,
+        .comm-popup,
+        .comm-popup.comm-popup-max {
+          bottom: 73px;
+          max-height: calc(100% - 83px);
+        }
+      }
+
+      &:not(.maximized).has-stats:has(.post-artist-label) {
+        .tags-popup,
+        .tags-popup.tags-popup-max,
+        .info-popup,
+        .info-popup.info-popup-max,
+        .comm-popup,
+        .comm-popup.comm-popup-max {
+          bottom: 100px;
+          max-height: calc(100% - 110px);
+        }
+      }
+
       // Większe dla maximized
       &.maximized {
         .maximize-btn {
@@ -629,6 +738,19 @@ button {
           top: auto;
           bottom: 20px;
           right: 260px;
+        }
+
+        // Popupy otwierają się od dołu
+        .tags-popup,
+        .tags-popup.tags-popup-max,
+        .info-popup,
+        .info-popup.info-popup-max,
+        .comm-popup,
+        .comm-popup.comm-popup-max {
+          top: auto !important;
+          bottom: 80px;
+          height: auto;
+          max-height: 60vh;
         }
       }
     }
@@ -1353,7 +1475,7 @@ button {
   align-items: center;
   padding: 20px;
   top: 50%;
-  z-index: 1000;
+  z-index: 19;
   opacity: 0.5;
   transition:
     background 0.2s ease,

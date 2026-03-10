@@ -19,16 +19,16 @@ export default async function handler(req, res) {
 
   try {
     const query = String(req.query.q || '').trim();
-    
+
     if (query.length < 2) {
       return res.json([]);
     }
 
     const cacheKey = `tags:${query}`;
-    
+
     // Cache na 5 minut dla tagów (nie zmieniają się często)
     if (cache.has(cacheKey)) {
-      const { data, timestamp } = cache.get(cacheKey);
+      const { provider = 'e621', data, timestamp } = cache.get(cacheKey);
       if (Date.now() - timestamp < 300000) {
         return res.json(data);
       }
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     console.log('🏷️  Searching tags:', query);
 
-    const response = await axios.get('https://e621.net/tags/autocomplete.json', {
+    const response = await axios.get(`${host}/tags/autocomplete.json`, {
       params: { 'search[name_matches]': `${query}*`, limit: 10 },
       headers: { 'User-Agent': USER_AGENT },
       timeout: 10000,
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     }));
 
     cache.set(cacheKey, { data: results, timestamp: Date.now() });
-    
+
     // Cleanup
     if (cache.size > 50) {
       const oldestKey = cache.keys().next().value;
