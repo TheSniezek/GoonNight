@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Order, PopularScale } from '../api/types';
 
 export type AppRoute =
@@ -84,16 +84,19 @@ interface UseAppRouterOptions {
 }
 
 export function useAppRouter({ onNavigate }: UseAppRouterOptions) {
-  // Trzymamy onNavigate w ref przez useLayoutEffect (odpala się sync przed paint,
-  // przed popstate który też jest sync) — bezpieczne i zawsze aktualne
   const onNavigateRef = useRef(onNavigate);
-  useLayoutEffect(() => {
+  useEffect(() => {
     onNavigateRef.current = onNavigate;
   });
 
   useEffect(() => {
-    const handlePop = (e: PopStateEvent) => {
-      const route = e.state && e.state.type ? (e.state as AppRoute) : parseRoute();
+    const handlePop = () => {
+      const route = parseRoute();
+      console.log(
+        '[handlePop] popstate fired, parsed route:',
+        route.type,
+        window.location.pathname,
+      );
       saveRouteToSession(route);
       onNavigateRef.current(route);
     };

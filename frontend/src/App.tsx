@@ -815,12 +815,25 @@ function App() {
   const { navigateToPosts, navigateToPopular, navigateToPost, navigateToFavorites } = useAppRouter({
     onNavigate: useCallback(
       (route: AppRoute) => {
+        console.log(
+          '[onNavigate] route:',
+          route.type,
+          '| maximizedPostIdRef:',
+          maximizedPostIdRef.current,
+          '| scrollBefore:',
+          scrollBeforePost.current,
+        );
         if (route.type === 'posts') {
           if (maximizedPostIdRef.current !== null) {
+            console.log(
+              '[onNavigate] → closing maximized, setting pendingScrollRestore:',
+              scrollBeforePost.current,
+            );
             if (pendingScrollRestore.current === null)
               pendingScrollRestore.current = scrollBeforePost.current;
             setMaximizedPostId(null);
           } else {
+            console.log('[onNavigate] → no maximized, calling handleSearch!');
             setIsPopularMode(false);
             window.scrollTo({ top: 0 });
             handleSearch(route.tags, route.order);
