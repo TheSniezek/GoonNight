@@ -798,6 +798,7 @@ function App() {
   // ─── ROUTER WIRING ──────────────────────────────────────────────────────────
   const scrollBeforePost = useRef<number>(0);
   const pendingScrollRestore = useRef<number | null>(null);
+  const pendingScrollPostId = useRef<number | null>(null);
   const maximizedPostIdRef = useRef<number | null>(null);
   // Ref zarządzany ręcznie w onMaximize i onNavigate — bez async efektu
 
@@ -806,7 +807,8 @@ function App() {
     if (maximizedPostId === null && pendingScrollRestore.current !== null) {
       const y = pendingScrollRestore.current;
       pendingScrollRestore.current = null;
-      window.scrollTo({ top: y });
+      pendingScrollPostId.current = null;
+      window.scrollTo({ top: y, behavior: 'instant' });
     }
   }, [maximizedPostId]);
 
@@ -815,8 +817,10 @@ function App() {
       (route: AppRoute) => {
         if (route.type === 'posts') {
           if (maximizedPostIdRef.current !== null) {
-            if (pendingScrollRestore.current === null)
+            if (pendingScrollRestore.current === null) {
               pendingScrollRestore.current = scrollBeforePost.current;
+              pendingScrollPostId.current = maximizedPostIdRef.current;
+            }
             maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
@@ -826,8 +830,10 @@ function App() {
           }
         } else if (route.type === 'popular') {
           if (maximizedPostIdRef.current !== null) {
-            if (pendingScrollRestore.current === null)
+            if (pendingScrollRestore.current === null) {
               pendingScrollRestore.current = scrollBeforePost.current;
+              pendingScrollPostId.current = maximizedPostIdRef.current;
+            }
             maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
@@ -838,8 +844,10 @@ function App() {
           }
         } else if (route.type === 'favorites') {
           if (maximizedPostIdRef.current !== null) {
-            if (pendingScrollRestore.current === null)
+            if (pendingScrollRestore.current === null) {
               pendingScrollRestore.current = scrollBeforePost.current;
+              pendingScrollPostId.current = maximizedPostIdRef.current;
+            }
             maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
@@ -849,12 +857,6 @@ function App() {
         } else if (route.type === 'post') {
           const postId = route.id;
           setMaximizedPostId(postId);
-          setTimeout(() => {
-            document.getElementById(`post-${postId}`)?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            });
-          }, 50);
         }
       },
       [handleSearch, handlePopularSearch, setMaximizedPostId],
@@ -864,7 +866,11 @@ function App() {
   // Wire up maximize/minimize URL callbacks
   useEffect(() => {
     onMaximizeRef.current = (postId: number) => {
-      scrollBeforePost.current = window.scrollY;
+      // Gdy body jest już fixed (przez inny efekt), window.scrollY = 0
+      // ale prawdziwa pozycja jest w body.style.top (np. "-1234px")
+      const bodyTop = document.body.style.top;
+      const realScrollY = bodyTop ? -parseInt(bodyTop, 10) : window.scrollY;
+      scrollBeforePost.current = realScrollY;
       // Ustaw ref synchronicznie PRZED pushState/popstate
       maximizedPostIdRef.current = postId;
       navigateToPost(postId, tags, order);
