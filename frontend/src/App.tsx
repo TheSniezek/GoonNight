@@ -799,8 +799,9 @@ function App() {
   const scrollBeforePost = useRef<number>(0);
   const pendingScrollRestore = useRef<number | null>(null);
   const maximizedPostIdRef = useRef<number | null>(null);
-  // Synchroniczny update ref — musi być przed popstate handlerem
-  maximizedPostIdRef.current = maximizedPostId;
+  useEffect(() => {
+    maximizedPostIdRef.current = maximizedPostId;
+  });
 
   // Restore scroll after closing maximized post
   useLayoutEffect(() => {
