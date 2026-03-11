@@ -774,7 +774,7 @@ export default function SearchBar({
             type="text"
             value={input}
             onChange={(e) => handleChange(e.target.value)}
-            placeholder="Enter tags (e.g., wolf cum)"
+            placeholder="Enter tags (e.g., wolf female)"
             onFocus={() => {
               if (!input.trim()) {
                 if (searchHistorySize === 0) {

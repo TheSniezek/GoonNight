@@ -265,6 +265,12 @@
             }
           }
 
+          .settings-login-required {
+            font-size: 0.85rem;
+            color: #888;
+            font-style: italic;
+          }
+
           .filename-input {
             flex: 1;
             padding: 8px 12px;

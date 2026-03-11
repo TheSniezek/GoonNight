@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, PostTag } from '../api/types';
-import { fetchPostsForMultipleTags } from '../api/posts';
+import { fetchPostsForMultipleTags, fetchPostComments, type PostComment } from '../api/posts';
 import { filterPostsByBlacklist } from '../logic/blacklistFilter';
 import type { BlacklistLine } from '../logic/useBlacklist';
 import '../styles/NewsModal.scss';
@@ -42,6 +42,7 @@ interface NewsModalProps {
   showStatsBar?: boolean;
   hideScrollbar?: boolean;
   provider?: string;
+  commentSort?: 'score' | 'newest';
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -78,6 +79,7 @@ const NewsModal = ({
   showStatsBar = false,
   hideScrollbar = false,
   provider = 'e621',
+  commentSort = 'newest',
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   const [width, setWidth] = useState(() => {
@@ -94,6 +96,9 @@ const NewsModal = ({
   const [maximizedPost, setMaximizedPost] = useState<Post | null>(null);
   const [showTagsFor, setShowTagsFor] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
+  const [showCommFor, setShowCommFor] = useState<number | null>(null);
+  const [postComments, setPostComments] = useState<Record<number, PostComment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // -------------------- REFS --------------------
@@ -106,6 +111,9 @@ const NewsModal = ({
   const listVideoRefs = useRef<Record<number, HTMLVideoElement>>({});
   const tagsPopupRef = useRef<HTMLDivElement | null>(null);
   const infoPopupRef = useRef<HTMLDivElement | null>(null);
+  const commPopupRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const savedScrollRef = useRef<number>(0);
 
   // -------------------- FUNCTIONS --------------------
   const startResize = (e: React.MouseEvent) => {
@@ -225,9 +233,12 @@ const NewsModal = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🔥 Blokowanie scrollu w maximized mode
+  // 🔥 Blokowanie scrollu w maximized mode + zapis/przywracanie scroll pozycji
   useEffect(() => {
     if (maximizedPost) {
+      // Zapisz obecną pozycję news-content
+      savedScrollRef.current = contentRef.current?.scrollTop ?? 0;
+
       const scrollY = window.scrollY;
 
       document.body.style.overflow = 'hidden';
@@ -246,6 +257,12 @@ const NewsModal = ({
         document.body.style.top = '';
         document.body.style.width = '';
         window.scrollTo(0, scrollY);
+        // Przywróć scroll w news-content
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.scrollTop = savedScrollRef.current;
+          }
+        });
       };
     }
   }, [maximizedPost]);
@@ -392,11 +409,45 @@ const NewsModal = ({
           setShowInfoFor(null);
         }
       }
+      if (showCommFor !== null) {
+        const popup = commPopupRef.current;
+        const button = document
+          .getElementById(`news-post-${showCommFor}`)
+          ?.querySelector('.news-comm-btn');
+
+        if (popup && !popup.contains(target) && button && !button.contains(target)) {
+          setShowCommFor(null);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTagsFor, showInfoFor]);
+  }, [showTagsFor, showInfoFor, showCommFor]);
+
+  // Load comments when showCommFor changes
+  useEffect(() => {
+    if (showCommFor === null) return;
+    if (postComments[showCommFor] !== undefined) return;
+    if (loadingComments.has(showCommFor)) return;
+    const postId = showCommFor;
+    setLoadingComments((prev) => new Set([...prev, postId]));
+    const auth = username && apiKey ? { username, apiKey } : undefined;
+    fetchPostComments(postId, auth, provider)
+      .then((comments) => {
+        setPostComments((prev) => ({ ...prev, [postId]: comments }));
+      })
+      .catch(() => {
+        setPostComments((prev) => ({ ...prev, [postId]: [] }));
+      })
+      .finally(() => {
+        setLoadingComments((prev) => {
+          const next = new Set(prev);
+          next.delete(postId);
+          return next;
+        });
+      });
+  }, [showCommFor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown timer for auto reload
   useEffect(() => {
@@ -455,6 +506,115 @@ const NewsModal = ({
       : posts;
   const postsByDay = groupPostsByDay(postsToRender);
   const sortedDates = Object.keys(postsByDay).sort((a, b) => (a < b ? 1 : -1));
+
+  // ── Comment helpers ──────────────────────────────────────────────────────
+  const applyBBCode = (text: string, keyPrefix: string, idx: { v: number }): React.ReactNode[] => {
+    const bbRegex = /\[(b|i|s|u)\]([\s\S]*?)\[\/\1\]/gi;
+    const nodes: React.ReactNode[] = [];
+    let last = 0,
+      m;
+    while ((m = bbRegex.exec(text)) !== null) {
+      if (m.index > last)
+        nodes.push(<span key={`${keyPrefix}-bb${idx.v++}`}>{text.slice(last, m.index)}</span>);
+      const tag = m[1].toLowerCase();
+      const inner = applyBBCode(m[2], keyPrefix, idx);
+      const k = `${keyPrefix}-bb${idx.v++}`;
+      if (tag === 'b') nodes.push(<strong key={k}>{inner}</strong>);
+      else if (tag === 'i') nodes.push(<em key={k}>{inner}</em>);
+      else if (tag === 's') nodes.push(<s key={k}>{inner}</s>);
+      else if (tag === 'u') nodes.push(<u key={k}>{inner}</u>);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length)
+      nodes.push(<span key={`${keyPrefix}-bb${idx.v++}`}>{text.slice(last)}</span>);
+    return nodes;
+  };
+
+  const renderTextWithLinks = (text: string, keyPrefix: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = [];
+    const tagRegex = /\[\[([^\]]+)\]\]/g;
+    let last = 0,
+      m,
+      i = 0;
+    while ((m = tagRegex.exec(text)) !== null) {
+      if (m.index > last)
+        nodes.push(...applyBBCode(text.slice(last, m.index), keyPrefix, { v: i++ }));
+      const parts = m[1].split('|');
+      const tagName = (parts[1] || parts[0]).trim();
+      nodes.push(
+        <a
+          key={`${keyPrefix}-tag${i++}`}
+          href={`https://e621.net/wiki_pages/${tagName}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="comm-tag-link"
+        >
+          {parts[0].replace(/_/g, ' ')}
+        </a>,
+      );
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) nodes.push(...applyBBCode(text.slice(last), keyPrefix, { v: i++ }));
+    return nodes;
+  };
+
+  const parseCommentBody = (raw: string, postId: number): React.ReactNode[] => {
+    const parts: React.ReactNode[] = [];
+    const quoteRegex = /\[quote\]([\s\S]*?)\[\/quote\]/gi;
+    let last = 0,
+      match,
+      key = 0;
+    while ((match = quoteRegex.exec(raw)) !== null) {
+      if (match.index > last) {
+        const before = raw
+          .slice(last, match.index)
+          .replace(/\r\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/^\n+/, '')
+          .trimEnd();
+        if (before)
+          parts.push(
+            <span key={key++} className="comm-text">
+              {renderTextWithLinks(before, `bef-${key}`)}
+            </span>,
+          );
+      }
+      const inner = match[1];
+      const attrMatch = inner.match(/^"([^"]+)":\/users\/(\d+)\s+said:\s*[\r\n]+([\s\S]*)$/i);
+      const quotedUserId = attrMatch ? Number(attrMatch[2]) : null;
+      const quoteBodyRaw = attrMatch ? attrMatch[3].trim() : inner.trim();
+      const allComments: PostComment[] = postComments[postId] || [];
+      const quotedComment = quotedUserId
+        ? (allComments.find((cm) => cm.creator_id === quotedUserId) ?? null)
+        : null;
+      const displayNick = quotedComment
+        ? quotedComment.creator_name.replace(/_/g, ' ')
+        : (attrMatch?.[1]?.replace(/_/g, ' ') ?? null);
+      parts.push(
+        <blockquote key={key++} className="comm-quote">
+          {displayNick && <span className="comm-quote-author">{displayNick} said:</span>}
+          <span className="comm-quote-body">{renderTextWithLinks(quoteBodyRaw, `qb-${key}`)}</span>
+        </blockquote>,
+      );
+      last = match.index + match[0].length;
+    }
+    if (last < raw.length) {
+      const rest = raw
+        .slice(last)
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/^\n+/, '')
+        .trimEnd();
+      if (rest)
+        parts.push(
+          <span key={key++} className="comm-text">
+            {renderTextWithLinks(rest, `rest-${key}`)}
+          </span>,
+        );
+    }
+    return parts;
+  };
+  // ── End comment helpers ──────────────────────────────────────────────────
 
   return createPortal(
     <div
@@ -581,7 +741,7 @@ const NewsModal = ({
           </div>
         )}
 
-        <div className={`news-content${hideScrollbar ? ' scrollbar-hidden' : ''}`}>
+        <div className={`news-content${hideScrollbar ? ' scrollbar-hidden' : ''}`} ref={contentRef}>
           {loading ? (
             <p>Loading posts...</p>
           ) : postsToRender.length === 0 ? (
@@ -650,7 +810,13 @@ const NewsModal = ({
                             className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowTagsFor((prev) => (prev === post.id ? null : post.id));
+                              if (showTagsFor === post.id) {
+                                setShowTagsFor(null);
+                              } else {
+                                setShowTagsFor(post.id);
+                                setShowInfoFor(null);
+                                setShowCommFor(null);
+                              }
                             }}
                             disabled={isFetching}
                           >
@@ -678,7 +844,13 @@ const NewsModal = ({
                             className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowInfoFor((prev) => (prev === post.id ? null : post.id));
+                              if (showInfoFor === post.id) {
+                                setShowInfoFor(null);
+                              } else {
+                                setShowInfoFor(post.id);
+                                setShowTagsFor(null);
+                                setShowCommFor(null);
+                              }
                             }}
                             disabled={isFetching}
                           >
@@ -696,6 +868,38 @@ const NewsModal = ({
                               <circle cx="12" cy="12" r="10" />
                               <line x1="12" y1="16" x2="12" y2="12" />
                               <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {!isMobile && (
+                          <button
+                            className={`news-comm-btn ${showCommFor === post.id ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (showCommFor === post.id) {
+                                setShowCommFor(null);
+                              } else {
+                                setShowCommFor(post.id);
+                                setShowTagsFor(null);
+                                setShowInfoFor(null);
+                              }
+                            }}
+                            disabled={isFetching}
+                            title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                           </button>
                         )}
@@ -939,6 +1143,62 @@ const NewsModal = ({
                           </div>
                         )}
 
+                        {showCommFor === post.id && !isMobile && (
+                          <div
+                            className="news-comm-popup"
+                            ref={commPopupRef}
+                            onWheel={(e) => {
+                              const target = e.currentTarget;
+                              const atTop = target.scrollTop === 0;
+                              const atBottom =
+                                target.scrollTop + target.clientHeight >= target.scrollHeight;
+                              if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
+                            {loadingComments.has(post.id) ? (
+                              <div className="comm-loading">Loading comments…</div>
+                            ) : !postComments[post.id] || postComments[post.id].length === 0 ? (
+                              <div className="comm-empty">No one is here yet…</div>
+                            ) : (
+                              [...(postComments[post.id] || [])]
+                                .sort((a, b) =>
+                                  commentSort === 'score'
+                                    ? b.score - a.score
+                                    : new Date(b.created_at).getTime() -
+                                      new Date(a.created_at).getTime(),
+                                )
+                                .map((comment) => {
+                                  const bodyParts = parseCommentBody(comment.body, post.id);
+                                  return (
+                                    <div key={comment.id} className="comm-item">
+                                      <div className="comm-item-header">
+                                        <a
+                                          href={`https://e621.net/users/${comment.creator_id}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="comm-author"
+                                        >
+                                          {comment.creator_name.replace(/_/g, ' ')}
+                                        </a>
+                                        <span
+                                          className={`comm-score ${comment.score > 0 ? 'pos' : comment.score < 0 ? 'neg' : ''}`}
+                                        >
+                                          {comment.score > 0 ? '+' : ''}
+                                          {comment.score}
+                                        </span>
+                                      </div>
+                                      <div className="comm-body">
+                                        {bodyParts.length > 0 ? bodyParts : comment.body}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                            )}
+                          </div>
+                        )}
+
                         {/* Permanent favorite indicator */}
                         {post.is_favorited && showFavIndicators && (
                           <div
@@ -1157,9 +1417,13 @@ const NewsModal = ({
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowTagsFor((prev) =>
-                      prev === currentMaximizedPost.id ? null : maximizedPost.id,
-                    );
+                    if (showTagsFor === currentMaximizedPost.id) {
+                      setShowTagsFor(null);
+                    } else {
+                      setShowTagsFor(currentMaximizedPost.id);
+                      setShowInfoFor(null);
+                      setShowCommFor(null);
+                    }
                   }}
                 >
                   <svg
@@ -1187,9 +1451,13 @@ const NewsModal = ({
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowInfoFor(
-                      showInfoFor === currentMaximizedPost.id ? null : maximizedPost.id,
-                    );
+                    if (showInfoFor === currentMaximizedPost.id) {
+                      setShowInfoFor(null);
+                    } else {
+                      setShowInfoFor(currentMaximizedPost.id);
+                      setShowTagsFor(null);
+                      setShowCommFor(null);
+                    }
                   }}
                 >
                   <svg
@@ -1206,6 +1474,38 @@ const NewsModal = ({
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="16" x2="12" y2="12" />
                     <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </button>
+
+                {/* Comm button */}
+                <button
+                  className={`news-comm-btn news-comm-btn-max ${
+                    showCommFor === currentMaximizedPost.id ? 'active' : ''
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (showCommFor === currentMaximizedPost.id) {
+                      setShowCommFor(null);
+                    } else {
+                      setShowCommFor(currentMaximizedPost.id);
+                      setShowTagsFor(null);
+                      setShowInfoFor(null);
+                    }
+                  }}
+                  title={`${currentMaximizedPost.comment_count} comment${currentMaximizedPost.comment_count !== 1 ? 's' : ''}`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="30"
+                    height="30"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </button>
 
@@ -1447,6 +1747,64 @@ const NewsModal = ({
                         {formatTimeAgo(currentMaximizedPost.created_at)}
                       </span>
                     </div>
+                  </div>
+                )}
+
+                {/* Comm popup max */}
+                {showCommFor === currentMaximizedPost.id && (
+                  <div
+                    className="news-comm-popup news-comm-popup-max"
+                    ref={commPopupRef}
+                    onClick={(e) => e.stopPropagation()}
+                    onWheel={(e) => {
+                      const target = e.currentTarget;
+                      const atTop = target.scrollTop === 0;
+                      const atBottom =
+                        target.scrollTop + target.clientHeight >= target.scrollHeight;
+                      if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
+                    {loadingComments.has(currentMaximizedPost.id) ? (
+                      <div className="comm-loading">Loading comments…</div>
+                    ) : !postComments[currentMaximizedPost.id] ||
+                      postComments[currentMaximizedPost.id].length === 0 ? (
+                      <div className="comm-empty">No one is here yet…</div>
+                    ) : (
+                      [...(postComments[currentMaximizedPost.id] || [])]
+                        .sort((a, b) =>
+                          commentSort === 'score'
+                            ? b.score - a.score
+                            : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                        )
+                        .map((comment) => {
+                          const bodyParts = parseCommentBody(comment.body, currentMaximizedPost.id);
+                          return (
+                            <div key={comment.id} className="comm-item">
+                              <div className="comm-item-header">
+                                <a
+                                  href={`https://e621.net/users/${comment.creator_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="comm-author"
+                                >
+                                  {comment.creator_name.replace(/_/g, ' ')}
+                                </a>
+                                <span
+                                  className={`comm-score ${comment.score > 0 ? 'pos' : comment.score < 0 ? 'neg' : ''}`}
+                                >
+                                  {comment.score > 0 ? '+' : ''}
+                                  {comment.score}
+                                </span>
+                              </div>
+                              <div className="comm-body">
+                                {bodyParts.length > 0 ? bodyParts : comment.body}
+                              </div>
+                            </div>
+                          );
+                        })
+                    )}
                   </div>
                 )}
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 interface SettingsModalProps {
   onClose: () => void;
+  isLoggedIn: boolean;
   provider: Provider;
   setProvider: (v: Provider) => void;
   defaultVolume: number;
@@ -159,6 +160,7 @@ export default function SettingsModal({
   isMobile,
   sexSearch,
   setSexSearch,
+  isLoggedIn,
   provider,
   setProvider,
 }: SettingsModalProps) {
@@ -347,20 +349,24 @@ export default function SettingsModal({
             <div className="settings-section-content">
               <label className="settings-row">
                 <span className="settings-names">Provider</span>
-                <div className="layout-toggle">
-                  <button
-                    className={`right-settings-btn button ${provider === 'e621' ? 'active' : ''}`}
-                    onClick={() => setProvider('e621')}
-                  >
-                    e621
-                  </button>
-                  <button
-                    className={`left-settings-btn button ${provider === 'e926' ? 'active' : ''}`}
-                    onClick={() => setProvider('e926')}
-                  >
-                    e926
-                  </button>
-                </div>
+                {isLoggedIn ? (
+                  <div className="layout-toggle">
+                    <button
+                      className={`right-settings-btn button ${provider === 'e621' ? 'active' : ''}`}
+                      onClick={() => setProvider('e621')}
+                    >
+                      e621
+                    </button>
+                    <button
+                      className={`left-settings-btn button ${provider === 'e926' ? 'active' : ''}`}
+                      onClick={() => setProvider('e926')}
+                    >
+                      e926
+                    </button>
+                  </div>
+                ) : (
+                  <span className="settings-login-required">Login required</span>
+                )}
               </label>
 
               <label className="settings-row">

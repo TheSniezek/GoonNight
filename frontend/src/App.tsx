@@ -817,7 +817,8 @@ function App() {
       (route: AppRoute) => {
         if (route.type === 'posts') {
           if (maximizedPostIdRef.current !== null) {
-            pendingScrollRestore.current = scrollBeforePost.current;
+            if (pendingScrollRestore.current === null)
+              pendingScrollRestore.current = scrollBeforePost.current;
             setMaximizedPostId(null);
           } else {
             setIsPopularMode(false);
@@ -826,7 +827,8 @@ function App() {
           }
         } else if (route.type === 'popular') {
           if (maximizedPostIdRef.current !== null) {
-            pendingScrollRestore.current = scrollBeforePost.current;
+            if (pendingScrollRestore.current === null)
+              pendingScrollRestore.current = scrollBeforePost.current;
             setMaximizedPostId(null);
           } else {
             window.scrollTo({ top: 0 });
@@ -836,7 +838,8 @@ function App() {
           }
         } else if (route.type === 'favorites') {
           if (maximizedPostIdRef.current !== null) {
-            pendingScrollRestore.current = scrollBeforePost.current;
+            if (pendingScrollRestore.current === null)
+              pendingScrollRestore.current = scrollBeforePost.current;
             setMaximizedPostId(null);
           } else {
             window.scrollTo({ top: 0 });
@@ -864,6 +867,7 @@ function App() {
       navigateToPost(postId, tags, order);
     };
     onMinimizeRef.current = () => {
+      pendingScrollRestore.current = scrollBeforePost.current;
       window.history.back();
     };
   });
@@ -1458,6 +1462,28 @@ function App() {
   // ── Comment rendering helpers ──────────────────────────────────────────────
 
   // Render plain text with [[tag]] links
+  const applyBBCode = (text: string, keyPrefix: string, idx: { v: number }): React.ReactNode[] => {
+    const bbRegex = /\[(b|i|s|u)\]([\s\S]*?)\[\/\1\]/gi;
+    const nodes: React.ReactNode[] = [];
+    let last = 0;
+    let m;
+    while ((m = bbRegex.exec(text)) !== null) {
+      if (m.index > last)
+        nodes.push(<span key={`${keyPrefix}-bb${idx.v++}`}>{text.slice(last, m.index)}</span>);
+      const tag = m[1].toLowerCase();
+      const inner = applyBBCode(m[2], keyPrefix, idx);
+      const k = `${keyPrefix}-bb${idx.v++}`;
+      if (tag === 'b') nodes.push(<strong key={k}>{inner}</strong>);
+      else if (tag === 'i') nodes.push(<em key={k}>{inner}</em>);
+      else if (tag === 's') nodes.push(<s key={k}>{inner}</s>);
+      else if (tag === 'u') nodes.push(<u key={k}>{inner}</u>);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length)
+      nodes.push(<span key={`${keyPrefix}-bb${idx.v++}`}>{text.slice(last)}</span>);
+    return nodes;
+  };
+
   const renderTextWithLinks = (text: string, keyPrefix: string): React.ReactNode[] => {
     const nodes: React.ReactNode[] = [];
     const tagRegex = /\[\[([^\]]+)\]\]/g;
@@ -1466,7 +1492,7 @@ function App() {
     let i = 0;
     while ((m = tagRegex.exec(text)) !== null) {
       if (m.index > last)
-        nodes.push(<span key={`${keyPrefix}-t${i++}`}>{text.slice(last, m.index)}</span>);
+        nodes.push(...applyBBCode(text.slice(last, m.index), keyPrefix, { v: i++ }));
       const rawTag = m[1]; // e.g. "cum_from_ass" or "display text|tag_name"
       const parts = rawTag.split('|');
       const tagName = (parts[1] || parts[0]).trim();
@@ -1484,8 +1510,7 @@ function App() {
       );
       last = m.index + m[0].length;
     }
-    if (last < text.length)
-      nodes.push(<span key={`${keyPrefix}-t${i++}`}>{text.slice(last)}</span>);
+    if (last < text.length) nodes.push(...applyBBCode(text.slice(last), keyPrefix, { v: i++ }));
     return nodes;
   };
 
@@ -2686,6 +2711,7 @@ function App() {
             setSearchHistorySize={setSearchHistorySize}
             hideSearchHistoryScrollbar={hideSearchHistoryScrollbar}
             setHideSearchHistoryScrollbar={setHideSearchHistoryScrollbar}
+            isLoggedIn={isLoggedIn}
             provider={provider}
             setProvider={handleProviderChange}
             isMobile={isMobile}
@@ -2738,6 +2764,7 @@ function App() {
             showStatsBar={showStatsBarNews}
             hideScrollbar={hideScrollbarNews}
             provider={provider}
+            commentSort={commentSort}
           />
         )}
 
