@@ -285,7 +285,8 @@ function App() {
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
-        window.scrollTo(0, scrollY);
+        // NIE robimy window.scrollTo tutaj — useLayoutEffect z pendingScrollRestore to ogarnie
+        // żeby uniknąć konfliktu dwóch scrollTo na produkcji
       };
     }
   }, [maximizedPostId]);
