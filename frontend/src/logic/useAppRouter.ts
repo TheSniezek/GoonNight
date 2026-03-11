@@ -92,11 +92,6 @@ export function useAppRouter({ onNavigate }: UseAppRouterOptions) {
   useEffect(() => {
     const handlePop = () => {
       const route = parseRoute();
-      console.log(
-        '[handlePop] popstate fired, parsed route:',
-        route.type,
-        window.location.pathname,
-      );
       saveRouteToSession(route);
       onNavigateRef.current(route);
     };

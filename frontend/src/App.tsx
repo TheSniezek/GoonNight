@@ -799,9 +799,7 @@ function App() {
   const scrollBeforePost = useRef<number>(0);
   const pendingScrollRestore = useRef<number | null>(null);
   const maximizedPostIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    maximizedPostIdRef.current = maximizedPostId;
-  });
+  // Ref zarządzany ręcznie w onMaximize i onNavigate — bez async efektu
 
   // Restore scroll after closing maximized post
   useLayoutEffect(() => {
@@ -815,25 +813,13 @@ function App() {
   const { navigateToPosts, navigateToPopular, navigateToPost, navigateToFavorites } = useAppRouter({
     onNavigate: useCallback(
       (route: AppRoute) => {
-        console.log(
-          '[onNavigate] route:',
-          route.type,
-          '| maximizedPostIdRef:',
-          maximizedPostIdRef.current,
-          '| scrollBefore:',
-          scrollBeforePost.current,
-        );
         if (route.type === 'posts') {
           if (maximizedPostIdRef.current !== null) {
-            console.log(
-              '[onNavigate] → closing maximized, setting pendingScrollRestore:',
-              scrollBeforePost.current,
-            );
             if (pendingScrollRestore.current === null)
               pendingScrollRestore.current = scrollBeforePost.current;
+            maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
-            console.log('[onNavigate] → no maximized, calling handleSearch!');
             setIsPopularMode(false);
             window.scrollTo({ top: 0 });
             handleSearch(route.tags, route.order);
@@ -842,6 +828,7 @@ function App() {
           if (maximizedPostIdRef.current !== null) {
             if (pendingScrollRestore.current === null)
               pendingScrollRestore.current = scrollBeforePost.current;
+            maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
             window.scrollTo({ top: 0 });
@@ -853,6 +840,7 @@ function App() {
           if (maximizedPostIdRef.current !== null) {
             if (pendingScrollRestore.current === null)
               pendingScrollRestore.current = scrollBeforePost.current;
+            maximizedPostIdRef.current = null;
             setMaximizedPostId(null);
           } else {
             window.scrollTo({ top: 0 });
@@ -877,6 +865,8 @@ function App() {
   useEffect(() => {
     onMaximizeRef.current = (postId: number) => {
       scrollBeforePost.current = window.scrollY;
+      // Ustaw ref synchronicznie PRZED pushState/popstate
+      maximizedPostIdRef.current = postId;
       navigateToPost(postId, tags, order);
     };
     onMinimizeRef.current = () => {
