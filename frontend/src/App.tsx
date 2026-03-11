@@ -2748,7 +2748,6 @@ function App() {
             autoPlayOnMaximize={autoPlayOnMaximize}
             videoResolution={videoResolution}
             toggleFavoritePost={toggleFavoritePost}
-            pendingFavorites={pendingFavorites}
             isLoggedIn={isLoggedIn}
             addTag={addTag}
             removeTag={removeTag}
