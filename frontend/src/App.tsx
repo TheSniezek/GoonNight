@@ -285,8 +285,7 @@ function App() {
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
-        // NIE robimy window.scrollTo tutaj — useLayoutEffect z pendingScrollRestore to ogarnie
-        // żeby uniknąć konfliktu dwóch scrollTo na produkcji
+        window.scrollTo(0, scrollY);
       };
     }
   }, [maximizedPostId]);
@@ -800,9 +799,8 @@ function App() {
   const scrollBeforePost = useRef<number>(0);
   const pendingScrollRestore = useRef<number | null>(null);
   const maximizedPostIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    maximizedPostIdRef.current = maximizedPostId;
-  });
+  // Synchroniczny update ref — musi być przed popstate handlerem
+  maximizedPostIdRef.current = maximizedPostId;
 
   // Restore scroll after closing maximized post
   useLayoutEffect(() => {
