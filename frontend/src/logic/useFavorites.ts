@@ -21,6 +21,7 @@ interface QueueCallbacks {
   onSuccess: (postId: number, action: 'add' | 'remove') => void;
   onError: (postId: number, action: 'add' | 'remove', error: Error) => void;
   credentials: () => { username: string; apiKey: string; provider: string };
+  onProcessingChange: (isProcessing: boolean) => void;
 }
 
 // ============================================================================
@@ -71,6 +72,7 @@ class FavoriteOperationQueue {
 
     console.log(`🔄 [FavoriteQueue] Starting flush of ${this.queue.length} operations`);
     this.processing = true;
+    this.callbacks.onProcessingChange(true);
 
     while (this.queue.length > 0) {
       const op = this.queue.shift()!;
@@ -79,6 +81,7 @@ class FavoriteOperationQueue {
     }
 
     this.processing = false;
+    this.callbacks.onProcessingChange(false);
     console.log('✅ [FavoriteQueue] Flush complete');
   }
 
@@ -194,6 +197,7 @@ export function useFavorites({
   onPostUpdate,
 }: UseFavoritesParams) {
   const [pendingFavorites, setPendingFavorites] = useState<Set<number>>(new Set());
+  const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
 
   const isLoggedIn = Boolean(username && apiKey);
   const queueRef = useRef<FavoriteOperationQueue | null>(null);
@@ -246,6 +250,9 @@ export function useFavorites({
       credentials: () => {
         console.log('🔑 [useFavorites] Getting credentials:', { username, hasApiKey: !!apiKey });
         return { username, apiKey, provider };
+      },
+      onProcessingChange: (isProcessing: boolean) => {
+        setIsProcessingFavorite(isProcessing);
       },
     });
 
@@ -305,5 +312,6 @@ export function useFavorites({
     isLoggedIn,
     toggleFavoritePost,
     pendingFavorites,
+    isProcessingFavorite,
   };
 }

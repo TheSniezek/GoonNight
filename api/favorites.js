@@ -33,7 +33,14 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { page = 1, limit = 50 } = req.query;
 
-      console.log('💖 [Vercel] Fetching favorites for:', username, 'page:', page);
+      console.log(
+        '💖 [Vercel] Fetching favorites for:',
+        username,
+        'page:',
+        page,
+        'provider:',
+        provider,
+      );
 
       const response = await axios.get(`${host}/favorites.json`, {
         params: { page: Number(page), limit: Number(limit) },
@@ -42,16 +49,29 @@ export default async function handler(req, res) {
         timeout: 15000,
       });
 
-      const posts = (response.data.posts || []).filter(
+      let posts = (response.data.posts || []).filter(
         (post) => post.file?.ext !== 'swf' && !post.flags?.deleted,
       );
 
-      // ✅ FIX: Dodaj hasMore - jeśli dostaliśmy pełną stronę, prawdopodobnie są następne
-      const hasMore = posts.length >= Number(limit);
+      // ✅ FIX: e926 mode - filter out non-safe posts (same as local backend)
+      if (provider === 'e926') {
+        posts = posts.filter((p) => p.rating === 's');
+      }
 
-      console.log('✅ [Vercel] Fetched', posts.length, 'favorites, hasMore:', hasMore);
+      // ✅ FIX: hasMore based on raw response length (before filtering),
+      // so we keep paginating even if this page was mostly filtered out
+      const rawCount = (response.data.posts || []).length;
+      const hasMore = rawCount >= Number(limit);
 
-      // ✅ FIX: Zwróć posts i hasMore (poprzednio było tylko { posts })
+      console.log(
+        '✅ [Vercel] Fetched',
+        posts.length,
+        'favorites (raw:',
+        rawCount,
+        '), hasMore:',
+        hasMore,
+      );
+
       return res.json({ posts, hasMore });
     }
 

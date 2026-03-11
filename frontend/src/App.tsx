@@ -220,7 +220,7 @@ function App() {
   // ─── END ROUTER SETUP (continued below after handleSearch/handlePopularSearch are defined) ──
 
   // ✅ NOWY hook useFavorites - tylko do toggle'owania
-  const { isLoggedIn, toggleFavoritePost, pendingFavorites } = useFavorites({
+  const { isLoggedIn, toggleFavoritePost, pendingFavorites, isProcessingFavorite } = useFavorites({
     username: e621User,
     apiKey: e621ApiKey,
     provider,
@@ -2740,7 +2740,7 @@ function App() {
             layout={newsLayout}
             onClose={() => setShowNewsPopup(false)}
             loading={loading}
-            isFetching={newsIsFetching}
+            isFetching={newsIsFetching || isProcessingFavorite}
             onToggleTag={toggleTag}
             onSearchTag={handleSearch}
             defaultVolume={defaultVolume}

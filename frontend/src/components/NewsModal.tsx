@@ -22,7 +22,6 @@ interface NewsModalProps {
   videoResolution: 'best' | 'worse';
   // Nowe propsy dla favorites
   toggleFavoritePost: (postId: number, currentIsFavorited: boolean) => Promise<void>;
-  pendingFavorites: Set<number>;
   isLoggedIn: boolean;
   // Nowe propsy dla tagów
   addTag: (tag: string) => void;
@@ -62,7 +61,6 @@ const NewsModal = ({
   autoPlayOnMaximize,
   videoResolution,
   toggleFavoritePost,
-  pendingFavorites,
   isLoggedIn,
   addTag,
   removeTag,
@@ -82,6 +80,11 @@ const NewsModal = ({
   commentSort = 'newest',
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
+  // Lokalne overrides dla is_favorited - persystują przez fetching nowych postów
+  const [localFavoriteOverrides, setLocalFavoriteOverrides] = useState<Map<number, boolean>>(
+    new Map(),
+  );
+
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(NEWS_WIDTH_KEY);
     return saved ? Number(saved) : 400;
@@ -115,6 +118,26 @@ const NewsModal = ({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const savedScrollRef = useRef<number>(0);
 
+  const handleToggleFavorite = async (postId: number, currentIsFavorited: boolean) => {
+    // Optimistycznie zapisz override lokalnie (persystuje przez re-fetch)
+    const newValue = !currentIsFavorited;
+    setLocalFavoriteOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(postId, newValue);
+      return next;
+    });
+    try {
+      await toggleFavoritePost(postId, currentIsFavorited);
+    } catch {
+      // Rollback override jeśli się nie udało
+      setLocalFavoriteOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(postId, currentIsFavorited);
+        return next;
+      });
+    }
+  };
+
   // -------------------- FUNCTIONS --------------------
   const startResize = (e: React.MouseEvent) => {
     isResizing.current = true;
@@ -123,7 +146,7 @@ const NewsModal = ({
   };
 
   const handleReload = async () => {
-    if (!observedTags.length || isReloading) return;
+    if (!observedTags.length || isBlocked) return;
     try {
       setIsReloading(true);
       // 🔥 DODANE - przekaż auth do fetchPostsForMultipleTags
@@ -499,11 +522,18 @@ const NewsModal = ({
     };
   }, []);
 
+  // Zablokuj przyciski podczas fetcha/reloada
+  const isBlocked = isFetching || isReloading;
+
   // -------------------- RENDER --------------------
+  // Aplikuj lokalne overrides is_favorited - persystują przez fetching
+  const postsWithOverrides = posts.map((p) =>
+    localFavoriteOverrides.has(p.id) ? { ...p, is_favorited: localFavoriteOverrides.get(p.id) } : p,
+  );
   const postsToRender =
     applyBlacklist && blacklistLines.some((l) => l.enabled)
-      ? filterPostsByBlacklist(posts, blacklistLines)
-      : posts;
+      ? filterPostsByBlacklist(postsWithOverrides, blacklistLines)
+      : postsWithOverrides;
   const postsByDay = groupPostsByDay(postsToRender);
   const sortedDates = Object.keys(postsByDay).sort((a, b) => (a < b ? 1 : -1));
 
@@ -657,7 +687,7 @@ const NewsModal = ({
               reloadCountdown % 60,
             ).padStart(2, '0')}`}
             aria-label="Reload"
-            disabled={loading || isReloading}
+            disabled={loading || isBlocked}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -675,7 +705,7 @@ const NewsModal = ({
             className={`observed-tags-btn ${showObservedTags ? 'active' : ''}`}
             onClick={() => setShowObservedTags((prev) => !prev)}
             aria-label="Observed tags"
-            disabled={loading}
+            disabled={loading || isBlocked}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -772,6 +802,7 @@ const NewsModal = ({
                           isMaximized ? 'maximized' : '',
                           showTagsFor === post.id || showInfoFor === post.id ? 'popup-active' : '',
                           showStatsBar ? 'has-stats' : '',
+                          '',
                         ]
                           .filter(Boolean)
                           .join(' ')}
@@ -783,7 +814,7 @@ const NewsModal = ({
                               e.stopPropagation();
                               setMaximizedPost(post);
                             }}
-                            disabled={isFetching}
+                            disabled={isBlocked}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -818,7 +849,7 @@ const NewsModal = ({
                                 setShowCommFor(null);
                               }
                             }}
-                            disabled={isFetching}
+                            disabled={isBlocked}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -852,7 +883,7 @@ const NewsModal = ({
                                 setShowCommFor(null);
                               }
                             }}
-                            disabled={isFetching}
+                            disabled={isBlocked}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -885,7 +916,7 @@ const NewsModal = ({
                                 setShowInfoFor(null);
                               }
                             }}
-                            disabled={isFetching}
+                            disabled={isBlocked}
                             title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
                           >
                             <svg
@@ -909,10 +940,10 @@ const NewsModal = ({
                             className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''}`}
                             onClick={async (e) => {
                               e.stopPropagation();
-                              await toggleFavoritePost(post.id, post.is_favorited || false);
+                              await handleToggleFavorite(post.id, post.is_favorited || false);
                             }}
                             title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                            disabled={!isLoggedIn || pendingFavorites.has(post.id) || isFetching}
+                            disabled={!isLoggedIn || isBlocked}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1377,8 +1408,14 @@ const NewsModal = ({
       {maximizedPost &&
         (() => {
           // FIX: Znajdź aktualny post z posts aby mieć aktualne is_favorited
-          const currentMaximizedPost =
-            posts.find((p) => p.id === maximizedPost.id) || maximizedPost;
+          const baseMaximizedPost = posts.find((p) => p.id === maximizedPost.id) || maximizedPost;
+          // Aplikuj lokalne overrides (persystują przez fetching)
+          const currentMaximizedPost = localFavoriteOverrides.has(baseMaximizedPost.id)
+            ? {
+                ...baseMaximizedPost,
+                is_favorited: localFavoriteOverrides.get(baseMaximizedPost.id),
+              }
+            : baseMaximizedPost;
 
           return createPortal(
             <div className="news-maximized-overlay" onClick={() => closeMaximized()}>
@@ -1425,6 +1462,7 @@ const NewsModal = ({
                       setShowCommFor(null);
                     }
                   }}
+                  disabled={isBlocked}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1459,6 +1497,7 @@ const NewsModal = ({
                       setShowCommFor(null);
                     }
                   }}
+                  disabled={isBlocked}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1493,6 +1532,7 @@ const NewsModal = ({
                     }
                   }}
                   title={`${currentMaximizedPost.comment_count} comment${currentMaximizedPost.comment_count !== 1 ? 's' : ''}`}
+                  disabled={isBlocked}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1516,13 +1556,13 @@ const NewsModal = ({
                   }`}
                   onClick={async (e) => {
                     e.stopPropagation();
-                    await toggleFavoritePost(
+                    await handleToggleFavorite(
                       currentMaximizedPost.id,
                       currentMaximizedPost.is_favorited || false,
                     );
                   }}
                   title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                  disabled={!isLoggedIn || pendingFavorites.has(currentMaximizedPost.id)}
+                  disabled={!isLoggedIn || isBlocked}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

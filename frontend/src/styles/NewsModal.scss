@@ -24,7 +24,6 @@
     transform: translateX(100%);
     animation: slide-in 0.3s forwards;
 
-    // Mobile styles - full width, no resizing
     @media (max-width: 768px) {
       min-width: 100%;
       width: 100% !important;
@@ -46,7 +45,6 @@
       z-index: 50;
       background: transparent;
 
-      // Disable resize handle on mobile
       @media (max-width: 768px) {
         display: none;
       }
@@ -79,7 +77,6 @@
 
         &:hover {
           transform: scale(1.05);
-
           background: #ff5ca8;
         }
       }
@@ -195,7 +192,6 @@
       }
     }
 
-    // Title styles
     .news-title-desktop {
       color: #ff5ca8;
       font-size: 1.5rem;
@@ -227,14 +223,12 @@
       overflow-y: auto;
       margin-top: 5px;
 
-      // Enable scrolling on mobile
       @media (max-width: 768px) {
         max-height: 120px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
 
-      // Custom scrollbar
       &::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -295,7 +289,6 @@
       flex: 1;
       padding-right: 20px;
 
-      // Custom scrollbar
       &::-webkit-scrollbar {
         width: 8px;
       }
@@ -311,7 +304,6 @@
         }
       }
 
-      // Hide scrollbar class
       &.scrollbar-hidden {
         scrollbar-width: none;
         padding-right: 0;
@@ -480,9 +472,8 @@
             flex-direction: column;
             width: 100%;
             height: fit-content;
-            content-visibility: auto; // 🔥 Performance optimization
+            content-visibility: auto;
 
-            // Artist label - bar between media and stats bar
             .news-artist-label {
               display: flex;
               align-items: center;
@@ -513,7 +504,7 @@
               pointer-events: none;
               transition: opacity 0.2s ease;
               background: #ff5ca8;
-              border-radius: 4px;
+              border-radius: 6px;
               padding: 3px;
               display: flex;
               align-items: center;
@@ -522,13 +513,13 @@
               height: 36px;
             }
 
-            // Hide fav indicator when buttons appear on hover
+            // Chowaj indicator tylko gdy hover i NIE blocked (gdy blocked, ukryty przez TSX !isBlocked)
             &:hover .news-fav-indicator,
             &.popup-active .news-fav-indicator {
-              opacity: 0;
+              opacity: 0 !important;
+              pointer-events: none;
             }
 
-            // Stats bar - below media as flow element
             .news-stats-bar {
               display: flex;
               align-items: center;
@@ -574,7 +565,6 @@
               }
             }
 
-            // When stats bar shown, media loses bottom border-radius
             &.has-stats {
               .news-post-item,
               .news-video-thumb,
@@ -585,7 +575,8 @@
               }
             }
 
-            // Maximize button (like in App.tsx)
+            // ── Przyciski na poście ──────────────────────────────────────────
+            // Domyślnie niewidoczne (opacity: 0), pojawiają się na hover wrappera.
             .news-maximize-btn {
               position: absolute;
               top: 6px;
@@ -610,6 +601,15 @@
 
               &:hover {
                 transform: scale(1.05);
+              }
+
+              &:disabled {
+                cursor: not-allowed;
+                color: #555;
+                background: #22222e;
+                &:hover {
+                  transform: none;
+                }
               }
             }
 
@@ -643,6 +643,15 @@
                 background: #ff5ca8;
                 color: white;
               }
+
+              &:disabled {
+                cursor: not-allowed;
+                color: #555;
+                background: #22222e;
+                &:hover {
+                  transform: none;
+                }
+              }
             }
 
             .news-info-btn {
@@ -670,13 +679,21 @@
 
               &:hover {
                 transform: scale(1.05);
-                opacity: 1;
               }
 
               &.active {
                 opacity: 1;
                 background: #5ca8ff;
                 color: white;
+              }
+
+              &:disabled {
+                cursor: not-allowed;
+                color: #555;
+                background: #22222e;
+                &:hover {
+                  transform: none;
+                }
               }
             }
 
@@ -716,6 +733,15 @@
                 background: #5ca8ff;
                 color: white;
               }
+
+              &:disabled {
+                cursor: not-allowed;
+                color: #555;
+                background: #22222e;
+                &:hover {
+                  transform: none;
+                }
+              }
             }
 
             .news-info-btn {
@@ -728,9 +754,8 @@
 
               &:disabled {
                 cursor: not-allowed;
-                background: #1b1b24;
-                color: #6f2e4f;
-
+                color: #555;
+                background: #22222e;
                 &:hover {
                   transform: none;
                 }
@@ -742,15 +767,25 @@
               }
             }
 
-            &:hover .news-tags-btn,
-            &:hover .news-fav-btn,
-            &:hover .news-info-btn,
-            &:hover .news-comm-btn,
-            &:hover .news-maximize-btn {
+            // Pokaż normalne przyciski na hover tego wrappera
+            &:hover .news-tags-btn:not(:disabled),
+            &:hover .news-fav-btn:not(:disabled),
+            &:hover .news-info-btn:not(:disabled),
+            &:hover .news-comm-btn:not(:disabled),
+            &:hover .news-maximize-btn:not(:disabled) {
               opacity: 1;
             }
 
-            // FIX: Gdy popup otwarty - pokaż WSZYSTKIE przyciski
+            // Pokaż disabled przyciski na hover tego wrappera, ale wyszarzone
+            &:hover .news-tags-btn:disabled,
+            &:hover .news-fav-btn:disabled,
+            &:hover .news-info-btn:disabled,
+            &:hover .news-comm-btn:disabled,
+            &:hover .news-maximize-btn:disabled {
+              opacity: 0.4;
+            }
+
+            // Gdy popup otwarty - pokaż wszystkie
             &.popup-active .news-tags-btn,
             &.popup-active .news-fav-btn,
             &.popup-active .news-info-btn,
@@ -782,12 +817,10 @@
               &::-webkit-scrollbar {
                 width: 6px;
               }
-
               &::-webkit-scrollbar-thumb {
                 background-color: #5ca8ff;
                 border-radius: 3px;
               }
-
               &::-webkit-scrollbar-track {
                 background: #35354b;
                 border-radius: 3px;
@@ -919,17 +952,14 @@
               scroll-behavior: smooth;
               overscroll-behavior: contain;
 
-              // Custom scrollbar for better UX
               &::-webkit-scrollbar {
                 width: 6px;
                 height: 6px;
               }
-
               &::-webkit-scrollbar-thumb {
                 background-color: #ff5ca8;
                 border-radius: 3px;
               }
-
               &::-webkit-scrollbar-track {
                 background: #35354b;
                 border-radius: 3px;
@@ -953,16 +983,13 @@
               scroll-behavior: smooth;
               overscroll-behavior: contain;
 
-              // Custom scrollbar for better UX
               &::-webkit-scrollbar {
                 width: 6px;
               }
-
               &::-webkit-scrollbar-thumb {
                 background-color: #5ca8ff;
                 border-radius: 3px;
               }
-
               &::-webkit-scrollbar-track {
                 background: #35354b;
                 border-radius: 3px;
@@ -1137,7 +1164,6 @@
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
   }
 
-  // Maximize/Close button
   .news-maximize-btn {
     position: absolute;
     z-index: 10;
@@ -1170,7 +1196,6 @@
     }
   }
 
-  // Tags button in maximized mode
   .news-tags-btn-max {
     position: absolute;
     top: 20px;
@@ -1201,9 +1226,18 @@
       background: #ff5ca8;
       color: white;
     }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+      color: #555;
+      background: #22222e;
+      &:hover {
+        transform: none;
+      }
+    }
   }
 
-  // Info button in maximized mode
   .news-info-btn-max {
     position: absolute;
     top: 20px;
@@ -1234,9 +1268,18 @@
       background: #5ca8ff;
       color: white;
     }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+      color: #555;
+      background: #22222e;
+      &:hover {
+        transform: none;
+      }
+    }
   }
 
-  // Comm button in maximized mode
   .news-comm-btn-max {
     position: absolute;
     top: 20px;
@@ -1267,9 +1310,18 @@
       background: #5ca8ff;
       color: white;
     }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+      color: #555;
+      background: #22222e;
+      &:hover {
+        transform: none;
+      }
+    }
   }
 
-  // Favorite button in maximized mode
   .news-fav-btn-max {
     position: absolute;
     top: 20px;
@@ -1298,9 +1350,9 @@
 
     &:disabled {
       cursor: not-allowed;
-      background: #1b1b24;
-      color: #6f2e4f;
-
+      opacity: 0.35;
+      background: #22222e;
+      color: #555;
       &:hover {
         transform: none;
       }
@@ -1338,12 +1390,10 @@
     &::-webkit-scrollbar {
       width: 6px;
     }
-
     &::-webkit-scrollbar-thumb {
       background-color: #5ca8ff;
       border-radius: 3px;
     }
-
     &::-webkit-scrollbar-track {
       background: #35354b;
       border-radius: 3px;
@@ -1482,12 +1532,10 @@
       width: 6px;
       height: 6px;
     }
-
     &::-webkit-scrollbar-thumb {
       background-color: #ff5ca8;
       border-radius: 3px;
     }
-
     &::-webkit-scrollbar-track {
       background: #35354b;
       border-radius: 3px;
@@ -1532,7 +1580,6 @@
 
         &.active {
           background-color: #ff5ca8;
-
           &:hover {
             background-color: #ff298d;
           }
@@ -1564,12 +1611,10 @@
     &::-webkit-scrollbar {
       width: 6px;
     }
-
     &::-webkit-scrollbar-thumb {
       background-color: #5ca8ff;
       border-radius: 3px;
     }
-
     &::-webkit-scrollbar-track {
       background: #35354b;
       border-radius: 3px;
