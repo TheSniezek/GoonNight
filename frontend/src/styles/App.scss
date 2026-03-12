@@ -367,1095 +367,1095 @@ button {
       }
     }
   }
+}
 
-  .post-wrapper {
+.post-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 20px;
+  position: relative;
+  content-visibility: auto;
+
+  @media (max-width: 768px) {
+    margin-bottom: 10px;
+  }
+
+  // Artist label
+  .post-artist-label {
     display: flex;
-    flex-direction: column;
-    width: 100%;
-    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    background: rgb(28, 28, 38);
+    color: #ff298d;
+    font-size: 11px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    // Rounded bottom only when no stats bar follows
+    border-radius: 0 0 6px 6px;
+
+    &.artist-has-stats {
+      border-radius: 0;
+    }
+  }
+
+  // Permanent favorite indicator
+  .post-fav-indicator {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 9;
+    color: #ffffff;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    background: #ff5ca8;
+    border-radius: 4px;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+  }
+
+  &:hover .post-fav-indicator,
+  &.popup-active .post-fav-indicator {
+    opacity: 0;
+  }
+
+  // Stats bar - below media as flow element
+  .post-stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 5px 8px;
+    background: rgb(28, 28, 38);
+    border-radius: 0 0 6px 6px;
+    pointer-events: none;
+  }
+
+  .post-stats-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  .post-stats-score {
+    color: #f0d060;
+    svg {
+      color: #f0d060;
+    }
+  }
+
+  .post-stats-fav {
+    color: #ff5ca8;
+    svg {
+      color: #ff5ca8;
+    }
+  }
+
+  .post-stats-comment {
+    color: #fff;
+    svg {
+      color: #fff;
+    }
+  }
+
+  // When stats bar or artist label shown, media loses bottom border-radius
+  &.has-stats,
+  &:has(.post-artist-label) {
+    .post-item,
+    .video-thumb,
+    .video-thumb img,
+    .video-thumb video {
+      border-radius: 6px 6px 0 0 !important;
+    }
+  }
+
+  .video-thumb {
     position: relative;
-    content-visibility: auto;
+    cursor: pointer;
+
+    .post-item {
+      width: 100%;
+      display: block;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      border-radius: 6px;
+
+      &.gif {
+        color: rgba(255, 255, 255, 0.5);
+      }
+    }
+
+    svg {
+      @media (max-width: 768px) {
+        transform: scale(0.5);
+      }
+    }
+  }
+
+  &.mobile-no-buttons {
+    .maximize-btn,
+    .tags-btn,
+    .info-btn,
+    .fav-post-btn {
+      display: none !important;
+    }
+  }
+
+  &.buttons-top {
+    .maximize-btn {
+      right: 10px;
+    }
+
+    .tags-btn {
+      right: 60px;
+    }
+
+    .info-btn {
+      right: 110px;
+    }
+
+    .comm-btn {
+      right: 160px;
+    }
+
+    .fav-post-btn {
+      right: 210px;
+    }
+
+    &.maximized {
+      .maximize-btn {
+        right: 20px;
+      }
+
+      .tags-btn {
+        right: 80px;
+      }
+
+      .info-btn {
+        right: 140px;
+      }
+
+      .comm-btn {
+        right: 200px;
+      }
+
+      .fav-post-btn {
+        right: 260px;
+      }
+    }
+  }
+
+  &.buttons-bottom {
+    .maximize-btn {
+      top: auto;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    .tags-btn {
+      top: auto;
+      bottom: 10px;
+      right: 60px;
+    }
+
+    .info-btn {
+      top: auto;
+      bottom: 10px;
+      right: 110px;
+    }
+
+    .comm-btn {
+      top: auto;
+      bottom: 10px;
+      right: 160px;
+    }
+
+    .fav-post-btn {
+      top: auto;
+      bottom: 10px;
+      right: 210px;
+    }
+
+    // Lift buttons above stats bar only
+    &.has-stats:not(:has(.post-artist-label)) {
+      .maximize-btn {
+        bottom: 27px;
+      }
+      .tags-btn {
+        bottom: 27px;
+      }
+      .info-btn {
+        bottom: 27px;
+      }
+      .comm-btn {
+        bottom: 27px;
+      }
+      .fav-post-btn {
+        bottom: 27px;
+      }
+    }
+
+    // Lift buttons above artist label only
+    &:not(.has-stats):has(.post-artist-label) {
+      .maximize-btn {
+        bottom: 32px;
+      }
+      .tags-btn {
+        bottom: 32px;
+      }
+      .info-btn {
+        bottom: 32px;
+      }
+      .comm-btn {
+        bottom: 32px;
+      }
+      .fav-post-btn {
+        bottom: 32px;
+      }
+    }
+
+    // Lift buttons above both bars
+    &.has-stats:has(.post-artist-label) {
+      .maximize-btn {
+        bottom: 54px;
+      }
+      .tags-btn {
+        bottom: 54px;
+      }
+      .info-btn {
+        bottom: 54px;
+      }
+      .comm-btn {
+        bottom: 54px;
+      }
+      .fav-post-btn {
+        bottom: 54px;
+      }
+    }
+
+    // Popupy otwierają się od dołu gdy przyciski są na dole (non-maximized)
+    &:not(.maximized) {
+      .tags-popup,
+      .tags-popup.tags-popup-max,
+      .info-popup,
+      .info-popup.info-popup-max,
+      .comm-popup,
+      .comm-popup.comm-popup-max {
+        top: auto !important;
+        bottom: 5px;
+        height: auto;
+        max-height: calc(100% - 70px);
+      }
+    }
+
+    &:not(.maximized).has-stats:not(:has(.post-artist-label)) {
+      .tags-popup,
+      .tags-popup.tags-popup-max,
+      .info-popup,
+      .info-popup.info-popup-max,
+      .comm-popup,
+      .comm-popup.comm-popup-max {
+        bottom: 73px;
+        max-height: calc(100% - 83px);
+      }
+    }
+
+    &:not(.maximized):not(.has-stats):has(.post-artist-label) {
+      .tags-popup,
+      .tags-popup.tags-popup-max,
+      .info-popup,
+      .info-popup.info-popup-max,
+      .comm-popup,
+      .comm-popup.comm-popup-max {
+        bottom: 73px;
+        max-height: calc(100% - 83px);
+      }
+    }
+
+    &:not(.maximized).has-stats:has(.post-artist-label) {
+      .tags-popup,
+      .tags-popup.tags-popup-max,
+      .info-popup,
+      .info-popup.info-popup-max,
+      .comm-popup,
+      .comm-popup.comm-popup-max {
+        bottom: 100px;
+        max-height: calc(100% - 110px);
+      }
+    }
+
+    // Większe dla maximized
+    &.maximized {
+      .maximize-btn {
+        top: auto;
+        bottom: 20px;
+        right: 20px;
+      }
+
+      .tags-btn {
+        top: auto;
+        bottom: 20px;
+        right: 80px;
+      }
+
+      .info-btn {
+        top: auto;
+        bottom: 20px;
+        right: 140px;
+      }
+
+      .comm-btn {
+        top: auto;
+        bottom: 20px;
+        right: 200px;
+      }
+
+      .fav-post-btn {
+        top: auto;
+        bottom: 20px;
+        right: 260px;
+      }
+
+      // Popupy otwierają się od dołu
+      .tags-popup,
+      .tags-popup.tags-popup-max,
+      .info-popup,
+      .info-popup.info-popup-max,
+      .comm-popup,
+      .comm-popup.comm-popup-max {
+        top: auto !important;
+        bottom: 80px;
+        height: auto;
+        max-height: 60vh;
+      }
+    }
+  }
+
+  .maximize-btn {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: #35354b;
+    color: #ff5ca8;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity 0.2s ease,
+      background 0.2s ease;
 
     @media (max-width: 768px) {
-      margin-bottom: 10px;
+      display: none !important; // Ukryj całkowicie na mobile
     }
 
-    // Artist label
-    .post-artist-label {
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &.maximized-btn {
+      top: 12px;
+      left: 12px;
+      width: 50px;
+      height: 50px;
+      opacity: 1;
+
+      @media (max-width: 768px) {
+        display: flex !important; // Pokaż tylko w trybie maximized
+      }
+
+      &:hover {
+        background: #e0094a;
+        color: #fff;
+      }
+    }
+  }
+
+  &.maximized {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+
+    .post-item {
+      width: auto;
+      height: 100%;
+      max-width: 95vw;
+      max-height: 95vh;
+      object-fit: contain;
+      border-radius: 0;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      display: block;
+
+      @media (max-width: 768px) {
+        width: 100%;
+        height: auto;
+        max-height: 80vh;
+      }
+    }
+
+    .post-item-max {
+      z-index: 8;
+    }
+  }
+
+  .tags-btn {
+    position: absolute;
+    top: 6px;
+    left: 48px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #35354b;
+    color: #ff5ca8;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0;
+
+    @media (max-width: 768px) {
+      display: none !important; // Ukryj na mobile
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &.active {
+      opacity: 1;
+      background: #ff5ca8;
+      color: white;
+    }
+
+    &.tags-btn-max {
+      width: 50px;
+      height: 50px;
+      top: 12px;
+      left: 74px;
+      opacity: 1;
+
+      @media (max-width: 768px) {
+        display: flex !important; // Pokaż w trybie maximized
+      }
+    }
+  }
+
+  .info-btn {
+    position: absolute;
+    top: 6px;
+    left: 90px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #35354b;
+    color: #5ca8ff;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0;
+
+    @media (max-width: 768px) {
+      display: none !important; // Ukryj na mobile
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &.active {
+      opacity: 1;
+      background: #5ca8ff;
+      color: white;
+    }
+
+    &.info-btn-max {
+      width: 50px;
+      height: 50px;
+      top: 12px;
+      left: 136px;
+      opacity: 1;
+
+      @media (max-width: 768px) {
+        display: flex !important; // Pokaż w trybie maximized
+      }
+    }
+  }
+
+  .fav-post-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 6px;
+    left: 176px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #35354b;
+    color: #ff5ca8;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0;
+
+    @media (max-width: 768px) {
+      display: none !important; // Ukryj na mobile
+    }
+
+    &:hover {
+      transform: scale(1.05);
+
+      &:disabled {
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      background: #1b1b24;
+      color: #6f2e4f;
+    }
+
+    &.is-favorite {
+      background: #ff5ca8;
+      color: white;
+    }
+
+    &.fav-post-btn-max {
+      width: 50px;
+      height: 50px;
+      top: 12px;
+      left: 260px;
+      opacity: 1;
+
+      @media (max-width: 768px) {
+        display: flex !important; // Pokaż w trybie maximized
+      }
+    }
+  }
+
+  .comm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 6px;
+    left: 132px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #35354b;
+    color: #5ca8ff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0;
+
+    @media (max-width: 768px) {
+      display: none !important;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &.active {
+      opacity: 1;
+      background: #5ca8ff;
+      color: #fff;
+    }
+
+    &.comm-btn-max {
+      width: 50px;
+      height: 50px;
+      top: 12px;
+      left: 198px;
+      opacity: 1;
+
+      @media (max-width: 768px) {
+        display: flex !important;
+      }
+    }
+  }
+
+  .comm-popup {
+    position: absolute;
+    top: 55px;
+    left: 12px;
+    max-height: fit-content;
+    height: calc(100% - 67px);
+    overflow-y: auto;
+    width: calc(100% - 24px);
+    background: #0f0f14;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    z-index: 20;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    display: flex;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    flex-direction: column;
+    gap: 6px;
+
+    &.comm-popup-max {
+      top: 80px;
+      left: 12px;
+      max-height: 300px;
+      max-width: 400px;
+    }
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #5ca8ff;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #35354b;
+      border-radius: 3px;
+    }
+
+    &.scrollbar-hidden {
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .comm-loading,
+    .comm-empty {
+      color: #888;
+      font-size: 0.9rem;
+      padding: 12px 0;
+      text-align: center;
+    }
+
+    .comm-item {
+      border-bottom: 1px solid #2e2e3e;
+      padding-bottom: 8px;
+
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+    }
+
+    .comm-item-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 5px 8px;
-      background: rgb(28, 28, 38);
-      color: #ff298d;
-      font-size: 11px;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+
+    .comm-author {
+      font-size: 0.8rem;
       font-weight: 700;
+      color: #5ca8ff;
+      text-decoration: none;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
-      pointer-events: none;
-      // Rounded bottom only when no stats bar follows
-      border-radius: 0 0 6px 6px;
 
-      &.artist-has-stats {
-        border-radius: 0;
-      }
-    }
-
-    // Permanent favorite indicator
-    .post-fav-indicator {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      z-index: 9;
-      color: #ffffff;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-      background: #ff5ca8;
-      border-radius: 4px;
-      padding: 3px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-    }
-
-    &:hover .post-fav-indicator,
-    &.popup-active .post-fav-indicator {
-      opacity: 0;
-    }
-
-    // Stats bar - below media as flow element
-    .post-stats-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 5px 8px;
-      background: rgb(28, 28, 38);
-      border-radius: 0 0 6px 6px;
-      pointer-events: none;
-    }
-
-    .post-stats-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1;
-
-      svg {
-        flex-shrink: 0;
-      }
-    }
-
-    .post-stats-score {
-      color: #f0d060;
-      svg {
-        color: #f0d060;
-      }
-    }
-
-    .post-stats-fav {
-      color: #ff5ca8;
-      svg {
+      &:hover {
+        text-decoration: underline;
         color: #ff5ca8;
       }
     }
 
-    .post-stats-comment {
-      color: #fff;
-      svg {
-        color: #fff;
+    .comm-score {
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #888;
+
+      &.pos {
+        color: #6ddc8b;
+      }
+      &.neg {
+        color: #ff6b6b;
       }
     }
 
-    // When stats bar or artist label shown, media loses bottom border-radius
-    &.has-stats,
-    &:has(.post-artist-label) {
-      .post-item,
-      .video-thumb,
-      .video-thumb img,
-      .video-thumb video {
-        border-radius: 6px 6px 0 0 !important;
-      }
-    }
+    .comm-body {
+      font-size: 0.82rem;
+      color: #ccc;
+      line-height: 1.4;
+      word-break: break-word;
 
-    .video-thumb {
-      position: relative;
-      cursor: pointer;
-
-      .post-item {
-        width: 100%;
+      .comm-text {
+        white-space: pre-wrap;
         display: block;
-      }
-
-      .video-overlay {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 48px;
-        color: rgba(255, 255, 255, 0.8);
-        background: rgba(0, 0, 0, 0.3);
-        pointer-events: none;
-        border-radius: 6px;
-
-        &.gif {
-          color: rgba(255, 255, 255, 0.5);
-        }
-      }
-
-      svg {
-        @media (max-width: 768px) {
-          transform: scale(0.5);
-        }
-      }
-    }
-
-    &.mobile-no-buttons {
-      .maximize-btn,
-      .tags-btn,
-      .info-btn,
-      .fav-post-btn {
-        display: none !important;
-      }
-    }
-
-    &.buttons-top {
-      .maximize-btn {
-        right: 10px;
-      }
-
-      .tags-btn {
-        right: 60px;
-      }
-
-      .info-btn {
-        right: 110px;
-      }
-
-      .comm-btn {
-        right: 160px;
-      }
-
-      .fav-post-btn {
-        right: 210px;
-      }
-
-      &.maximized {
-        .maximize-btn {
-          right: 20px;
-        }
-
-        .tags-btn {
-          right: 80px;
-        }
-
-        .info-btn {
-          right: 140px;
-        }
-
-        .comm-btn {
-          right: 200px;
-        }
-
-        .fav-post-btn {
-          right: 260px;
-        }
-      }
-    }
-
-    &.buttons-bottom {
-      .maximize-btn {
-        top: auto;
-        bottom: 10px;
-        right: 10px;
-      }
-
-      .tags-btn {
-        top: auto;
-        bottom: 10px;
-        right: 60px;
-      }
-
-      .info-btn {
-        top: auto;
-        bottom: 10px;
-        right: 110px;
-      }
-
-      .comm-btn {
-        top: auto;
-        bottom: 10px;
-        right: 160px;
-      }
-
-      .fav-post-btn {
-        top: auto;
-        bottom: 10px;
-        right: 210px;
-      }
-
-      // Lift buttons above stats bar only
-      &.has-stats:not(:has(.post-artist-label)) {
-        .maximize-btn {
-          bottom: 27px;
-        }
-        .tags-btn {
-          bottom: 27px;
-        }
-        .info-btn {
-          bottom: 27px;
-        }
-        .comm-btn {
-          bottom: 27px;
-        }
-        .fav-post-btn {
-          bottom: 27px;
-        }
-      }
-
-      // Lift buttons above artist label only
-      &:not(.has-stats):has(.post-artist-label) {
-        .maximize-btn {
-          bottom: 32px;
-        }
-        .tags-btn {
-          bottom: 32px;
-        }
-        .info-btn {
-          bottom: 32px;
-        }
-        .comm-btn {
-          bottom: 32px;
-        }
-        .fav-post-btn {
-          bottom: 32px;
-        }
-      }
-
-      // Lift buttons above both bars
-      &.has-stats:has(.post-artist-label) {
-        .maximize-btn {
-          bottom: 54px;
-        }
-        .tags-btn {
-          bottom: 54px;
-        }
-        .info-btn {
-          bottom: 54px;
-        }
-        .comm-btn {
-          bottom: 54px;
-        }
-        .fav-post-btn {
-          bottom: 54px;
-        }
-      }
-
-      // Popupy otwierają się od dołu gdy przyciski są na dole (non-maximized)
-      &:not(.maximized) {
-        .tags-popup,
-        .tags-popup.tags-popup-max,
-        .info-popup,
-        .info-popup.info-popup-max,
-        .comm-popup,
-        .comm-popup.comm-popup-max {
-          top: auto !important;
-          bottom: 5px;
-          height: auto;
-          max-height: calc(100% - 70px);
-        }
-      }
-
-      &:not(.maximized).has-stats:not(:has(.post-artist-label)) {
-        .tags-popup,
-        .tags-popup.tags-popup-max,
-        .info-popup,
-        .info-popup.info-popup-max,
-        .comm-popup,
-        .comm-popup.comm-popup-max {
-          bottom: 73px;
-          max-height: calc(100% - 83px);
-        }
-      }
-
-      &:not(.maximized):not(.has-stats):has(.post-artist-label) {
-        .tags-popup,
-        .tags-popup.tags-popup-max,
-        .info-popup,
-        .info-popup.info-popup-max,
-        .comm-popup,
-        .comm-popup.comm-popup-max {
-          bottom: 73px;
-          max-height: calc(100% - 83px);
-        }
-      }
-
-      &:not(.maximized).has-stats:has(.post-artist-label) {
-        .tags-popup,
-        .tags-popup.tags-popup-max,
-        .info-popup,
-        .info-popup.info-popup-max,
-        .comm-popup,
-        .comm-popup.comm-popup-max {
-          bottom: 100px;
-          max-height: calc(100% - 110px);
-        }
-      }
-
-      // Większe dla maximized
-      &.maximized {
-        .maximize-btn {
-          top: auto;
-          bottom: 20px;
-          right: 20px;
-        }
-
-        .tags-btn {
-          top: auto;
-          bottom: 20px;
-          right: 80px;
-        }
-
-        .info-btn {
-          top: auto;
-          bottom: 20px;
-          right: 140px;
-        }
-
-        .comm-btn {
-          top: auto;
-          bottom: 20px;
-          right: 200px;
-        }
-
-        .fav-post-btn {
-          top: auto;
-          bottom: 20px;
-          right: 260px;
-        }
-
-        // Popupy otwierają się od dołu
-        .tags-popup,
-        .tags-popup.tags-popup-max,
-        .info-popup,
-        .info-popup.info-popup-max,
-        .comm-popup,
-        .comm-popup.comm-popup-max {
-          top: auto !important;
-          bottom: 80px;
-          height: auto;
-          max-height: 60vh;
-        }
-      }
-    }
-
-    .maximize-btn {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      z-index: 10;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      border: none;
-      border-radius: 6px;
-      background: #35354b;
-      color: #ff5ca8;
-      cursor: pointer;
-      opacity: 0;
-      transition:
-        opacity 0.2s ease,
-        background 0.2s ease;
-
-      @media (max-width: 768px) {
-        display: none !important; // Ukryj całkowicie na mobile
-      }
-
-      &:hover {
-        transform: scale(1.05);
-      }
-
-      &.maximized-btn {
-        top: 12px;
-        left: 12px;
-        width: 50px;
-        height: 50px;
-        opacity: 1;
-
-        @media (max-width: 768px) {
-          display: flex !important; // Pokaż tylko w trybie maximized
-        }
-
-        &:hover {
-          background: #e0094a;
-          color: #fff;
-        }
-      }
-    }
-
-    &.maximized {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1500;
-      background: rgba(0, 0, 0, 0.9);
-      padding: 20px;
-
-      .post-item {
-        width: auto;
-        height: 100%;
-        max-width: 95vw;
-        max-height: 95vh;
-        object-fit: contain;
-        border-radius: 0;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-        display: block;
-
-        @media (max-width: 768px) {
-          width: 100%;
-          height: auto;
-          max-height: 80vh;
-        }
-      }
-
-      .post-item-max {
-        z-index: 8;
-      }
-    }
-
-    .tags-btn {
-      position: absolute;
-      top: 6px;
-      left: 48px;
-      z-index: 10;
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 6px;
-      background: #35354b;
-      color: #ff5ca8;
-      cursor: pointer;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      padding: 0;
-
-      @media (max-width: 768px) {
-        display: none !important; // Ukryj na mobile
-      }
-
-      &:hover {
-        transform: scale(1.05);
-      }
-
-      &.active {
-        opacity: 1;
-        background: #ff5ca8;
-        color: white;
-      }
-
-      &.tags-btn-max {
-        width: 50px;
-        height: 50px;
-        top: 12px;
-        left: 74px;
-        opacity: 1;
-
-        @media (max-width: 768px) {
-          display: flex !important; // Pokaż w trybie maximized
-        }
-      }
-    }
-
-    .info-btn {
-      position: absolute;
-      top: 6px;
-      left: 90px;
-      z-index: 10;
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 6px;
-      background: #35354b;
-      color: #5ca8ff;
-      cursor: pointer;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      padding: 0;
-
-      @media (max-width: 768px) {
-        display: none !important; // Ukryj na mobile
-      }
-
-      &:hover {
-        transform: scale(1.05);
-      }
-
-      &.active {
-        opacity: 1;
-        background: #5ca8ff;
-        color: white;
-      }
-
-      &.info-btn-max {
-        width: 50px;
-        height: 50px;
-        top: 12px;
-        left: 136px;
-        opacity: 1;
-
-        @media (max-width: 768px) {
-          display: flex !important; // Pokaż w trybie maximized
-        }
-      }
-    }
-
-    .fav-post-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 6px;
-      left: 176px;
-      z-index: 10;
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 6px;
-      background: #35354b;
-      color: #ff5ca8;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      padding: 0;
-
-      @media (max-width: 768px) {
-        display: none !important; // Ukryj na mobile
-      }
-
-      &:hover {
-        transform: scale(1.05);
-
-        &:disabled {
-          cursor: not-allowed;
-          transform: none;
-        }
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        background: #1b1b24;
-        color: #6f2e4f;
-      }
-
-      &.is-favorite {
-        background: #ff5ca8;
-        color: white;
-      }
-
-      &.fav-post-btn-max {
-        width: 50px;
-        height: 50px;
-        top: 12px;
-        left: 260px;
-        opacity: 1;
-
-        @media (max-width: 768px) {
-          display: flex !important; // Pokaż w trybie maximized
-        }
-      }
-    }
-
-    .comm-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 6px;
-      left: 132px;
-      z-index: 10;
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 6px;
-      background: #35354b;
-      color: #5ca8ff;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      padding: 0;
-
-      @media (max-width: 768px) {
-        display: none !important;
-      }
-
-      &:hover {
-        transform: scale(1.05);
-      }
-
-      &.active {
-        opacity: 1;
-        background: #5ca8ff;
-        color: #fff;
-      }
-
-      &.comm-btn-max {
-        width: 50px;
-        height: 50px;
-        top: 12px;
-        left: 198px;
-        opacity: 1;
-
-        @media (max-width: 768px) {
-          display: flex !important;
-        }
-      }
-    }
-
-    .comm-popup {
-      position: absolute;
-      top: 55px;
-      left: 12px;
-      max-height: fit-content;
-      height: calc(100% - 67px);
-      overflow-y: auto;
-      width: calc(100% - 24px);
-      background: #0f0f14;
-      color: #fff;
-      border-radius: 8px;
-      padding: 8px 12px;
-      z-index: 20;
-      scroll-behavior: smooth;
-      overscroll-behavior: contain;
-      display: flex;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
-      flex-direction: column;
-      gap: 6px;
-
-      &.comm-popup-max {
-        top: 80px;
-        left: 12px;
-        max-height: 300px;
-        max-width: 400px;
-      }
-
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background-color: #5ca8ff;
-        border-radius: 3px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #35354b;
-        border-radius: 3px;
-      }
-
-      &.scrollbar-hidden {
-        scrollbar-width: none;
-        &::-webkit-scrollbar {
+        // Collapse double-newline visual height
+        line-height: 1.4;
+        &:empty {
           display: none;
         }
       }
 
-      .comm-loading,
-      .comm-empty {
-        color: #888;
-        font-size: 0.9rem;
-        padding: 12px 0;
-        text-align: center;
-      }
-
-      .comm-item {
-        border-bottom: 1px solid #2e2e3e;
-        padding-bottom: 8px;
-
-        &:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-      }
-
-      .comm-item-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 4px;
-        gap: 8px;
-      }
-
-      .comm-author {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #5ca8ff;
+      .comm-tag-link {
+        color: #b0a0ff;
         text-decoration: none;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
         &:hover {
           text-decoration: underline;
           color: #ff5ca8;
         }
       }
 
-      .comm-score {
-        font-size: 0.75rem;
-        font-weight: 700;
-        white-space: nowrap;
-        color: #888;
-
-        &.pos {
-          color: #6ddc8b;
-        }
-        &.neg {
-          color: #ff6b6b;
-        }
-      }
-
-      .comm-body {
-        font-size: 0.82rem;
-        color: #ccc;
-        line-height: 1.4;
-        word-break: break-word;
-
-        .comm-text {
-          white-space: pre-wrap;
-          display: block;
-          // Collapse double-newline visual height
-          line-height: 1.4;
-          &:empty {
-            display: none;
-          }
-        }
-
-        .comm-tag-link {
-          color: #b0a0ff;
-          text-decoration: none;
-          &:hover {
-            text-decoration: underline;
-            color: #ff5ca8;
-          }
-        }
-
-        .comm-quote {
-          border-left: 3px solid #5ca8ff;
-          margin: 3px 0;
-          padding: 2px 8px;
-          background: rgba(92, 168, 255, 0.06);
-          border-radius: 0 4px 4px 0;
-          display: flex;
-          flex-direction: column;
-          gap: 1px;
-
-          .comm-quote-author {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #5ca8ff;
-            opacity: 0.8;
-            line-height: 1.2;
-          }
-
-          .comm-quote-body {
-            color: #9ab8d4;
-            font-style: italic;
-            font-size: 0.8rem;
-            white-space: pre-wrap;
-            word-break: break-word;
-            line-height: 1.35;
-          }
-        }
-      }
-
-      .comm-item-highlight {
-        animation: comm-highlight 1.2s ease;
-      }
-
-      @keyframes comm-highlight {
-        0% {
-          background: rgba(92, 168, 255, 0.18);
-        }
-        100% {
-          background: transparent;
-        }
-      }
-    }
-
-    .tags-popup {
-      position: absolute;
-      top: 55px;
-      left: 12px;
-      max-height: fit-content;
-      height: calc(100% - 67px);
-      overflow-y: auto;
-      width: calc(100% - 24px);
-      background: #0f0f14;
-      color: #fff;
-      border-radius: 8px;
-      padding: 8px 12px;
-      z-index: 20;
-      scroll-behavior: smooth;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
-      overscroll-behavior: contain;
-
-      &.tags-popup-max {
-        top: 80px;
-        left: 12px;
-        max-height: 300px;
-        max-width: 400px;
-      }
-
-      // Custom scrollbar for better UX
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background-color: #ff5ca8;
-        border-radius: 3px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #35354b;
-        border-radius: 3px;
-      }
-
-      &.scrollbar-hidden {
-        scrollbar-width: none;
-        &::-webkit-scrollbar {
-          display: none;
-        }
-      }
-    }
-
-    .info-popup {
-      position: absolute;
-      top: 55px;
-      left: 12px;
-      max-height: fit-content;
-      height: calc(100% - 67px);
-      overflow-y: auto;
-      width: calc(100% - 24px);
-      background: #0f0f14;
-      color: #fff;
-      border-radius: 8px;
-      padding: 0 12px;
-      z-index: 20;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
-      scroll-behavior: smooth;
-      overscroll-behavior: contain;
-
-      &.info-popup-max {
-        top: 80px;
-        left: 12px;
-        max-height: 300px;
-        max-width: 400px;
-      }
-
-      // Custom scrollbar for better UX
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background-color: #5ca8ff;
-        border-radius: 3px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #35354b;
-        border-radius: 3px;
-      }
-
-      &.scrollbar-hidden {
-        scrollbar-width: none;
-        &::-webkit-scrollbar {
-          display: none;
-        }
-      }
-
-      .info-row {
+      .comm-quote {
+        border-left: 3px solid #5ca8ff;
+        margin: 3px 0;
+        padding: 2px 8px;
+        background: rgba(92, 168, 255, 0.06);
+        border-radius: 0 4px 4px 0;
         display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #35354b;
+        flex-direction: column;
+        gap: 1px;
 
-        &:last-child {
-          border-bottom: none;
-        }
-
-        .info-label {
-          font-weight: 600;
+        .comm-quote-author {
+          font-size: 0.75rem;
+          font-weight: 700;
           color: #5ca8ff;
-          min-width: 70px;
+          opacity: 0.8;
+          line-height: 1.2;
         }
 
-        .info-value {
-          text-align: right;
-          color: #eaeaea;
-          word-break: break-all;
-          max-width: 250px;
-        }
-
-        .info-link {
-          color: #5ca8ff;
-          text-decoration: none;
-          transition: color 0.2s ease;
-
-          &:hover {
-            color: #ff5ca8;
-            text-decoration: underline;
-          }
-        }
-
-        // Multi-link values (children, pools)
-        .info-children,
-        .info-pools {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 3px;
-        }
-
-        .info-pool-link {
-          font-size: 0.85em;
-          max-width: 200px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          display: block;
-        }
-
-        .info-more {
-          font-size: 0.8em;
-          color: #888;
-        }
-
-        .info-loading-text {
-          color: #888;
+        .comm-quote-body {
+          color: #9ab8d4;
           font-style: italic;
-          font-size: 0.9em;
+          font-size: 0.8rem;
+          white-space: pre-wrap;
+          word-break: break-word;
+          line-height: 1.35;
         }
       }
     }
 
-    .tag-item {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 6px;
-      margin-bottom: 4px;
+    .comm-item-highlight {
+      animation: comm-highlight 1.2s ease;
+    }
 
-      .tag-name {
-        cursor: pointer;
-        color: #00bfff;
-        font-weight: 500;
+    @keyframes comm-highlight {
+      0% {
+        background: rgba(92, 168, 255, 0.18);
+      }
+      100% {
+        background: transparent;
+      }
+    }
+  }
+
+  .tags-popup {
+    position: absolute;
+    top: 55px;
+    left: 12px;
+    max-height: fit-content;
+    height: calc(100% - 67px);
+    overflow-y: auto;
+    width: calc(100% - 24px);
+    background: #0f0f14;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    z-index: 20;
+    scroll-behavior: smooth;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    overscroll-behavior: contain;
+
+    &.tags-popup-max {
+      top: 80px;
+      left: 12px;
+      max-height: 300px;
+      max-width: 400px;
+    }
+
+    // Custom scrollbar for better UX
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #ff5ca8;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #35354b;
+      border-radius: 3px;
+    }
+
+    &.scrollbar-hidden {
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  }
+
+  .info-popup {
+    position: absolute;
+    top: 55px;
+    left: 12px;
+    max-height: fit-content;
+    height: calc(100% - 67px);
+    overflow-y: auto;
+    width: calc(100% - 24px);
+    background: #0f0f14;
+    color: #fff;
+    border-radius: 8px;
+    padding: 0 12px;
+    z-index: 20;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+
+    &.info-popup-max {
+      top: 80px;
+      left: 12px;
+      max-height: 300px;
+      max-width: 400px;
+    }
+
+    // Custom scrollbar for better UX
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #5ca8ff;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #35354b;
+      border-radius: 3px;
+    }
+
+    &.scrollbar-hidden {
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #35354b;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .info-label {
+        font-weight: 600;
+        color: #5ca8ff;
+        min-width: 70px;
+      }
+
+      .info-value {
+        text-align: right;
+        color: #eaeaea;
+        word-break: break-all;
+        max-width: 250px;
+      }
+
+      .info-link {
+        color: #5ca8ff;
+        text-decoration: none;
+        transition: color 0.2s ease;
 
         &:hover {
+          color: #ff5ca8;
           text-decoration: underline;
         }
       }
 
-      .tag-add,
-      .tag-remove,
-      .tag-observe {
-        order: -1;
-        border: none;
-        background: #35354b;
-        color: white;
-        cursor: pointer;
-        border-radius: 4px;
-        width: 20px;
-        height: 20px;
+      // Multi-link values (children, pools)
+      .info-children,
+      .info-pools {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-
-        &:hover {
-          transform: scale(1.1);
-        }
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 3px;
       }
 
-      .active {
-        background-color: #ff5ca8;
+      .info-pool-link {
+        font-size: 0.85em;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
+      }
 
-        &:hover {
-          background-color: #ff298d;
-        }
+      .info-more {
+        font-size: 0.8em;
+        color: #888;
+      }
+
+      .info-loading-text {
+        color: #888;
+        font-style: italic;
+        font-size: 0.9em;
+      }
+    }
+  }
+
+  .tag-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    margin-bottom: 4px;
+
+    .tag-name {
+      cursor: pointer;
+      color: #00bfff;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
       }
     }
 
-    &:hover .tags-btn {
-      opacity: 1;
+    .tag-add,
+    .tag-remove,
+    .tag-observe {
+      order: -1;
+      border: none;
+      background: #35354b;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+
+      &:hover {
+        transform: scale(1.1);
+      }
     }
 
-    &:hover .info-btn {
-      opacity: 1;
-    }
+    .active {
+      background-color: #ff5ca8;
 
-    &:hover .maximize-btn {
-      opacity: 1;
+      &:hover {
+        background-color: #ff298d;
+      }
     }
+  }
 
-    &:hover .comm-btn {
-      opacity: 1;
-    }
+  &:hover .tags-btn {
+    opacity: 1;
+  }
 
-    &:hover .fav-post-btn {
-      opacity: 1;
-    }
+  &:hover .info-btn {
+    opacity: 1;
+  }
 
-    // FIX: Gdy popup otwarty - pokaż WSZYSTKIE przyciski dla tego posta
-    &.popup-active .tags-btn,
-    &.popup-active .info-btn,
-    &.popup-active .maximize-btn,
-    &.popup-active .comm-btn,
-    &.popup-active .fav-post-btn {
-      opacity: 1;
-      transition: opacity 1s ease;
-    }
+  &:hover .maximize-btn {
+    opacity: 1;
+  }
 
-    // FIX: Fade przycisków w maximized mode po 1s
-    &.buttons-faded .maximize-btn,
-    &.buttons-faded .tags-btn,
-    &.buttons-faded .info-btn,
-    &.buttons-faded .comm-btn,
-    &.buttons-faded .fav-post-btn {
-      opacity: 0.3 !important;
-      transition: opacity 1s ease;
-    }
-    // Ale jeśli popup jest aktywny to nie faduj
-    &.buttons-faded.popup-active .tags-btn,
-    &.buttons-faded.popup-active .info-btn,
-    &.buttons-faded.popup-active .maximize-btn,
-    &.buttons-faded.popup-active .comm-btn,
-    &.buttons-faded.popup-active .fav-post-btn {
-      opacity: 1 !important;
-    }
+  &:hover .comm-btn {
+    opacity: 1;
+  }
+
+  &:hover .fav-post-btn {
+    opacity: 1;
+  }
+
+  // FIX: Gdy popup otwarty - pokaż WSZYSTKIE przyciski dla tego posta
+  &.popup-active .tags-btn,
+  &.popup-active .info-btn,
+  &.popup-active .maximize-btn,
+  &.popup-active .comm-btn,
+  &.popup-active .fav-post-btn {
+    opacity: 1;
+    transition: opacity 1s ease;
+  }
+
+  // FIX: Fade przycisków w maximized mode po 1s
+  &.buttons-faded .maximize-btn,
+  &.buttons-faded .tags-btn,
+  &.buttons-faded .info-btn,
+  &.buttons-faded .comm-btn,
+  &.buttons-faded .fav-post-btn {
+    opacity: 0.3 !important;
+    transition: opacity 1s ease;
+  }
+  // Ale jeśli popup jest aktywny to nie faduj
+  &.buttons-faded.popup-active .tags-btn,
+  &.buttons-faded.popup-active .info-btn,
+  &.buttons-faded.popup-active .maximize-btn,
+  &.buttons-faded.popup-active .comm-btn,
+  &.buttons-faded.popup-active .fav-post-btn {
+    opacity: 1 !important;
   }
 }
 

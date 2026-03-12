@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './styles/App.scss';
 import SearchBar from './components/SearchBar';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -1728,9 +1729,8 @@ function App() {
           const videoUrl = videoResolution === 'best' ? post.file.url : post.sample.url;
           const shouldUseFull = isMaximized || (gifsAutoplay && isGif);
 
-          return (
+          const el = (
             <div
-              key={post.id}
               id={`post-${post.id}`}
               className={[
                 'post-wrapper',
@@ -2646,6 +2646,11 @@ function App() {
                 />
               )}
             </div>
+          );
+          return isMaximized ? (
+            createPortal(el, document.body)
+          ) : (
+            <React.Fragment key={post.id}>{el}</React.Fragment>
           );
         })}
 
