@@ -355,13 +355,13 @@ export default function SettingsModal({
                       className={`right-settings-btn button ${provider === 'e621' ? 'active' : ''}`}
                       onClick={() => setProvider('e621')}
                     >
-                      e621
+                      e621 (NSFW)
                     </button>
                     <button
                       className={`left-settings-btn button ${provider === 'e926' ? 'active' : ''}`}
                       onClick={() => setProvider('e926')}
                     >
-                      e926
+                      e926 (SFW)
                     </button>
                   </div>
                 ) : (
