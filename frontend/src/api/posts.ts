@@ -169,10 +169,10 @@ export const fetchPopularPosts = async (
 export const fetchUserNames = async (ids: number[]): Promise<Record<number, string>> => {
   const filtered = ids.filter(Boolean);
   if (!filtered.length) return {};
-  const { data } = await axios.get<{ users: Record<string, string> }>(
-    `${BASE_URL}/api/e621/users`,
-    { params: { ids: filtered.join(',') } },
-  );
+  const endpoint = IS_PROD ? `${BASE_URL}/api/users` : `${BASE_URL}/api/e621/users`;
+  const { data } = await axios.get<{ users: Record<string, string> }>(endpoint, {
+    params: { ids: filtered.join(',') },
+  });
   // Konwertuj klucze z string na number
   const result: Record<number, string> = {};
   for (const [k, v] of Object.entries(data.users || {})) {

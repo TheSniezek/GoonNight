@@ -84,6 +84,8 @@ const NewsModal = ({
   const [localFavoriteOverrides, setLocalFavoriteOverrides] = useState<Map<number, boolean>>(
     new Map(),
   );
+  // Niezależny pending state dla przycisków fav - nie blokuje reszty UI
+  const [pendingFavIds, setPendingFavIds] = useState<Set<number>>(new Set());
 
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(NEWS_WIDTH_KEY);
@@ -119,6 +121,8 @@ const NewsModal = ({
   const savedScrollRef = useRef<number>(0);
 
   const handleToggleFavorite = async (postId: number, currentIsFavorited: boolean) => {
+    if (pendingFavIds.has(postId)) return;
+    setPendingFavIds((prev) => new Set(prev).add(postId));
     // Optimistycznie zapisz override lokalnie (persystuje przez re-fetch)
     const newValue = !currentIsFavorited;
     setLocalFavoriteOverrides((prev) => {
@@ -133,6 +137,12 @@ const NewsModal = ({
       setLocalFavoriteOverrides((prev) => {
         const next = new Map(prev);
         next.set(postId, currentIsFavorited);
+        return next;
+      });
+    } finally {
+      setPendingFavIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
         return next;
       });
     }
@@ -937,13 +947,13 @@ const NewsModal = ({
 
                         {!isMobile && (
                           <button
-                            className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''}`}
+                            className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''} ${pendingFavIds.has(post.id) ? 'fav-pending' : ''}`}
                             onClick={async (e) => {
                               e.stopPropagation();
                               await handleToggleFavorite(post.id, post.is_favorited || false);
                             }}
                             title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                            disabled={!isLoggedIn || isBlocked}
+                            disabled={!isLoggedIn || isBlocked || pendingFavIds.has(post.id)}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1553,7 +1563,7 @@ const NewsModal = ({
                 <button
                   className={`news-fav-btn news-fav-btn-max ${
                     currentMaximizedPost.is_favorited ? 'is-favorite' : ''
-                  }`}
+                  } ${pendingFavIds.has(currentMaximizedPost.id) ? 'fav-pending' : ''}`}
                   onClick={async (e) => {
                     e.stopPropagation();
                     await handleToggleFavorite(
@@ -1562,7 +1572,7 @@ const NewsModal = ({
                     );
                   }}
                   title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                  disabled={!isLoggedIn || isBlocked}
+                  disabled={!isLoggedIn || isBlocked || pendingFavIds.has(currentMaximizedPost.id)}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
