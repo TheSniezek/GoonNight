@@ -78,9 +78,10 @@ export const fetchPosts = async (
   auth?: { username: string; apiKey: string },
   provider = 'e621',
 ): Promise<Post[]> => {
-  const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, {
-    params: { tags, page, username: auth?.username, apiKey: auth?.apiKey, provider },
-  });
+  const params: Record<string, unknown> = { tags, page, provider };
+  if (auth?.username) params.username = auth.username;
+  if (auth?.apiKey) params.apiKey = auth.apiKey;
+  const { data } = await axios.get<{ posts: E621Post[] }>(E621_API, { params });
   return data.posts.map(mapE621Post);
 };
 
@@ -219,4 +220,17 @@ export const fetchPostMeta = async (
 }> => {
   const { data } = await axios.get(`${BASE_URL}/api/e621/post-meta/${postId}`);
   return data;
+};
+
+export const fetchUserProfile = async (
+  username: string,
+  provider = 'e621',
+): Promise<{ favorite_count: number; post_upload_count: number; name: string }> => {
+  const endpoint = IS_PROD ? `${BASE_URL}/api/users` : `${BASE_URL}/api/e621/userprofile`;
+  const { data } = await axios.get(endpoint, { params: { username, provider } });
+  return {
+    favorite_count: data.favorite_count ?? 0,
+    post_upload_count: data.post_upload_count ?? 0,
+    name: data.name || username,
+  };
 };

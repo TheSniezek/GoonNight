@@ -19,11 +19,13 @@ export default function LoginModal({
   setE621ApiKey,
 }: LoginModalProps) {
   const handleSave = () => {
-    setE621User(localUser);
-    setE621ApiKey(localKey);
+    const trimmedUser = localUser.trim();
+    const trimmedKey = localKey.trim();
+    setE621User(trimmedUser);
+    setE621ApiKey(trimmedKey);
 
-    localStorage.setItem('e621User', localUser);
-    localStorage.setItem('e621ApiKey', localKey);
+    localStorage.setItem('e621User', trimmedUser);
+    localStorage.setItem('e621ApiKey', trimmedKey);
 
     onClose(); // 🔥 TYLKO TO
   };
@@ -54,6 +56,6 @@ export default function LoginModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

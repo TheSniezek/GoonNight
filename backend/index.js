@@ -215,8 +215,19 @@ app.get('/api/e621', async (req, res) => {
     const limit = Math.min(Number(req.query.limit ?? 50), 320);
 
     // ✅ PRIORYTET: Credentials z requesta > .env (LoginModal!)
-    const username = req.query.username || E621_USER;
-    const apiKey = req.query.apiKey || E621_API_KEY;
+    // e926 jest publiczne - nie wymaga auth
+    const username = (
+      provider === 'e926' ? req.query.username || E621_USER || '' : req.query.username || E621_USER
+    )
+      .toString()
+      .trim();
+    const apiKey = (
+      provider === 'e926'
+        ? req.query.apiKey || E621_API_KEY || ''
+        : req.query.apiKey || E621_API_KEY
+    )
+      .toString()
+      .trim();
 
     const cacheKey = `posts:${host}:${tags}:${page}:${limit}:${username || 'anon'}`;
     const cached = cache.get(cacheKey, 60000);
@@ -275,7 +286,9 @@ app.get('/api/e621/favorites', async (req, res) => {
   try {
     const host = getHost(req);
     const provider = getProvider(req);
-    const { username, apiKey, page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 50 } = req.query;
+    const username = String(req.query.username || '').trim();
+    const apiKey = String(req.query.apiKey || '').trim();
 
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', posts: [] });
@@ -327,7 +340,8 @@ app.get('/api/e621/favorites', async (req, res) => {
 app.get('/api/e621/favorites/ids', async (req, res) => {
   try {
     const host = getHost(req);
-    const { username, apiKey } = req.query;
+    const username = String(req.query.username || '').trim();
+    const apiKey = String(req.query.apiKey || '').trim();
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', ids: [] });
     }
@@ -560,7 +574,8 @@ app.get('/api/e621/blacklist', async (req, res) => {
   try {
     const host = getHost(req);
     console.log('📥 [Blacklist] Query params:', JSON.stringify(req.query));
-    const { username, apiKey } = req.query;
+    const username = String(req.query.username || '').trim();
+    const apiKey = String(req.query.apiKey || '').trim();
 
     if (!username || !apiKey) {
       return res.status(400).json({ error: 'Missing credentials', blacklist: '' });
@@ -660,8 +675,8 @@ app.get('/api/e621/popular', async (req, res) => {
     }
 
     // ✅ PRIORYTET: Credentials z requesta > .env
-    const username = req.query.username || E621_USER;
-    const apiKey = req.query.apiKey || E621_API_KEY;
+    const username = String(req.query.username || E621_USER || '').trim();
+    const apiKey = String(req.query.apiKey || E621_API_KEY || '').trim();
 
     // ⚡ WYŁĄCZONY CACHE dla popular - is_favorited musi być zawsze aktualne
     // const cacheKey = `popular:${date}:${scale}:${username || 'anon'}`;
@@ -825,6 +840,40 @@ app.get('/api/e621/post-meta/:postId', async (req, res) => {
   }
 });
 
+// ==================== USER PROFILE ====================
+app.get('/api/e621/userprofile', async (req, res) => {
+  try {
+    const host = getHost(req);
+    const username = String(req.query.username || '').trim();
+    if (!username) return res.status(400).json({ error: 'Missing username' });
+
+    const cacheKey = `userprofile:${host}:${username.toLowerCase()}`;
+    const cached = cache.get(cacheKey, 300000); // 5min
+    if (cached) return res.json({ ...cached, fromCache: true });
+
+    console.log('\xf0\x9f\x91\xa4 [UserProfile] Fetching:', username);
+    const r = await e621Limiter.execute(() =>
+      retryWithBackoff(() =>
+        axios.get(`${host}/users/${encodeURIComponent(username)}.json`, {
+          headers: { 'User-Agent': USER_AGENT },
+          timeout: 8000,
+        }),
+      ),
+    );
+
+    const payload = {
+      favorite_count: r.data.favorite_count ?? 0,
+      post_upload_count: r.data.post_upload_count ?? 0,
+      name: r.data.name || username,
+    };
+    cache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    console.error('\xe2\x9d\x8c [UserProfile]', err.message);
+    res.status(err.response?.status || 500).json({ favorite_count: 0, post_upload_count: 0 });
+  }
+});
+
 // ==================== COMMENTS ====================
 app.get('/api/e621/comments/:postId', async (req, res) => {
   try {
@@ -832,7 +881,8 @@ app.get('/api/e621/comments/:postId', async (req, res) => {
     const postId = Number(req.params.postId);
     if (!postId) return res.status(400).json({ error: 'Invalid post ID' });
 
-    const { username, apiKey } = req.query;
+    const username = String(req.query.username || '').trim();
+    const apiKey = String(req.query.apiKey || '').trim();
     const cacheKey = `comments:${postId}`;
 
     const cached = cache.get(cacheKey, 300000); // cache 5min

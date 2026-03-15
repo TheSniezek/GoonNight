@@ -114,12 +114,11 @@ button {
     .top-bar {
       display: flex;
       align-items: flex-start;
-      gap: 40px;
+      gap: 20px;
 
       .hidden-fav-count-container {
         display: flex;
         justify-content: center;
-        align-items: center;
 
         .hidden-fav-count-icon {
           display: flex;
@@ -127,16 +126,20 @@ button {
           align-items: center;
           background-color: #35354b;
           color: #ff5ca8;
-          padding: 6px;
+          padding: 0;
           border-radius: 6px 0 0 6px;
+          width: 60px;
+          height: 60px;
         }
 
         .hidden-fav-count-textbox {
           display: flex;
-          flex-direction: column;
+          justify-content: center;
+          align-items: center;
           background-color: #1b1b24;
-          padding: 6px;
+          padding: 0 20px;
           border-radius: 0 6px 6px 0;
+          font-size: 1.5rem;
 
           .hidden-fav-count {
             display: flex;

@@ -13,6 +13,7 @@ import {
   fetchUserNames,
   fetchPostMeta,
   fetchPostComments,
+  fetchUserProfile,
 } from './api/posts';
 import type { PostComment } from './api/posts';
 import { useSettings, type Provider } from './logic/useSettings';
@@ -112,6 +113,11 @@ function App() {
   } = useSettings();
 
   const { observedTags, toggleTag } = useObservedTags();
+
+  // Przy starcie: jeśli brak credentiali a provider to e621 → przełącz na e926
+  useEffect(() => {
+    if (!e621User && provider === 'e621') setProvider('e926');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     blacklistLines,
@@ -444,6 +450,7 @@ function App() {
 
   // 🌟 Popular mode state
   const [isPopularMode, setIsPopularMode] = useState(() => initialRoute.type === 'popular');
+  const [favTotalCount, setFavTotalCount] = useState<number | null>(null);
   const [popularDate, setPopularDate] = useState(() => {
     if (initialRoute.type === 'popular') return initialRoute.date;
     const today = new Date();
@@ -713,6 +720,7 @@ function App() {
         setHasNextApiPage(false); // Popular nie ma paginacji
         setTags(`popular:${scale}:${date}`);
         setIsViewingRealFavorites(false);
+        setFavTotalCount(null);
 
         console.log('⭐ [handlePopularSearch] State updated, posts should display');
       } catch (err) {
@@ -1024,7 +1032,11 @@ function App() {
 
       // ✅ USTAW FLAGĘ ŻE JESTEŚ W TRYBIE FAVORITES
       setIsViewingRealFavorites(true);
+      setFavTotalCount(null);
       setTags(`fav:${e621User}`);
+      fetchUserProfile(e621User, provider)
+        .then((profile) => setFavTotalCount(profile.favorite_count))
+        .catch(() => setFavTotalCount(null));
 
       const response = await fetch(
         `${BASE_URL}${FAVORITES_ENDPOINT}?username=${encodeURIComponent(e621User)}&apiKey=${encodeURIComponent(e621ApiKey)}&page=1&limit=50&provider=${provider}`,
@@ -1054,6 +1066,7 @@ function App() {
       alert('Failed to load favorites');
       // ✅ RESET FLAGI przy błędzie
       setIsViewingRealFavorites(false);
+      setFavTotalCount(null);
     } finally {
       setLoading(false);
     }
@@ -1645,6 +1658,21 @@ function App() {
             hidePopupScrollbar={hideSearchHistoryScrollbar}
             provider={provider}
           />
+
+          {isViewingRealFavorites && !isMobile && (
+            <div className="hidden-fav-count-container">
+              <div className="hidden-fav-count-icon">
+                <svg height="40" width="40" viewBox="0 0 512 512" fill="currentColor">
+                  <path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z" />
+                </svg>
+              </div>
+              <div className="hidden-fav-count-textbox">
+                <span className="hidden-fav-count">
+                  {favTotalCount !== null ? favTotalCount.toLocaleString() : '...'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {!infiniteScroll && !isPopularMode && (
             <PageButtonsTop
@@ -2740,7 +2768,11 @@ function App() {
             onLoginSuccess={() => {}}
             e621User={e621User}
             e621ApiKey={e621ApiKey}
-            setE621User={setE621User}
+            setE621User={(user) => {
+              setE621User(user);
+              // Gdy wylogowany na e621 → przełącz na e926
+              if (!user && provider === 'e621') setProvider('e926');
+            }}
             setE621ApiKey={setE621ApiKey}
           />
         )}
