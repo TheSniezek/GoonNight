@@ -116,7 +116,7 @@ function App() {
 
   // Przy starcie: jeśli brak credentiali a provider to e621 → przełącz na e926
   useEffect(() => {
-    if (!e621User && provider === 'e621') setProvider('e926');
+    if ((!e621User || !e621ApiKey) && provider === 'e621') setProvider('e926');
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
@@ -2770,10 +2770,14 @@ function App() {
             e621ApiKey={e621ApiKey}
             setE621User={(user) => {
               setE621User(user);
-              // Gdy wylogowany na e621 → przełącz na e926
-              if (!user && provider === 'e621') setProvider('e926');
+              // Gdy brak nicka lub apiKey na e621 → przełącz na e926
+              if ((!user || !e621ApiKey) && provider === 'e621') handleProviderChange('e926');
             }}
-            setE621ApiKey={setE621ApiKey}
+            setE621ApiKey={(key) => {
+              setE621ApiKey(key);
+              // Gdy brak nicka lub apiKey na e621 → przełącz na e926
+              if ((!e621User || !key) && provider === 'e621') handleProviderChange('e926');
+            }}
           />
         )}
 

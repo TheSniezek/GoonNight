@@ -692,7 +692,7 @@ const NewsModal = ({
 
           <button
             onClick={handleReload}
-            className={`news-reload-btn ${isReloading ? 'spinning' : ''}`}
+            className={`news-reload-btn ${isReloading || isFetching ? 'spinning' : ''}`}
             data-countdown={`${Math.floor(reloadCountdown / 60)}:${String(
               reloadCountdown % 60,
             ).padStart(2, '0')}`}
