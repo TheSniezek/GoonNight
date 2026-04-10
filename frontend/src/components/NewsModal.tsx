@@ -42,6 +42,11 @@ interface NewsModalProps {
   hideScrollbar?: boolean;
   provider?: string;
   commentSort?: 'score' | 'newest';
+  showBtnMaximize?: boolean;
+  showBtnTags?: boolean;
+  showBtnInfo?: boolean;
+  showBtnComments?: boolean;
+  showBtnFavorite?: boolean;
 }
 
 const NEWS_WIDTH_KEY = 'newsSidebarWidth';
@@ -78,6 +83,11 @@ const NewsModal = ({
   hideScrollbar = false,
   provider = 'e621',
   commentSort = 'newest',
+  showBtnMaximize = true,
+  showBtnTags = true,
+  showBtnInfo = true,
+  showBtnComments = true,
+  showBtnFavorite = true,
 }: NewsModalProps) => {
   // -------------------- STATE --------------------
   // Lokalne overrides dla is_favorited - persystują przez fetching nowych postów
@@ -692,7 +702,7 @@ const NewsModal = ({
 
           <button
             onClick={handleReload}
-            className={`news-reload-btn ${isReloading || isFetching ? 'spinning' : ''}`}
+            className={`news-reload-btn ${isReloading ? 'spinning' : ''}`}
             data-countdown={`${Math.floor(reloadCountdown / 60)}:${String(
               reloadCountdown % 60,
             ).padStart(2, '0')}`}
@@ -818,157 +828,157 @@ const NewsModal = ({
                           .join(' ')}
                       >
                         {!isMobile && (
-                          <button
-                            className="news-maximize-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMaximizedPost(post);
-                            }}
-                            disabled={isBlocked}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M9 9L3.29 3.29M15 9l5.71-5.71M9 15L3.29 20.71m17.42 0L15 15" />
-                              <path d="M3 8V4a1 1 0 0 1 1-1h4" />
-                              <path d="M16 3h4a1 1 0 0 1 1 1v4" />
-                              <path d="M8 21H4a1 1 0 0 1-1-1v-4" />
-                              <path d="M21 16v4a1 1 0 0 1-1 1h-4" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {!isMobile && (
-                          <button
-                            className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (showTagsFor === post.id) {
-                                setShowTagsFor(null);
-                              } else {
-                                setShowTagsFor(post.id);
-                                setShowInfoFor(null);
-                                setShowCommFor(null);
-                              }
-                            }}
-                            disabled={isBlocked}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <line x1="8" y1="2" x2="8" y2="22" />
-                              <line x1="16" y1="2" x2="16" y2="22" />
-                              <line x1="2" y1="8" x2="22" y2="8" />
-                              <line x1="2" y1="16" x2="22" y2="16" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {!isMobile && (
-                          <button
-                            className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (showInfoFor === post.id) {
-                                setShowInfoFor(null);
-                              } else {
-                                setShowInfoFor(post.id);
-                                setShowTagsFor(null);
-                                setShowCommFor(null);
-                              }
-                            }}
-                            disabled={isBlocked}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="12" y1="16" x2="12" y2="12" />
-                              <line x1="12" y1="8" x2="12.01" y2="8" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {!isMobile && (
-                          <button
-                            className={`news-comm-btn ${showCommFor === post.id ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (showCommFor === post.id) {
-                                setShowCommFor(null);
-                              } else {
-                                setShowCommFor(post.id);
-                                setShowTagsFor(null);
-                                setShowInfoFor(null);
-                              }
-                            }}
-                            disabled={isBlocked}
-                            title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {!isMobile && (
-                          <button
-                            className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''} ${pendingFavIds.has(post.id) ? 'fav-pending' : ''}`}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              await handleToggleFavorite(post.id, post.is_favorited || false);
-                            }}
-                            title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                            disabled={!isLoggedIn || isBlocked || pendingFavIds.has(post.id)}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                            </svg>
-                          </button>
+                          <div className="news-post-btns">
+                            {showBtnMaximize && (
+                              <button
+                                className="news-maximize-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMaximizedPost(post);
+                                }}
+                                disabled={isBlocked}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M9 9L3.29 3.29M15 9l5.71-5.71M9 15L3.29 20.71m17.42 0L15 15" />
+                                  <path d="M3 8V4a1 1 0 0 1 1-1h4" />
+                                  <path d="M16 3h4a1 1 0 0 1 1 1v4" />
+                                  <path d="M8 21H4a1 1 0 0 1-1-1v-4" />
+                                  <path d="M21 16v4a1 1 0 0 1-1 1h-4" />
+                                </svg>
+                              </button>
+                            )}
+                            {showBtnTags && (
+                              <button
+                                className={`news-tags-btn ${showTagsFor === post.id ? 'active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (showTagsFor === post.id) {
+                                    setShowTagsFor(null);
+                                  } else {
+                                    setShowTagsFor(post.id);
+                                    setShowInfoFor(null);
+                                    setShowCommFor(null);
+                                  }
+                                }}
+                                disabled={isBlocked}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <line x1="8" y1="2" x2="8" y2="22" />
+                                  <line x1="16" y1="2" x2="16" y2="22" />
+                                  <line x1="2" y1="8" x2="22" y2="8" />
+                                  <line x1="2" y1="16" x2="22" y2="16" />
+                                </svg>
+                              </button>
+                            )}
+                            {showBtnInfo && (
+                              <button
+                                className={`news-info-btn ${showInfoFor === post.id ? 'active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (showInfoFor === post.id) {
+                                    setShowInfoFor(null);
+                                  } else {
+                                    setShowInfoFor(post.id);
+                                    setShowTagsFor(null);
+                                    setShowCommFor(null);
+                                  }
+                                }}
+                                disabled={isBlocked}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="12" y1="16" x2="12" y2="12" />
+                                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                              </button>
+                            )}
+                            {showBtnComments && (
+                              <button
+                                className={`news-comm-btn ${showCommFor === post.id ? 'active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (showCommFor === post.id) {
+                                    setShowCommFor(null);
+                                  } else {
+                                    setShowCommFor(post.id);
+                                    setShowTagsFor(null);
+                                    setShowInfoFor(null);
+                                  }
+                                }}
+                                disabled={isBlocked}
+                                title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                              </button>
+                            )}
+                            {showBtnFavorite && (
+                              <button
+                                className={`news-fav-btn ${post.is_favorited ? 'is-favorite' : ''} ${pendingFavIds.has(post.id) ? 'fav-pending' : ''}`}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await handleToggleFavorite(post.id, post.is_favorited || false);
+                                }}
+                                title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
+                                disabled={!isLoggedIn || isBlocked || pendingFavIds.has(post.id)}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         )}
                         {showTagsFor === post.id && !isMobile && (
                           <div
@@ -1430,7 +1440,7 @@ const NewsModal = ({
           return createPortal(
             <div className="news-maximized-overlay" onClick={() => closeMaximized()}>
               <div className="news-maximized-wrapper">
-                {/* Close/Minimize button */}
+                {/* Close/Minimize button — always visible */}
                 <button
                   className="news-maximize-btn news-maximized-btn"
                   onClick={(e) => {
@@ -1457,137 +1467,135 @@ const NewsModal = ({
                   </svg>
                 </button>
 
-                {/* Tags button */}
-                <button
-                  className={`news-tags-btn news-tags-btn-max ${
-                    showTagsFor === currentMaximizedPost.id ? 'active' : ''
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (showTagsFor === currentMaximizedPost.id) {
-                      setShowTagsFor(null);
-                    } else {
-                      setShowTagsFor(currentMaximizedPost.id);
-                      setShowInfoFor(null);
-                      setShowCommFor(null);
-                    }
-                  }}
-                  disabled={isBlocked}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="8" y1="2" x2="8" y2="22" />
-                    <line x1="16" y1="2" x2="16" y2="22" />
-                    <line x1="2" y1="8" x2="22" y2="8" />
-                    <line x1="2" y1="16" x2="22" y2="16" />
-                  </svg>
-                </button>
-
-                {/* Info button */}
-                <button
-                  className={`news-info-btn news-info-btn-max ${
-                    showInfoFor === currentMaximizedPost.id ? 'active' : ''
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (showInfoFor === currentMaximizedPost.id) {
-                      setShowInfoFor(null);
-                    } else {
-                      setShowInfoFor(currentMaximizedPost.id);
-                      setShowTagsFor(null);
-                      setShowCommFor(null);
-                    }
-                  }}
-                  disabled={isBlocked}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                </button>
-
-                {/* Comm button */}
-                <button
-                  className={`news-comm-btn news-comm-btn-max ${
-                    showCommFor === currentMaximizedPost.id ? 'active' : ''
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (showCommFor === currentMaximizedPost.id) {
-                      setShowCommFor(null);
-                    } else {
-                      setShowCommFor(currentMaximizedPost.id);
-                      setShowTagsFor(null);
-                      setShowInfoFor(null);
-                    }
-                  }}
-                  title={`${currentMaximizedPost.comment_count} comment${currentMaximizedPost.comment_count !== 1 ? 's' : ''}`}
-                  disabled={isBlocked}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </button>
-
-                {/* Favorite button */}
-                <button
-                  className={`news-fav-btn news-fav-btn-max ${
-                    currentMaximizedPost.is_favorited ? 'is-favorite' : ''
-                  } ${pendingFavIds.has(currentMaximizedPost.id) ? 'fav-pending' : ''}`}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await handleToggleFavorite(
-                      currentMaximizedPost.id,
-                      currentMaximizedPost.is_favorited || false,
-                    );
-                  }}
-                  title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                  disabled={!isLoggedIn || isBlocked || pendingFavIds.has(currentMaximizedPost.id)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                </button>
+                {/* Action buttons — flex container, filters by visibility settings */}
+                <div className="news-maximized-btns">
+                  {showBtnTags && (
+                    <button
+                      className={`news-tags-btn news-tags-btn-max ${showTagsFor === currentMaximizedPost.id ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (showTagsFor === currentMaximizedPost.id) {
+                          setShowTagsFor(null);
+                        } else {
+                          setShowTagsFor(currentMaximizedPost.id);
+                          setShowInfoFor(null);
+                          setShowCommFor(null);
+                        }
+                      }}
+                      disabled={isBlocked}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="8" y1="2" x2="8" y2="22" />
+                        <line x1="16" y1="2" x2="16" y2="22" />
+                        <line x1="2" y1="8" x2="22" y2="8" />
+                        <line x1="2" y1="16" x2="22" y2="16" />
+                      </svg>
+                    </button>
+                  )}
+                  {showBtnInfo && (
+                    <button
+                      className={`news-info-btn news-info-btn-max ${showInfoFor === currentMaximizedPost.id ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (showInfoFor === currentMaximizedPost.id) {
+                          setShowInfoFor(null);
+                        } else {
+                          setShowInfoFor(currentMaximizedPost.id);
+                          setShowTagsFor(null);
+                          setShowCommFor(null);
+                        }
+                      }}
+                      disabled={isBlocked}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    </button>
+                  )}
+                  {showBtnComments && (
+                    <button
+                      className={`news-comm-btn news-comm-btn-max ${showCommFor === currentMaximizedPost.id ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (showCommFor === currentMaximizedPost.id) {
+                          setShowCommFor(null);
+                        } else {
+                          setShowCommFor(currentMaximizedPost.id);
+                          setShowTagsFor(null);
+                          setShowInfoFor(null);
+                        }
+                      }}
+                      title={`${currentMaximizedPost.comment_count} comment${currentMaximizedPost.comment_count !== 1 ? 's' : ''}`}
+                      disabled={isBlocked}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </button>
+                  )}
+                  {showBtnFavorite && (
+                    <button
+                      className={`news-fav-btn news-fav-btn-max ${currentMaximizedPost.is_favorited ? 'is-favorite' : ''} ${pendingFavIds.has(currentMaximizedPost.id) ? 'fav-pending' : ''}`}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await handleToggleFavorite(
+                          currentMaximizedPost.id,
+                          currentMaximizedPost.is_favorited || false,
+                        );
+                      }}
+                      title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
+                      disabled={
+                        !isLoggedIn || isBlocked || pendingFavIds.has(currentMaximizedPost.id)
+                      }
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
 
                 {/* Tags popup */}
                 {showTagsFor === currentMaximizedPost.id && (

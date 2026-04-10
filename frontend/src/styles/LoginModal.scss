@@ -74,3 +74,119 @@
     }
   }
 }
+
+// Multi-account styles
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #1b1b24;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    background: #252535;
+    border-color: #3d3d5c;
+  }
+
+  &--active {
+    border-color: #6b6bff;
+    background: #1e1e30;
+    cursor: default;
+  }
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  &__name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__badge {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    background: #6b6bff33;
+    color: #9d9dff;
+    border-radius: 20px;
+    border: 1px solid #6b6bff55;
+    white-space: nowrap;
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition:
+      color 0.15s,
+      background 0.15s;
+
+    &:hover {
+      color: #ff6b6b;
+      background: #ff6b6b22;
+    }
+  }
+}
+
+.login-add-btn {
+  background: transparent;
+  border: 1px dashed #3d3d5c;
+  color: #9d9dff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  width: 100%;
+
+  &:hover {
+    background: #1e1e30;
+    border-color: #6b6bff;
+  }
+}
+
+.login-overlay--inner {
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 12;
+}
+
+.login-modal--confirm {
+  width: 300px;
+  padding: 20px;
+
+  p {
+    text-align: center;
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+    color: #ccc;
+
+    strong {
+      color: white;
+    }
+  }
+}

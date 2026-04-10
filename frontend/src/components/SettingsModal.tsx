@@ -77,6 +77,28 @@ interface SettingsModalProps {
   setSearchHistorySize: (v: 0 | 5 | 10) => void;
   hideSearchHistoryScrollbar: boolean;
   setHideSearchHistoryScrollbar: (v: boolean) => void;
+  // Post buttons visibility
+  showBtnMaximize: boolean;
+  setShowBtnMaximize: (v: boolean) => void;
+  showBtnTags: boolean;
+  setShowBtnTags: (v: boolean) => void;
+  showBtnInfo: boolean;
+  setShowBtnInfo: (v: boolean) => void;
+  showBtnComments: boolean;
+  setShowBtnComments: (v: boolean) => void;
+  showBtnFavorite: boolean;
+  setShowBtnFavorite: (v: boolean) => void;
+  // News buttons visibility
+  showNewsBtnMaximize: boolean;
+  setShowNewsBtnMaximize: (v: boolean) => void;
+  showNewsBtnTags: boolean;
+  setShowNewsBtnTags: (v: boolean) => void;
+  showNewsBtnInfo: boolean;
+  setShowNewsBtnInfo: (v: boolean) => void;
+  showNewsBtnComments: boolean;
+  setShowNewsBtnComments: (v: boolean) => void;
+  showNewsBtnFavorite: boolean;
+  setShowNewsBtnFavorite: (v: boolean) => void;
   isMobile: boolean;
   sexSearch: {
     female: boolean;
@@ -157,6 +179,26 @@ export default function SettingsModal({
   setSearchHistorySize,
   hideSearchHistoryScrollbar,
   setHideSearchHistoryScrollbar,
+  showBtnMaximize,
+  setShowBtnMaximize,
+  showBtnTags,
+  setShowBtnTags,
+  showBtnInfo,
+  setShowBtnInfo,
+  showBtnComments,
+  setShowBtnComments,
+  showBtnFavorite,
+  setShowBtnFavorite,
+  showNewsBtnMaximize,
+  setShowNewsBtnMaximize,
+  showNewsBtnTags,
+  setShowNewsBtnTags,
+  showNewsBtnInfo,
+  setShowNewsBtnInfo,
+  showNewsBtnComments,
+  setShowNewsBtnComments,
+  showNewsBtnFavorite,
+  setShowNewsBtnFavorite,
   isMobile,
   sexSearch,
   setSexSearch,
@@ -250,6 +292,24 @@ export default function SettingsModal({
           setShowFavIndicatorsNews(data.settings.showFavIndicatorsNews);
         if (data.settings.favIndicatorOpacity !== undefined)
           setFavIndicatorOpacity(data.settings.favIndicatorOpacity);
+        if (data.settings.showBtnMaximize !== undefined)
+          setShowBtnMaximize(data.settings.showBtnMaximize);
+        if (data.settings.showBtnTags !== undefined) setShowBtnTags(data.settings.showBtnTags);
+        if (data.settings.showBtnInfo !== undefined) setShowBtnInfo(data.settings.showBtnInfo);
+        if (data.settings.showBtnComments !== undefined)
+          setShowBtnComments(data.settings.showBtnComments);
+        if (data.settings.showBtnFavorite !== undefined)
+          setShowBtnFavorite(data.settings.showBtnFavorite);
+        if (data.settings.showNewsBtnMaximize !== undefined)
+          setShowNewsBtnMaximize(data.settings.showNewsBtnMaximize);
+        if (data.settings.showNewsBtnTags !== undefined)
+          setShowNewsBtnTags(data.settings.showNewsBtnTags);
+        if (data.settings.showNewsBtnInfo !== undefined)
+          setShowNewsBtnInfo(data.settings.showNewsBtnInfo);
+        if (data.settings.showNewsBtnComments !== undefined)
+          setShowNewsBtnComments(data.settings.showNewsBtnComments);
+        if (data.settings.showNewsBtnFavorite !== undefined)
+          setShowNewsBtnFavorite(data.settings.showNewsBtnFavorite);
       }
 
       if (data.observedTags) {
@@ -285,11 +345,7 @@ export default function SettingsModal({
     URL.revokeObjectURL(url);
   };
 
-  const importSettings = (
-    file: File,
-    applySettings: (newSettings: Partial<StoredSettings>) => void,
-    applyObservedTags: (tags: string[]) => void,
-  ) => {
+  const importSettings = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -299,12 +355,16 @@ export default function SettingsModal({
           observedTags?: string[];
         };
 
-        // 🔥 NOWE - Wczytaj zawartość do pola tekstowego
         setSettingsText(text);
 
-        if (data.settings) applySettings(data.settings);
-        if (data.observedTags) applyObservedTags(data.observedTags);
+        if (data.settings) {
+          localStorage.setItem('e621_viewer_settings', JSON.stringify(data.settings));
+        }
+        if (data.observedTags) {
+          localStorage.setItem('observed_tags', JSON.stringify(data.observedTags));
+        }
         alert('Settings imported successfully!');
+        window.location.reload();
       } catch {
         alert('Failed to import settings. Invalid file.');
       }
@@ -647,6 +707,57 @@ export default function SettingsModal({
           </div>
 
           <div className="settings-section">
+            <span className="settings-section-tittle">Post Buttons</span>
+            <div className="settings-section-content">
+              <label className="settings-row">
+                <span className="settings-names">Maximize button</span>
+                <input
+                  type="checkbox"
+                  checked={showBtnMaximize}
+                  onChange={(e) => setShowBtnMaximize(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Tags button</span>
+                <input
+                  type="checkbox"
+                  checked={showBtnTags}
+                  onChange={(e) => setShowBtnTags(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Info button</span>
+                <input
+                  type="checkbox"
+                  checked={showBtnInfo}
+                  onChange={(e) => setShowBtnInfo(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Comments button</span>
+                <input
+                  type="checkbox"
+                  checked={showBtnComments}
+                  onChange={(e) => setShowBtnComments(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Favorite button</span>
+                <input
+                  type="checkbox"
+                  checked={showBtnFavorite}
+                  onChange={(e) => setShowBtnFavorite(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
             <span className="settings-section-tittle">Comments</span>
             <div className="settings-section-content">
               <label className="settings-row">
@@ -984,6 +1095,52 @@ export default function SettingsModal({
                 />
                 <span className="checkmark"></span>
               </label>
+
+              <label className="settings-row">
+                <span className="settings-names">Maximize button</span>
+                <input
+                  type="checkbox"
+                  checked={showNewsBtnMaximize}
+                  onChange={(e) => setShowNewsBtnMaximize(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Tags button</span>
+                <input
+                  type="checkbox"
+                  checked={showNewsBtnTags}
+                  onChange={(e) => setShowNewsBtnTags(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Info button</span>
+                <input
+                  type="checkbox"
+                  checked={showNewsBtnInfo}
+                  onChange={(e) => setShowNewsBtnInfo(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Comments button</span>
+                <input
+                  type="checkbox"
+                  checked={showNewsBtnComments}
+                  onChange={(e) => setShowNewsBtnComments(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className="settings-row">
+                <span className="settings-names">Favorite button</span>
+                <input
+                  type="checkbox"
+                  checked={showNewsBtnFavorite}
+                  onChange={(e) => setShowNewsBtnFavorite(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
             </div>
           </div>
 
@@ -1055,44 +1212,7 @@ export default function SettingsModal({
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
-                        importSettings(
-                          e.target.files[0],
-                          (newSettings) => {
-                            if (newSettings.defaultVolume !== undefined)
-                              setDefaultVolume(newSettings.defaultVolume);
-                            if (newSettings.autoPlayOnMaximize !== undefined)
-                              setAutoPlayOnMaximize(newSettings.autoPlayOnMaximize);
-                            if (newSettings.autoPauseOnMinimize !== undefined)
-                              setAutoPauseOnMinimize(newSettings.autoPauseOnMinimize);
-                            if (newSettings.pauseVideoOutOfFocus !== undefined)
-                              setPauseVideoOutOfFocus(newSettings.pauseVideoOutOfFocus);
-                            if (newSettings.layout) setLayout(newSettings.layout);
-                            if (newSettings.postColumns) setPostColumns(newSettings.postColumns);
-                            if (newSettings.newsLayout) setNewsLayout(newSettings.newsLayout);
-                            if (newSettings.newsPostColumns)
-                              setNewsPostColumns(newSettings.newsPostColumns);
-                            if (newSettings.fixedHeader !== undefined)
-                              setFixedHeader(newSettings.fixedHeader);
-                            if (newSettings.hideNavArrows !== undefined)
-                              setHideNavArrows(newSettings.hideNavArrows);
-                            if (newSettings.postButtonsPosition !== undefined)
-                              setPostButtonsPosition(newSettings.postButtonsPosition);
-                            if (newSettings.maximizedButtonsPosition !== undefined)
-                              setMaximizedButtonsPosition(newSettings.maximizedButtonsPosition);
-                            if (newSettings.postsPerPage) setPostsPerPage(newSettings.postsPerPage);
-                            if (newSettings.hideFavorites !== undefined)
-                              setHideFavorites(newSettings.hideFavorites);
-                            if (newSettings.loopVideos !== undefined)
-                              setLoopVideos(newSettings.loopVideos);
-                            if (newSettings.videoResolution)
-                              setVideoResolution(newSettings.videoResolution);
-                            if (newSettings.sexSearch) setSexSearch(newSettings.sexSearch);
-                          },
-                          (tags) => {
-                            setObservedTags(tags);
-                          },
-                        );
-                        window.location.reload();
+                        importSettings(e.target.files[0]);
                       }
                     }}
                   />

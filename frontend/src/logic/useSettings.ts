@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 12;
+const SETTINGS_VERSION = 13;
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
@@ -48,6 +48,18 @@ export interface StoredSettings {
   commentSort: 'score' | 'newest'; // ✅ NOWE: sortowanie komentarzy
   searchHistorySize: 0 | 5 | 10;
   hideSearchHistoryScrollbar: boolean; // ✅ NOWE: rozmiar historii wyszukiwania
+  // Post buttons visibility
+  showBtnMaximize: boolean;
+  showBtnTags: boolean;
+  showBtnInfo: boolean;
+  showBtnComments: boolean;
+  showBtnFavorite: boolean;
+  // News buttons visibility
+  showNewsBtnMaximize: boolean;
+  showNewsBtnTags: boolean;
+  showNewsBtnInfo: boolean;
+  showNewsBtnComments: boolean;
+  showNewsBtnFavorite: boolean;
   sexSearch: {
     female: boolean;
     male: boolean;
@@ -93,6 +105,16 @@ const getDefaults = (): StoredSettings => ({
   commentSort: 'score' as const, // ✅ DOMYŚLNIE: według score
   searchHistorySize: 5 as const,
   hideSearchHistoryScrollbar: false,
+  showBtnMaximize: true,
+  showBtnTags: true,
+  showBtnInfo: true,
+  showBtnComments: true,
+  showBtnFavorite: true,
+  showNewsBtnMaximize: true,
+  showNewsBtnTags: true,
+  showNewsBtnInfo: true,
+  showNewsBtnComments: true,
+  showNewsBtnFavorite: true,
   sexSearch: {
     female: false,
     male: false,
@@ -236,6 +258,8 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
   }
   return { ...defaults, ...stored, version: SETTINGS_VERSION };
 }
+
+// NOTE: migration for v12→v13 handled by spread of defaults above
 
 export const loadSettings = (): StoredSettings => {
   try {
@@ -391,6 +415,26 @@ export function useSettings() {
     setHideSearchHistoryScrollbar: (v: boolean) => updateSetting('hideSearchHistoryScrollbar', v),
     sexSearch: settings.sexSearch,
     setSexSearch: (v: StoredSettings['sexSearch']) => updateSetting('sexSearch', v),
+    showBtnMaximize: settings.showBtnMaximize,
+    setShowBtnMaximize: (v: boolean) => updateSetting('showBtnMaximize', v),
+    showBtnTags: settings.showBtnTags,
+    setShowBtnTags: (v: boolean) => updateSetting('showBtnTags', v),
+    showBtnInfo: settings.showBtnInfo,
+    setShowBtnInfo: (v: boolean) => updateSetting('showBtnInfo', v),
+    showBtnComments: settings.showBtnComments,
+    setShowBtnComments: (v: boolean) => updateSetting('showBtnComments', v),
+    showBtnFavorite: settings.showBtnFavorite,
+    setShowBtnFavorite: (v: boolean) => updateSetting('showBtnFavorite', v),
+    showNewsBtnMaximize: settings.showNewsBtnMaximize,
+    setShowNewsBtnMaximize: (v: boolean) => updateSetting('showNewsBtnMaximize', v),
+    showNewsBtnTags: settings.showNewsBtnTags,
+    setShowNewsBtnTags: (v: boolean) => updateSetting('showNewsBtnTags', v),
+    showNewsBtnInfo: settings.showNewsBtnInfo,
+    setShowNewsBtnInfo: (v: boolean) => updateSetting('showNewsBtnInfo', v),
+    showNewsBtnComments: settings.showNewsBtnComments,
+    setShowNewsBtnComments: (v: boolean) => updateSetting('showNewsBtnComments', v),
+    showNewsBtnFavorite: settings.showNewsBtnFavorite,
+    setShowNewsBtnFavorite: (v: boolean) => updateSetting('showNewsBtnFavorite', v),
     updateSetting,
     updateSettings,
     reset,
