@@ -74,8 +74,11 @@ export function usePosts(initialTags: string, options?: UsePostsOptions) {
     // Najpierw usuń wszystkie order: z tagów
     let result = stripOrderFromTags(baseTags);
 
-    // 🔥 DODAJ SEX SEARCH TAGI
-    if (options?.sexSearch) {
+    // 🔥 SEX SEARCH TAGI - tylko gdy user NIE używa własnych ~ tagów
+    // E621 nie obsługuje grupowania, więc ~userTag ~female tworzy jeden wielki OR
+    // Filtrowanie lokalne (filterPostsBySexSearch) obsługuje resztę poprawnie
+    const userHasOrTags = result.split(' ').some((t) => t.startsWith('~'));
+    if (options?.sexSearch && !userHasOrTags) {
       const sexSearchTags = buildSexSearchTags(options.sexSearch);
       if (sexSearchTags) {
         result += ` ${sexSearchTags}`;

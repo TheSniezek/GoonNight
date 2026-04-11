@@ -317,11 +317,14 @@ function App() {
       document.body.style.width = '100%';
 
       return () => {
+        // Odczytaj rzeczywistą pozycję z body.style.top (window.scrollY=0 gdy body jest fixed)
+        const bodyTop = document.body.style.top;
+        const restoreY = bodyTop ? -parseInt(bodyTop, 10) : scrollY;
         document.body.style.overflow = '';
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
-        window.scrollTo(0, scrollY);
+        window.scrollTo(0, restoreY);
       };
     }
   }, [maximizedPostId]);
@@ -1166,6 +1169,16 @@ function App() {
   const filteredPosts = useMemo(() => {
     let result = allPosts;
 
+    // 🔥 PENDING FAVORITES OVERRIDE - jeśli post jest w trakcie fav/unfav,
+    // użyj optimistic value żeby uniknąć migotania po wyszukaniu
+    if (pendingFavorites.size > 0) {
+      result = result.map((p) => {
+        if (!pendingFavorites.has(p.id)) return p;
+        // Dla pending postów: odwróć is_favorited (to jest optimistic state)
+        return { ...p, is_favorited: !p.is_favorited };
+      });
+    }
+
     // 🔥 FRONTEND BLACKLIST FILTERING - instant hide/show
     result = filterPostsByBlacklist(result, blacklistLines);
 
@@ -1178,7 +1191,7 @@ function App() {
     }
 
     return result;
-  }, [allPosts, blacklistLines, sexSearch, hideFavorites, isViewingFavorites]);
+  }, [allPosts, blacklistLines, sexSearch, hideFavorites, isViewingFavorites, pendingFavorites]);
 
   const start = (uiPage - 1) * postsPerPage;
   const end = start + postsPerPage;
@@ -1686,6 +1699,9 @@ function App() {
             searchHistorySize={searchHistorySize}
             hidePopupScrollbar={hideSearchHistoryScrollbar}
             provider={provider}
+            sexSearchActive={
+              !!(sexSearch.female || sexSearch.male || sexSearch.intersex || sexSearch.ambiguous)
+            }
           />
 
           {isViewingRealFavorites && !isMobile && (
@@ -2482,6 +2498,7 @@ function App() {
                       }
                     }}
                     loop={loopVideos}
+                    onClick={(e) => e.stopPropagation()}
                     onDoubleClick={() => handleDoubleClickFav(post, isMaximized)}
                   />
                 ) : isMobile ? (
@@ -2706,9 +2723,15 @@ function App() {
                   />
                 </>
               )}
-              {maximizedPostId !== null && (
+              {maximizedPostId !== null && !isVideo && (
                 <div
                   className="maximized-overlay"
+                  onClick={() => toggleMaximize(maximizedPostId)}
+                />
+              )}
+              {maximizedPostId !== null && isVideo && (
+                <div
+                  className="maximized-overlay-video"
                   onClick={() => toggleMaximize(maximizedPostId)}
                 />
               )}

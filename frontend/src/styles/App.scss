@@ -1471,6 +1471,14 @@ button {
   z-index: 7;
 }
 
+// Overlay dla video w maximized mode - nie blokuje kontrolek video
+.maximized-overlay-video {
+  // Video (z-index: 8) jest nad overlayem (z-index: 7)
+  // Kliknięcia na video są blokowane przez onClick stopPropagation
+  // Overlay jest aktywny tylko na obszarze tła (poza video)
+  pointer-events: auto;
+}
+
 .nav {
   position: fixed;
   display: flex;

@@ -22,6 +22,7 @@ type Props = {
   searchHistorySize?: 0 | 5 | 10;
   hidePopupScrollbar?: boolean;
   provider?: string;
+  sexSearchActive?: boolean;
 };
 
 export default function SearchBar({
@@ -42,6 +43,7 @@ export default function SearchBar({
   searchHistorySize = 5,
   hidePopupScrollbar = false,
   provider = 'e621',
+  sexSearchActive = false,
 }: Props) {
   const [input, setInput] = useState(initialTags);
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -304,7 +306,9 @@ export default function SearchBar({
     }
 
     const lastWord = value.split(' ').pop()?.toLowerCase() ?? '';
-    if (lastWord.length < 2) {
+    // Usuń prefix ~ (OR operator) przed wysłaniem do autocomplete
+    const cleanLastWord = lastWord.startsWith('~') ? lastWord.slice(1) : lastWord;
+    if (cleanLastWord.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -313,12 +317,12 @@ export default function SearchBar({
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = window.setTimeout(async () => {
-      const results: AutocompleteItem[] = await fetchTagSuggestions(lastWord, provider);
+      const results: AutocompleteItem[] = await fetchTagSuggestions(cleanLastWord, provider);
 
       // 🔥 Posortuj według post_count (malejąco)
       results.sort((a, b) => b.post_count - a.post_count);
 
-      console.log(`🔍 [SearchBar] Autocomplete for "${lastWord}":`, results.length, 'results');
+      console.log(`🔍 [SearchBar] Autocomplete for "${cleanLastWord}":`, results.length, 'results');
       setSuggestions(results);
       setShowSuggestions(true);
     }, 200);
@@ -326,7 +330,10 @@ export default function SearchBar({
 
   const applySuggestion = (tag: string) => {
     const parts = input.split(' ');
-    parts[parts.length - 1] = tag;
+    const lastPart = parts[parts.length - 1];
+    // Zachowaj prefix ~ jeśli był wpisany
+    const prefix = lastPart.startsWith('~') ? '~' : '';
+    parts[parts.length - 1] = prefix + tag;
     setInput(parts.join(' ') + ' ');
     setShowSuggestions(false);
     setActiveIndex(0);
@@ -769,6 +776,11 @@ export default function SearchBar({
         )}
 
         <div className="input-wrapper">
+          {sexSearchActive &&
+            input
+              .trim()
+              .split(' ')
+              .some((t) => t.startsWith('~'))}
           <input
             ref={inputRef}
             type="text"
