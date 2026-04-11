@@ -1169,16 +1169,6 @@ function App() {
   const filteredPosts = useMemo(() => {
     let result = allPosts;
 
-    // 🔥 PENDING FAVORITES OVERRIDE - jeśli post jest w trakcie fav/unfav,
-    // użyj optimistic value żeby uniknąć migotania po wyszukaniu
-    if (pendingFavorites.size > 0) {
-      result = result.map((p) => {
-        if (!pendingFavorites.has(p.id)) return p;
-        // Dla pending postów: odwróć is_favorited (to jest optimistic state)
-        return { ...p, is_favorited: !p.is_favorited };
-      });
-    }
-
     // 🔥 FRONTEND BLACKLIST FILTERING - instant hide/show
     result = filterPostsByBlacklist(result, blacklistLines);
 
