@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const SETTINGS_KEY = 'e621_viewer_settings';
-const SETTINGS_VERSION = 13;
+const SETTINGS_VERSION = 14;
 const DEBOUNCE_MS = 500;
 
 export type Layout = 'masonry' | 'grid' | 'accurate-grid' | 'fit-grid';
@@ -66,6 +66,8 @@ export interface StoredSettings {
     intersex: boolean;
     ambiguous: boolean;
   };
+  showPinFavField: boolean; // ✅ NOWE: pokaż pole "Hide Favorites" w pin tags
+  showPinBlacklistField: boolean; // ✅ NOWE: pokaż pole blacklist w pin tags
 }
 
 const getDefaults = (): StoredSettings => ({
@@ -121,6 +123,8 @@ const getDefaults = (): StoredSettings => ({
     intersex: false,
     ambiguous: false,
   },
+  showPinFavField: true,
+  showPinBlacklistField: true,
 });
 
 type SettingValidator = (value: unknown) => boolean;
@@ -155,6 +159,8 @@ const validators: Partial<Record<keyof StoredSettings, SettingValidator>> = {
       typeof obj.ambiguous === 'boolean'
     );
   },
+  showPinFavField: (v): v is boolean => typeof v === 'boolean',
+  showPinBlacklistField: (v): v is boolean => typeof v === 'boolean',
 };
 
 function validateSetting<K extends keyof StoredSettings>(
@@ -260,6 +266,7 @@ function migrateSettings(stored: Partial<StoredSettings>): StoredSettings {
 }
 
 // NOTE: migration for v12→v13 handled by spread of defaults above
+// NOTE: migration for v13→v14: showPinFavField, showPinBlacklistField handled by spread
 
 export const loadSettings = (): StoredSettings => {
   try {
@@ -435,6 +442,10 @@ export function useSettings() {
     setShowNewsBtnComments: (v: boolean) => updateSetting('showNewsBtnComments', v),
     showNewsBtnFavorite: settings.showNewsBtnFavorite,
     setShowNewsBtnFavorite: (v: boolean) => updateSetting('showNewsBtnFavorite', v),
+    showPinFavField: settings.showPinFavField,
+    setShowPinFavField: (v: boolean) => updateSetting('showPinFavField', v),
+    showPinBlacklistField: settings.showPinBlacklistField,
+    setShowPinBlacklistField: (v: boolean) => updateSetting('showPinBlacklistField', v),
     updateSetting,
     updateSettings,
     reset,

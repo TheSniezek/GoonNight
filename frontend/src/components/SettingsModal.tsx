@@ -107,6 +107,10 @@ interface SettingsModalProps {
     ambiguous: boolean;
   };
   setSexSearch: (v: SettingsModalProps['sexSearch']) => void;
+  showPinFavField: boolean;
+  setShowPinFavField: (v: boolean) => void;
+  showPinBlacklistField: boolean;
+  setShowPinBlacklistField: (v: boolean) => void;
 }
 
 export default function SettingsModal({
@@ -205,6 +209,10 @@ export default function SettingsModal({
   isLoggedIn,
   provider,
   setProvider,
+  showPinFavField,
+  setShowPinFavField,
+  showPinBlacklistField,
+  setShowPinBlacklistField,
 }: SettingsModalProps) {
   const {
     observedTags,
@@ -1138,6 +1146,37 @@ export default function SettingsModal({
                   type="checkbox"
                   checked={showNewsBtnFavorite}
                   onChange={(e) => setShowNewsBtnFavorite(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <span className="settings-section-tittle">Pin Tags</span>
+            <div className="settings-section-content">
+              {isMobile && (
+                <span className="settings-mobile-note">
+                  These fields are desktop-only and not available on mobile.
+                </span>
+              )}
+              <label className={`settings-row ${isMobile ? 'settings-row-disabled' : ''}`}>
+                <span className="settings-names">Hide favorites field</span>
+                <input
+                  type="checkbox"
+                  checked={showPinFavField}
+                  disabled={isMobile}
+                  onChange={(e) => !isMobile && setShowPinFavField(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </label>
+              <label className={`settings-row ${isMobile ? 'settings-row-disabled' : ''}`}>
+                <span className="settings-names">Blacklist field</span>
+                <input
+                  type="checkbox"
+                  checked={showPinBlacklistField}
+                  disabled={isMobile}
+                  onChange={(e) => !isMobile && setShowPinBlacklistField(e.target.checked)}
                 />
                 <span className="checkmark"></span>
               </label>

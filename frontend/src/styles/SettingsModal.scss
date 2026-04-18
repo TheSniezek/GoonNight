@@ -454,4 +454,19 @@
   @media (max-width: 768px) {
     font-size: 0.75rem;
   }
+
+  .settings-row-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .settings-mobile-note {
+    display: block;
+    color: #888;
+    font-size: 0.78rem;
+    font-style: italic;
+    padding: 4px 0 6px;
+    line-height: 1.4;
+  }
 }

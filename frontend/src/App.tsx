@@ -25,7 +25,11 @@ import LoginModal from './components/LoginModal';
 import { useAccounts } from './logic/useAccounts';
 import { useFavorites } from './logic/useFavorites';
 import { useBlacklist } from './logic/useBlacklist';
-import { filterPostsByBlacklist, filterPostsBySexSearch } from './logic/blacklistFilter';
+import {
+  filterPostsByBlacklist,
+  filterPostsBySexSearch,
+  postMatchesBlacklistLine,
+} from './logic/blacklistFilter';
 import BlacklistModal from './components/BlacklistModal';
 import { useAppRouter, loadRouteFromSession } from './logic/useAppRouter';
 import type { AppRoute } from './logic/useAppRouter';
@@ -139,6 +143,10 @@ function App() {
     setShowNewsBtnComments,
     showNewsBtnFavorite,
     setShowNewsBtnFavorite,
+    showPinFavField,
+    setShowPinFavField,
+    showPinBlacklistField,
+    setShowPinBlacklistField,
   } = useSettings();
 
   const { observedTags, toggleTag } = useObservedTags();
@@ -283,6 +291,7 @@ function App() {
 
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showBlacklistDropdown, setShowBlacklistDropdown] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // 🔥 Sprawdzanie rozmiaru ekranu
@@ -1193,6 +1202,14 @@ function App() {
     return filteredPosts.slice(start, end);
   }, [filteredPosts, start, end, infiniteScroll]);
 
+  // Blacklist lines that match at least one post on the current (unfiltered) page
+  const pageBlacklistLines = useMemo(() => {
+    const pagePosts = infiniteScroll ? allPosts : allPosts.slice(start, end);
+    return blacklistLines.filter((line) =>
+      pagePosts.some((post) => postMatchesBlacklistLine(post, { ...line, enabled: true })),
+    );
+  }, [blacklistLines, allPosts, start, end, infiniteScroll]);
+
   // ❤️ Double-click toggle favorite
   const handleDoubleClickFav = useCallback(
     async (post: Post, isMaximized: boolean) => {
@@ -1776,6 +1793,68 @@ function App() {
           </button>
         </div>
       </div>
+
+      {/* ── Pin Tags Panel ── */}
+      {!isMobile && (showPinFavField || showPinBlacklistField) && (
+        <div className="pin-tags-panel desktop-only">
+          {showPinFavField && (
+            <button
+              className={`pin-fav-field ${hideFavorites ? 'active' : ''}`}
+              onClick={() => setHideFavorites(!hideFavorites)}
+            >
+              Hide Favorites
+            </button>
+          )}
+
+          {showPinBlacklistField && pageBlacklistLines.length > 0 && (
+            <div className="pin-blacklist-field">
+              <div className="pin-blacklist-header">
+                <button
+                  className={`pin-tag-all ${pageBlacklistLines.every((l) => l.enabled) ? 'active' : ''}`}
+                  onClick={() => {
+                    const allOn = pageBlacklistLines.every((l) => l.enabled);
+                    pageBlacklistLines.forEach((l) => {
+                      if (allOn ? l.enabled : !l.enabled) toggleLine(l.id);
+                    });
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  className="pin-blacklist-header-btn"
+                  onClick={() => setShowBlacklistDropdown((v) => !v)}
+                >
+                  <span>Blacklist Tags</span>
+                  <svg
+                    className={`pin-dropdown-arrow ${showBlacklistDropdown ? 'open' : ''}`}
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M7 10l5 5 5-5z" />
+                  </svg>
+                </button>
+              </div>
+
+              {showBlacklistDropdown && (
+                <div className="pin-blacklist-list">
+                  {pageBlacklistLines.map((line) => (
+                    <button
+                      key={line.id}
+                      className={`pin-tag-row ${line.enabled ? 'active' : ''}`}
+                      onClick={() => toggleLine(line.id)}
+                      title={line.tags}
+                    >
+                      {line.tags}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div
         className={`posts-grid ${layout} ${hideScrollbar ? 'scrollbar-hidden' : ''}`}
@@ -2831,6 +2910,10 @@ function App() {
             setShowNewsBtnComments={setShowNewsBtnComments}
             showNewsBtnFavorite={showNewsBtnFavorite}
             setShowNewsBtnFavorite={setShowNewsBtnFavorite}
+            showPinFavField={showPinFavField}
+            setShowPinFavField={setShowPinFavField}
+            showPinBlacklistField={showPinBlacklistField}
+            setShowPinBlacklistField={setShowPinBlacklistField}
           />
         )}
 
