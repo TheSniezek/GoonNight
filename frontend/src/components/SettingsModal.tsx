@@ -234,26 +234,54 @@ export default function SettingsModal({
   const loadSettingsToText = () => {
     const currentSettings = {
       settings: {
+        provider,
         defaultVolume,
         autoPlayOnMaximize,
         autoPauseOnMinimize,
         pauseVideoOutOfFocus,
+        loopVideos,
+        videoResolution,
+        gifsAutoplay,
         layout,
         postColumns,
         newsLayout,
         newsPostColumns,
         fixedHeader,
-        hideNavArrows,
-        postButtonsPosition,
-        maximizedButtonsPosition,
         postsPerPage,
         hideFavorites,
-        loopVideos,
-        videoResolution,
-        sexSearch,
+        infiniteScroll,
+        hideNavArrows,
+        disableArrowKeys,
+        postButtonsPosition,
+        maximizedButtonsPosition,
+        showArtistLabels,
+        applyBlacklistInNews,
         showFavIndicators,
         showFavIndicatorsNews,
         favIndicatorOpacity,
+        favIndicatorSize,
+        favIndicatorSizeNews,
+        showStatsBar,
+        showStatsBarNews,
+        hideScrollbar,
+        hideScrollbarNews,
+        hidePopupScrollbar,
+        commentSort,
+        searchHistorySize,
+        hideSearchHistoryScrollbar,
+        showBtnMaximize,
+        showBtnTags,
+        showBtnInfo,
+        showBtnComments,
+        showBtnFavorite,
+        showNewsBtnMaximize,
+        showNewsBtnTags,
+        showNewsBtnInfo,
+        showNewsBtnComments,
+        showNewsBtnFavorite,
+        sexSearch,
+        showPinFavField,
+        showPinBlacklistField,
       },
       observedTags: [...observedTags].sort((a, b) => a.localeCompare(b)),
     };
@@ -269,6 +297,7 @@ export default function SettingsModal({
       };
 
       if (data.settings) {
+        if (data.settings.provider) setProvider(data.settings.provider);
         if (data.settings.defaultVolume !== undefined)
           setDefaultVolume(data.settings.defaultVolume);
         if (data.settings.autoPlayOnMaximize !== undefined)
@@ -277,29 +306,55 @@ export default function SettingsModal({
           setAutoPauseOnMinimize(data.settings.autoPauseOnMinimize);
         if (data.settings.pauseVideoOutOfFocus !== undefined)
           setPauseVideoOutOfFocus(data.settings.pauseVideoOutOfFocus);
+        if (data.settings.loopVideos !== undefined) setLoopVideos(data.settings.loopVideos);
+        if (data.settings.videoResolution) setVideoResolution(data.settings.videoResolution);
+        if (data.settings.gifsAutoplay !== undefined) setGifsAutoplay(data.settings.gifsAutoplay);
         if (data.settings.layout) setLayout(data.settings.layout);
         if (data.settings.postColumns) setPostColumns(data.settings.postColumns);
         if (data.settings.newsLayout) setNewsLayout(data.settings.newsLayout);
         if (data.settings.newsPostColumns) setNewsPostColumns(data.settings.newsPostColumns);
         if (data.settings.fixedHeader !== undefined) setFixedHeader(data.settings.fixedHeader);
+        if (data.settings.postsPerPage) setPostsPerPage(data.settings.postsPerPage);
+        if (data.settings.hideFavorites !== undefined)
+          setHideFavorites(data.settings.hideFavorites);
+        if (data.settings.infiniteScroll !== undefined)
+          setInfiniteScroll(data.settings.infiniteScroll);
         if (data.settings.hideNavArrows !== undefined)
           setHideNavArrows(data.settings.hideNavArrows);
+        if (data.settings.disableArrowKeys !== undefined)
+          setDisableArrowKeys(data.settings.disableArrowKeys);
         if (data.settings.postButtonsPosition !== undefined)
           setPostButtonsPosition(data.settings.postButtonsPosition);
         if (data.settings.maximizedButtonsPosition !== undefined)
           setMaximizedButtonsPosition(data.settings.maximizedButtonsPosition);
-        if (data.settings.postsPerPage) setPostsPerPage(data.settings.postsPerPage);
-        if (data.settings.hideFavorites !== undefined)
-          setHideFavorites(data.settings.hideFavorites);
-        if (data.settings.loopVideos !== undefined) setLoopVideos(data.settings.loopVideos);
-        if (data.settings.videoResolution) setVideoResolution(data.settings.videoResolution);
-        if (data.settings.sexSearch) setSexSearch(data.settings.sexSearch);
+        if (data.settings.showArtistLabels !== undefined)
+          setShowArtistLabels(data.settings.showArtistLabels);
+        if (data.settings.applyBlacklistInNews !== undefined)
+          setApplyBlacklistInNews(data.settings.applyBlacklistInNews);
         if (data.settings.showFavIndicators !== undefined)
           setShowFavIndicators(data.settings.showFavIndicators);
         if (data.settings.showFavIndicatorsNews !== undefined)
           setShowFavIndicatorsNews(data.settings.showFavIndicatorsNews);
         if (data.settings.favIndicatorOpacity !== undefined)
           setFavIndicatorOpacity(data.settings.favIndicatorOpacity);
+        if (data.settings.favIndicatorSize !== undefined)
+          setFavIndicatorSize(data.settings.favIndicatorSize);
+        if (data.settings.favIndicatorSizeNews !== undefined)
+          setFavIndicatorSizeNews(data.settings.favIndicatorSizeNews);
+        if (data.settings.showStatsBar !== undefined) setShowStatsBar(data.settings.showStatsBar);
+        if (data.settings.showStatsBarNews !== undefined)
+          setShowStatsBarNews(data.settings.showStatsBarNews);
+        if (data.settings.hideScrollbar !== undefined)
+          setHideScrollbar(data.settings.hideScrollbar);
+        if (data.settings.hideScrollbarNews !== undefined)
+          setHideScrollbarNews(data.settings.hideScrollbarNews);
+        if (data.settings.hidePopupScrollbar !== undefined)
+          setHidePopupScrollbar(data.settings.hidePopupScrollbar);
+        if (data.settings.commentSort !== undefined) setCommentSort(data.settings.commentSort);
+        if (data.settings.searchHistorySize !== undefined)
+          setSearchHistorySize(data.settings.searchHistorySize);
+        if (data.settings.hideSearchHistoryScrollbar !== undefined)
+          setHideSearchHistoryScrollbar(data.settings.hideSearchHistoryScrollbar);
         if (data.settings.showBtnMaximize !== undefined)
           setShowBtnMaximize(data.settings.showBtnMaximize);
         if (data.settings.showBtnTags !== undefined) setShowBtnTags(data.settings.showBtnTags);
@@ -318,6 +373,11 @@ export default function SettingsModal({
           setShowNewsBtnComments(data.settings.showNewsBtnComments);
         if (data.settings.showNewsBtnFavorite !== undefined)
           setShowNewsBtnFavorite(data.settings.showNewsBtnFavorite);
+        if (data.settings.sexSearch) setSexSearch(data.settings.sexSearch);
+        if (data.settings.showPinFavField !== undefined)
+          setShowPinFavField(data.settings.showPinFavField);
+        if (data.settings.showPinBlacklistField !== undefined)
+          setShowPinBlacklistField(data.settings.showPinBlacklistField);
       }
 
       if (data.observedTags) {
@@ -1262,28 +1322,54 @@ export default function SettingsModal({
                   onClick={() =>
                     exportSettings(
                       {
+                        provider,
                         defaultVolume,
                         autoPlayOnMaximize,
                         autoPauseOnMinimize,
                         pauseVideoOutOfFocus,
+                        loopVideos,
+                        videoResolution,
+                        gifsAutoplay,
                         layout,
                         postColumns,
                         newsLayout,
                         newsPostColumns,
                         fixedHeader,
-                        hideNavArrows,
-                        postButtonsPosition,
-                        maximizedButtonsPosition,
                         postsPerPage,
                         hideFavorites,
-                        loopVideos,
-                        videoResolution,
-                        sexSearch,
+                        infiniteScroll,
+                        hideNavArrows,
+                        disableArrowKeys,
+                        postButtonsPosition,
+                        maximizedButtonsPosition,
+                        showArtistLabels,
+                        applyBlacklistInNews,
                         showFavIndicators,
                         showFavIndicatorsNews,
                         favIndicatorOpacity,
+                        favIndicatorSize,
+                        favIndicatorSizeNews,
                         showStatsBar,
                         showStatsBarNews,
+                        hideScrollbar,
+                        hideScrollbarNews,
+                        hidePopupScrollbar,
+                        commentSort,
+                        searchHistorySize,
+                        hideSearchHistoryScrollbar,
+                        showBtnMaximize,
+                        showBtnTags,
+                        showBtnInfo,
+                        showBtnComments,
+                        showBtnFavorite,
+                        showNewsBtnMaximize,
+                        showNewsBtnTags,
+                        showNewsBtnInfo,
+                        showNewsBtnComments,
+                        showNewsBtnFavorite,
+                        sexSearch,
+                        showPinFavField,
+                        showPinBlacklistField,
                       },
                       observedTags,
                     )

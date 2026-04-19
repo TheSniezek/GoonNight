@@ -521,144 +521,50 @@ button {
   }
 
   &.mobile-no-buttons {
-    .maximize-btn,
-    .tags-btn,
-    .info-btn,
-    .fav-post-btn {
+    .post-btn-group {
       display: none !important;
     }
   }
 
   &.buttons-top {
-    .maximize-btn {
-      right: 10px;
+    .post-btn-group {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      display: flex;
+      flex-direction: row; // maximize on the right edge, fav on the left
+      gap: 6px;
     }
 
-    .tags-btn {
-      right: 60px;
-    }
-
-    .info-btn {
-      right: 110px;
-    }
-
-    .comm-btn {
-      right: 160px;
-    }
-
-    .fav-post-btn {
-      right: 210px;
-    }
-
-    &.maximized {
-      .maximize-btn {
-        right: 20px;
-      }
-
-      .tags-btn {
-        right: 80px;
-      }
-
-      .info-btn {
-        right: 140px;
-      }
-
-      .comm-btn {
-        right: 200px;
-      }
-
-      .fav-post-btn {
-        right: 260px;
-      }
+    &.maximized .post-btn-group {
+      top: 12px;
+      left: 12px;
     }
   }
 
   &.buttons-bottom {
-    .maximize-btn {
-      top: auto;
+    .post-btn-group {
+      position: absolute;
       bottom: 10px;
-      right: 10px;
-    }
-
-    .tags-btn {
-      top: auto;
-      bottom: 10px;
-      right: 60px;
-    }
-
-    .info-btn {
-      top: auto;
-      bottom: 10px;
-      right: 110px;
-    }
-
-    .comm-btn {
-      top: auto;
-      bottom: 10px;
-      right: 160px;
-    }
-
-    .fav-post-btn {
-      top: auto;
-      bottom: 10px;
-      right: 210px;
+      left: 6px;
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
     }
 
     // Lift buttons above stats bar only
-    &.has-stats:not(:has(.post-artist-label)) {
-      .maximize-btn {
-        bottom: 27px;
-      }
-      .tags-btn {
-        bottom: 27px;
-      }
-      .info-btn {
-        bottom: 27px;
-      }
-      .comm-btn {
-        bottom: 27px;
-      }
-      .fav-post-btn {
-        bottom: 27px;
-      }
+    &.has-stats:not(:has(.post-artist-label)) .post-btn-group {
+      bottom: 27px;
     }
 
     // Lift buttons above artist label only
-    &:not(.has-stats):has(.post-artist-label) {
-      .maximize-btn {
-        bottom: 32px;
-      }
-      .tags-btn {
-        bottom: 32px;
-      }
-      .info-btn {
-        bottom: 32px;
-      }
-      .comm-btn {
-        bottom: 32px;
-      }
-      .fav-post-btn {
-        bottom: 32px;
-      }
+    &:not(.has-stats):has(.post-artist-label) .post-btn-group {
+      bottom: 32px;
     }
 
     // Lift buttons above both bars
-    &.has-stats:has(.post-artist-label) {
-      .maximize-btn {
-        bottom: 54px;
-      }
-      .tags-btn {
-        bottom: 54px;
-      }
-      .info-btn {
-        bottom: 54px;
-      }
-      .comm-btn {
-        bottom: 54px;
-      }
-      .fav-post-btn {
-        bottom: 54px;
-      }
+    &.has-stats:has(.post-artist-label) .post-btn-group {
+      bottom: 54px;
     }
 
     // Popupy otwierają się od dołu gdy przyciski są na dole (non-maximized)
@@ -714,34 +620,9 @@ button {
 
     // Większe dla maximized
     &.maximized {
-      .maximize-btn {
-        top: auto;
+      .post-btn-group {
         bottom: 20px;
-        right: 20px;
-      }
-
-      .tags-btn {
-        top: auto;
-        bottom: 20px;
-        right: 80px;
-      }
-
-      .info-btn {
-        top: auto;
-        bottom: 20px;
-        right: 140px;
-      }
-
-      .comm-btn {
-        top: auto;
-        bottom: 20px;
-        right: 200px;
-      }
-
-      .fav-post-btn {
-        top: auto;
-        bottom: 20px;
-        right: 260px;
+        left: 12px;
       }
 
       // Popupy otwierają się od dołu
@@ -759,10 +640,21 @@ button {
     }
   }
 
+  // ── Shared button base (inside .post-btn-group flex container) ──────────────
+  .post-btn-group {
+    // Default: invisible — positioned by buttons-top / buttons-bottom
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    z-index: 10;
+
+    // All buttons inside are static — the group handles placement
+    > button {
+      flex-shrink: 0;
+    }
+  }
+
   .maximize-btn {
-    position: absolute;
-    top: 6px;
-    left: 6px;
     z-index: 10;
     width: 36px;
     height: 36px;
@@ -781,7 +673,7 @@ button {
       background 0.2s ease;
 
     @media (max-width: 768px) {
-      display: none !important; // Ukryj całkowicie na mobile
+      display: none !important;
     }
 
     &:hover {
@@ -789,14 +681,12 @@ button {
     }
 
     &.maximized-btn {
-      top: 12px;
-      left: 12px;
       width: 50px;
       height: 50px;
       opacity: 1;
 
       @media (max-width: 768px) {
-        display: flex !important; // Pokaż tylko w trybie maximized
+        display: flex !important;
       }
 
       &:hover {
@@ -821,7 +711,6 @@ button {
 
     .post-item {
       width: auto;
-      height: 100%;
       max-width: 95vw;
       max-height: 95vh;
       object-fit: contain;
@@ -842,9 +731,6 @@ button {
   }
 
   .tags-btn {
-    position: absolute;
-    top: 6px;
-    left: 48px;
     z-index: 10;
     width: 36px;
     height: 36px;
@@ -862,7 +748,7 @@ button {
     padding: 0;
 
     @media (max-width: 768px) {
-      display: none !important; // Ukryj na mobile
+      display: none !important;
     }
 
     &:hover {
@@ -878,20 +764,15 @@ button {
     &.tags-btn-max {
       width: 50px;
       height: 50px;
-      top: 12px;
-      left: 74px;
       opacity: 1;
 
       @media (max-width: 768px) {
-        display: flex !important; // Pokaż w trybie maximized
+        display: flex !important;
       }
     }
   }
 
   .info-btn {
-    position: absolute;
-    top: 6px;
-    left: 90px;
     z-index: 10;
     width: 36px;
     height: 36px;
@@ -909,7 +790,7 @@ button {
     padding: 0;
 
     @media (max-width: 768px) {
-      display: none !important; // Ukryj na mobile
+      display: none !important;
     }
 
     &:hover {
@@ -925,12 +806,10 @@ button {
     &.info-btn-max {
       width: 50px;
       height: 50px;
-      top: 12px;
-      left: 136px;
       opacity: 1;
 
       @media (max-width: 768px) {
-        display: flex !important; // Pokaż w trybie maximized
+        display: flex !important;
       }
     }
   }
@@ -939,9 +818,6 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
-    top: 6px;
-    left: 176px;
     z-index: 10;
     width: 36px;
     height: 36px;
@@ -955,7 +831,7 @@ button {
     padding: 0;
 
     @media (max-width: 768px) {
-      display: none !important; // Ukryj na mobile
+      display: none !important;
     }
 
     &:hover {
@@ -981,12 +857,10 @@ button {
     &.fav-post-btn-max {
       width: 50px;
       height: 50px;
-      top: 12px;
-      left: 260px;
       opacity: 1;
 
       @media (max-width: 768px) {
-        display: flex !important; // Pokaż w trybie maximized
+        display: flex !important;
       }
     }
   }
@@ -995,9 +869,6 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
-    top: 6px;
-    left: 132px;
     z-index: 10;
     width: 36px;
     height: 36px;
@@ -1027,8 +898,6 @@ button {
     &.comm-btn-max {
       width: 50px;
       height: 50px;
-      top: 12px;
-      left: 198px;
       opacity: 1;
 
       @media (max-width: 768px) {
@@ -1413,22 +1282,10 @@ button {
     }
   }
 
-  &:hover .tags-btn {
-    opacity: 1;
-  }
-
-  &:hover .info-btn {
-    opacity: 1;
-  }
-
-  &:hover .maximize-btn {
-    opacity: 1;
-  }
-
-  &:hover .comm-btn {
-    opacity: 1;
-  }
-
+  &:hover .tags-btn,
+  &:hover .info-btn,
+  &:hover .maximize-btn,
+  &:hover .comm-btn,
   &:hover .fav-post-btn {
     opacity: 1;
   }
@@ -1444,20 +1301,12 @@ button {
   }
 
   // FIX: Fade przycisków w maximized mode po 1s
-  &.buttons-faded .maximize-btn,
-  &.buttons-faded .tags-btn,
-  &.buttons-faded .info-btn,
-  &.buttons-faded .comm-btn,
-  &.buttons-faded .fav-post-btn {
+  &.buttons-faded .post-btn-group button {
     opacity: 0.3 !important;
     transition: opacity 1s ease;
   }
   // Ale jeśli popup jest aktywny to nie faduj
-  &.buttons-faded.popup-active .tags-btn,
-  &.buttons-faded.popup-active .info-btn,
-  &.buttons-faded.popup-active .maximize-btn,
-  &.buttons-faded.popup-active .comm-btn,
-  &.buttons-faded.popup-active .fav-post-btn {
+  &.buttons-faded.popup-active .post-btn-group button {
     opacity: 1 !important;
   }
 }
