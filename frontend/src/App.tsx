@@ -1890,211 +1890,178 @@ function App() {
                 .filter(Boolean)
                 .join(' ')}
             >
-              {(showBtnMaximize || isMaximized) && (
-                <button
-                  className={`maximize-btn ${isMaximized ? 'maximized-btn' : ''}`}
-                  onClick={() => toggleMaximize(post.id)}
-                >
-                  {isMaximized ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="30"
-                      height="30"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M8.71 15.29L3 21M8.71 8.71L3 3M21 21l-5.71-5.71M21 3L15.29 8.71" />
-                      <path d="M4 15H8a1 1 0 0 1 1 1v4" />
-                      <path d="M9 4V8a1 1 0 0 1-1 1H4" />
-                      <path d="M15 20V16a1 1 0 0 1 1-1h4" />
-                      <path d="M20 9H16a1 1 0 0 1-1-1V4" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M9 9L3.29 3.29M15 9l5.71-5.71M9 15L3.29 20.71m17.42 0L15 15" />
-                      <path d="M3 8V4a1 1 0 0 1 1-1h4" />
-                      <path d="M16 3h4a1 1 0 0 1 1 1v4" />
-                      <path d="M8 21H4a1 1 0 0 1-1-1v-4" />
-                      <path d="M21 16v4a1 1 0 0 1-1 1h-4" />
-                    </svg>
-                  )}
-                </button>
-              )}
-              {showBtnTags && (
-                <button
-                  className={`tags-btn ${isMaximized ? 'tags-btn-max' : ''} ${
-                    showTagsFor === post.id ? 'active' : ''
-                  }`}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    if (showTagsFor === post.id) {
-                      setShowTagsFor(null);
-                    } else {
-                      setShowTagsFor(post.id);
-                      setShowInfoFor(null);
-                      setShowCommentsFor(null);
-                    }
-                  }}
-                >
-                  {isMaximized ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="30"
-                      height="30"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="8" y1="2" x2="8" y2="22" />
-                      <line x1="16" y1="2" x2="16" y2="22" />
-
-                      <line x1="2" y1="8" x2="22" y2="8" />
-                      <line x1="2" y1="16" x2="22" y2="16" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="8" y1="2" x2="8" y2="22" />
-                      <line x1="16" y1="2" x2="16" y2="22" />
-
-                      <line x1="2" y1="8" x2="22" y2="8" />
-                      <line x1="2" y1="16" x2="22" y2="16" />
-                    </svg>
-                  )}
-                </button>
-              )}
-              {showBtnInfo && (
-                <button
-                  className={`info-btn ${isMaximized ? 'info-btn-max' : ''} ${
-                    showInfoFor === post.id ? 'active' : ''
-                  }`}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    if (showInfoFor === post.id) {
-                      setShowInfoFor(null);
-                    } else {
-                      setShowInfoFor(post.id);
-                      setShowTagsFor(null);
-                      setShowCommentsFor(null);
-                    }
-                  }}
-                >
-                  {isMaximized ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="30"
-                      height="30"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                  )}
-                </button>
-              )}
-              {showBtnComments && (
-                <button
-                  className={`comm-btn ${isMaximized ? 'comm-btn-max' : ''} ${
-                    showCommentsFor === post.id ? 'active' : ''
-                  }`}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    if (showCommentsFor === post.id) {
-                      closeComments();
-                    } else {
-                      setShowCommentsFor(post.id);
-                      setShowTagsFor(null);
-                      setShowInfoFor(null);
-                    }
-                  }}
-                  title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={isMaximized ? 30 : 20}
-                    height={isMaximized ? 30 : 20}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+              <div className={`post-btn-group ${isMaximized ? 'post-btn-group-max' : ''}`}>
+                {(showBtnMaximize || isMaximized) && (
+                  <button
+                    className={`maximize-btn ${isMaximized ? 'maximized-btn' : ''}`}
+                    onClick={() => toggleMaximize(post.id)}
                   >
-                    <path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" />
-                  </svg>
-                </button>
-              )}
-              {showBtnFavorite && (
-                <button
-                  className={`fav-post-btn ${post.is_favorited ? 'is-favorite' : ''} ${
-                    isMaximized ? 'fav-post-btn-max' : ''
-                  }`}
-                  onClick={async () => {
-                    const wasNotFavorite = !post.is_favorited;
-                    await toggleFavoritePost(post.id, post.is_favorited || false);
+                    {isMaximized ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M8.71 15.29L3 21M8.71 8.71L3 3M21 21l-5.71-5.71M21 3L15.29 8.71" />
+                        <path d="M4 15H8a1 1 0 0 1 1 1v4" />
+                        <path d="M9 4V8a1 1 0 0 1-1 1H4" />
+                        <path d="M15 20V16a1 1 0 0 1 1-1h4" />
+                        <path d="M20 9H16a1 1 0 0 1-1-1V4" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9 9L3.29 3.29M15 9l5.71-5.71M9 15L3.29 20.71m17.42 0L15 15" />
+                        <path d="M3 8V4a1 1 0 0 1 1-1h4" />
+                        <path d="M16 3h4a1 1 0 0 1 1 1v4" />
+                        <path d="M8 21H4a1 1 0 0 1-1-1v-4" />
+                        <path d="M21 16v4a1 1 0 0 1-1 1h-4" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+                {showBtnTags && (
+                  <button
+                    className={`tags-btn ${isMaximized ? 'tags-btn-max' : ''} ${
+                      showTagsFor === post.id ? 'active' : ''
+                    }`}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      if (showTagsFor === post.id) {
+                        setShowTagsFor(null);
+                      } else {
+                        setShowTagsFor(post.id);
+                        setShowInfoFor(null);
+                        setShowCommentsFor(null);
+                      }
+                    }}
+                  >
+                    {isMaximized ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="8" y1="2" x2="8" y2="22" />
+                        <line x1="16" y1="2" x2="16" y2="22" />
 
-                    // Jeśli dodaliśmy do fav i hide favorites jest włączony i jesteśmy w maximized
-                    if (wasNotFavorite && hideFavorites && isMaximized) {
-                      goNextPost();
-                    }
-                  }}
-                  title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
-                  disabled={!isLoggedIn || pendingFavorites.has(post.id)}
-                >
-                  {isMaximized ? (
+                        <line x1="2" y1="8" x2="22" y2="8" />
+                        <line x1="2" y1="16" x2="22" y2="16" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="8" y1="2" x2="8" y2="22" />
+                        <line x1="16" y1="2" x2="16" y2="22" />
+
+                        <line x1="2" y1="8" x2="22" y2="8" />
+                        <line x1="2" y1="16" x2="22" y2="16" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+                {showBtnInfo && (
+                  <button
+                    className={`info-btn ${isMaximized ? 'info-btn-max' : ''} ${
+                      showInfoFor === post.id ? 'active' : ''
+                    }`}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      if (showInfoFor === post.id) {
+                        setShowInfoFor(null);
+                      } else {
+                        setShowInfoFor(post.id);
+                        setShowTagsFor(null);
+                        setShowCommentsFor(null);
+                      }
+                    }}
+                  >
+                    {isMaximized ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+                {showBtnComments && (
+                  <button
+                    className={`comm-btn ${isMaximized ? 'comm-btn-max' : ''} ${
+                      showCommentsFor === post.id ? 'active' : ''
+                    }`}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      if (showCommentsFor === post.id) {
+                        closeComments();
+                      } else {
+                        setShowCommentsFor(post.id);
+                        setShowTagsFor(null);
+                        setShowInfoFor(null);
+                      }
+                    }}
+                    title={`${post.comment_count} comment${post.comment_count !== 1 ? 's' : ''}`}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="30"
-                      height="30"
+                      width={isMaximized ? 30 : 20}
+                      height={isMaximized ? 30 : 20}
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -2102,35 +2069,70 @@ function App() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
-                      <path
-                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
+                      <path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" />
+                    </svg>
+                  </button>
+                )}
+                {showBtnFavorite && (
+                  <button
+                    className={`fav-post-btn ${post.is_favorited ? 'is-favorite' : ''} ${
+                      isMaximized ? 'fav-post-btn-max' : ''
+                    }`}
+                    onClick={async () => {
+                      const wasNotFavorite = !post.is_favorited;
+                      await toggleFavoritePost(post.id, post.is_favorited || false);
+
+                      // Jeśli dodaliśmy do fav i hide favorites jest włączony i jesteśmy w maximized
+                      if (wasNotFavorite && hideFavorites && isMaximized) {
+                        goNextPost();
+                      }
+                    }}
+                    title={!isLoggedIn ? 'Login required' : 'Add/Remove Favorite'}
+                    disabled={!isLoggedIn || pendingFavorites.has(post.id)}
+                  >
+                    {isMaximized ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="30"
+                        height="30"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
              4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
              14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
              6.86-8.55 11.54L12 21.35z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path
-                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
              4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
              14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
              6.86-8.55 11.54L12 21.35z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              )}
+                        />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
 
               {showTagsFor === post.id && (
                 <div
